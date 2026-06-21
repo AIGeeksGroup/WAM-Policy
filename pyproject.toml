@@ -3,6 +3,9 @@ name = "wam-policy"
 version = "0.0.0"
 description = "WAM-Policy: On-policy distillation for LingBot-VA style world-action models."
 requires-python = ">=3.10"
+dependencies = [
+    "PyYAML>=6.0",
+]
 
 [tool.ruff]
 line-length = 100
