@@ -1,0 +1,49 @@
+# External source repositories
+/external/*
+
+# Local datasets and processed data
+/datasets/*
+
+# Experiments, checkpoints, pretrained models, and run outputs
+/experiments/*
+
+# Evaluation outputs
+/results/*
+
+# Logs, caches, and local trackers
+/logs/*
+/cache/*
+/wandb/*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python packaging/build outputs
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Test/type-check cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local env files
+.env
+.venv/
+venv/
+ENV/
+
+# IDE / OS files
+.DS_Store
+.idea/
+.vscode/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
