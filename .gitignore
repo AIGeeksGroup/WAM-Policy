@@ -15,6 +15,9 @@
 /cache/*
 /wandb/*
 
+# Local handoff files
+/agent_handoff/*
+
 # Python cache
 __pycache__/
 *.py[cod]
