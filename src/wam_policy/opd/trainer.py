@@ -114,7 +114,10 @@ class VideoFFMTrainer:
             raise RuntimeError("Optimizer has not been initialized.")
 
         self.student.train()
-        z_clean = batch["z_clean"].to(device=self.device, dtype=self.dtype)
+        z_clean = normalize_video_latent_batch(batch["z_clean"]).to(
+            device=self.device,
+            dtype=self.dtype,
+        )
         context = self.adapter.build_video_context(batch)
 
         s_src, s_tgt = sample_s_pairs(
@@ -166,6 +169,18 @@ def _checkpoint_dir(cfg: Mapping[str, Any]) -> Path:
     if not path.is_absolute():
         path = resolve_repo_root(cfg) / path
     return path.resolve()
+
+
+def normalize_video_latent_batch(z_clean: torch.Tensor) -> torch.Tensor:
+    if not isinstance(z_clean, torch.Tensor):
+        raise TypeError("z_clean must be a torch.Tensor.")
+    if z_clean.ndim == 5:
+        return z_clean
+    if z_clean.ndim == 6 and z_clean.shape[1] == 1:
+        return z_clean.squeeze(1)
+    raise ValueError(
+        "z_clean must have shape [B, C, F, H, W] or [B, 1, C, F, H, W]."
+    )
 
 
 def _section(cfg: Mapping[str, Any], section: str) -> Mapping[str, Any]:

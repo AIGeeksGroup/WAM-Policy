@@ -31,6 +31,40 @@ def test_flow_time_pair_embedding_rejects_invalid_time_pair() -> None:
         embedding(torch.tensor([0.4]), torch.tensor([0.2]))
 
 
+def test_flow_time_pair_embedding_forward_conditioning_supports_batch_times() -> None:
+    embedding = FlowTimePairEmbedding(hidden_dim=4, timestep_proj_dim=24)
+    s_src = torch.tensor([0.1, 0.2])
+    s_tgt = torch.tensor([0.6, 0.8])
+
+    temb_delta, timestep_proj_delta = embedding.forward_conditioning(
+        s_src,
+        s_tgt,
+        timestep_proj_shape=(2, 5, 6, 4),
+    )
+
+    assert temb_delta.shape == (2, 5, 4)
+    assert timestep_proj_delta.shape == (2, 5, 6, 4)
+    assert torch.equal(temb_delta, torch.zeros_like(temb_delta))
+    assert torch.equal(timestep_proj_delta, torch.zeros_like(timestep_proj_delta))
+
+
+def test_flow_time_pair_embedding_forward_conditioning_supports_token_times() -> None:
+    embedding = FlowTimePairEmbedding(hidden_dim=4, timestep_proj_dim=24)
+    s_src = torch.full((2, 5), 0.1)
+    s_tgt = torch.full((2, 5), 0.8)
+
+    temb_delta, timestep_proj_delta = embedding.forward_conditioning(
+        s_src,
+        s_tgt,
+        timestep_proj_shape=(2, 5, 6, 4),
+    )
+
+    assert temb_delta.shape == (2, 5, 4)
+    assert timestep_proj_delta.shape == (2, 5, 6, 4)
+    assert torch.equal(temb_delta, torch.zeros_like(temb_delta))
+    assert torch.equal(timestep_proj_delta, torch.zeros_like(timestep_proj_delta))
+
+
 class FakeBaseModel(nn.Module):
     def __init__(self) -> None:
         super().__init__()

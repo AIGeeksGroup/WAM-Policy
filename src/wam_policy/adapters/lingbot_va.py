@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import MethodType
 from typing import Any, Mapping
 
 import torch
@@ -56,7 +57,158 @@ class LingBotVAAdapter:
         conditioner: nn.Module,
     ) -> nn.Module:
         model.wam_time_pair_conditioner = conditioner
+        self._configure_conditioner_from_model(model, conditioner)
+        self._patch_time_embed(model, conditioner)
+        self.install_video_flowmap_hook(model, conditioner)
         return model
+
+    def install_video_flowmap_hook(
+        self,
+        model: nn.Module,
+        conditioner: nn.Module,
+    ) -> nn.Module:
+        model.wam_time_pair_conditioner = conditioner
+
+        def wam_forward_video_flowmap(
+            *,
+            z_src: torch.Tensor,
+            s_src: torch.Tensor,
+            s_tgt: torch.Tensor,
+            context: Any,
+        ) -> torch.Tensor:
+            input_dict = self.build_lingbot_video_input(model, z_src, s_src, s_tgt, context)
+            model._wam_current_s_src = s_src
+            model._wam_current_s_tgt = s_tgt
+            try:
+                output = model(input_dict, action_mode=False, train_mode=False)
+            finally:
+                model._wam_current_s_src = None
+                model._wam_current_s_tgt = None
+            return self.lingbot_output_to_latent(output, z_src.shape, _patch_size(model))
+
+        model.wam_forward_video_flowmap = wam_forward_video_flowmap
+        return model
+
+    def build_lingbot_video_input(
+        self,
+        model: nn.Module,
+        z_src: torch.Tensor,
+        s_src: torch.Tensor,
+        s_tgt: torch.Tensor,
+        context: Any,
+    ) -> dict[str, torch.Tensor]:
+        _validate_video_flowmap_inputs(z_src, s_src, s_tgt)
+        if z_src.ndim != 5:
+            raise ValueError("z_src must have shape [B, C, F, H, W].")
+
+        patch_size = _patch_size(model)
+        batch_size, _, frames, height, width = z_src.shape
+        patch_f, patch_h, patch_w = patch_size
+        if frames % patch_f or height % patch_h or width % patch_w:
+            raise ValueError(
+                f"z_src shape {tuple(z_src.shape)} is not divisible by patch_size {patch_size}."
+            )
+
+        token_frames = frames // patch_f
+        timesteps = (1.0 - s_src.to(dtype=torch.float32)) * self._num_train_timesteps()
+        timesteps = timesteps[:, None].expand(batch_size, token_frames).to(device=z_src.device)
+        grid_id = _get_mesh_id(
+            token_frames,
+            height // patch_h,
+            width // patch_w,
+            time_type=0,
+            device=z_src.device,
+        )
+        grid_id = grid_id[None].expand(batch_size, -1, -1)
+        text_emb = self.normalize_video_context(
+            context,
+            batch_size=batch_size,
+            device=z_src.device,
+            dtype=z_src.dtype,
+        )
+        return {
+            "noisy_latents": z_src,
+            "timesteps": timesteps,
+            "grid_id": grid_id,
+            "text_emb": text_emb,
+        }
+
+    def normalize_video_context(
+        self,
+        context: Any,
+        batch_size: int,
+        device: torch.device,
+        dtype: torch.dtype,
+    ) -> torch.Tensor:
+        text_emb = _extract_text_emb(context)
+        if isinstance(text_emb, list):
+            text_emb = torch.stack([_normalize_text_emb_tensor(item) for item in text_emb], dim=0)
+        else:
+            text_emb = _normalize_text_emb_tensor(text_emb)
+
+        if text_emb.ndim == 2:
+            if batch_size != 1:
+                raise ValueError("A single [L, D] text_emb is only valid for batch_size=1.")
+            text_emb = text_emb[None]
+        if text_emb.ndim != 3:
+            raise ValueError("text_emb must have shape [L, D] or [B, L, D].")
+        if text_emb.shape[0] != batch_size:
+            raise ValueError(
+                f"text_emb batch size must match z_src batch size: {text_emb.shape[0]} != {batch_size}"
+            )
+        return text_emb.to(device=device, dtype=dtype)
+
+    def lingbot_output_to_latent(
+        self,
+        output: Any,
+        z_shape: torch.Size | tuple[int, ...],
+        patch_size: tuple[int, int, int],
+    ) -> torch.Tensor:
+        if isinstance(output, (tuple, list)):
+            output = output[0]
+        if not isinstance(output, torch.Tensor):
+            raise TypeError("LingBot video forward must return a tensor or tuple/list of tensors.")
+        if tuple(output.shape) == tuple(z_shape):
+            return output
+        if output.ndim == 3:
+            return self.video_sequence_to_latent(output, z_shape, patch_size)
+        raise ValueError(f"Unsupported LingBot video output shape: {tuple(output.shape)}")
+
+    def video_sequence_to_latent(
+        self,
+        sequence: torch.Tensor,
+        z_shape: torch.Size | tuple[int, ...],
+        patch_size: tuple[int, int, int],
+    ) -> torch.Tensor:
+        if len(z_shape) != 5:
+            raise ValueError("z_shape must be [B, C, F, H, W].")
+        batch_size, channels, frames, height, width = tuple(z_shape)
+        patch_f, patch_h, patch_w = patch_size
+        if frames % patch_f or height % patch_h or width % patch_w:
+            raise ValueError(f"z_shape {tuple(z_shape)} is not divisible by patch_size {patch_size}.")
+
+        post_frames = frames // patch_f
+        post_height = height // patch_h
+        post_width = width // patch_w
+        expected_tokens = post_frames * post_height * post_width * patch_f * patch_h * patch_w
+        if sequence.shape != (batch_size, expected_tokens, channels):
+            raise ValueError(
+                f"sequence shape must be {(batch_size, expected_tokens, channels)}, "
+                f"got {tuple(sequence.shape)}."
+            )
+
+        latent = sequence.reshape(
+            batch_size,
+            post_frames,
+            post_height,
+            post_width,
+            patch_f,
+            patch_h,
+            patch_w,
+            channels,
+        )
+        latent = latent.permute(0, 7, 1, 4, 2, 5, 3, 6)
+        return latent.flatten(6, 7).flatten(4, 5).flatten(2, 3)
 
     def forward_video_flowmap(
         self,
@@ -132,6 +284,76 @@ class LingBotVAAdapter:
             raise ValueError(f"Unsupported runtime.precision: {precision}")
         return precision_map[precision]
 
+    def _num_train_timesteps(self) -> float:
+        flowmap_cfg = self.cfg.get("flowmap")
+        value = 1000
+        if isinstance(flowmap_cfg, Mapping):
+            value = flowmap_cfg.get("lingbot_num_train_timesteps", value)
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 0:
+            raise ValueError("flowmap.lingbot_num_train_timesteps must be positive.")
+        return float(value)
+
+    def _configure_conditioner_from_model(self, model: nn.Module, conditioner: nn.Module) -> None:
+        configure = getattr(conditioner, "configure_output_dims", None)
+        if not callable(configure):
+            return
+        try:
+            time_proj = model.condition_embedder.time_proj
+            timestep_proj_dim = int(time_proj.out_features)
+            hidden_dim = timestep_proj_dim // 6
+        except (AttributeError, TypeError, ValueError):
+            return
+        if hidden_dim <= 0 or timestep_proj_dim <= 0:
+            return
+        configure(hidden_dim=hidden_dim, timestep_proj_dim=timestep_proj_dim)
+
+    def _patch_time_embed(self, model: nn.Module, conditioner: nn.Module) -> None:
+        if hasattr(model, "_wam_original_time_embed"):
+            return
+        original_time_embed = getattr(model, "_time_embed", None)
+        if not callable(original_time_embed):
+            return
+
+        model._wam_original_time_embed = original_time_embed
+
+        def patched_time_embed(
+            model_self: nn.Module,
+            timesteps: torch.Tensor,
+            height: int,
+            width: int,
+            dtype: torch.dtype,
+            action_mode: bool = False,
+        ) -> tuple[torch.Tensor, torch.Tensor]:
+            temb, timestep_proj = model_self._wam_original_time_embed(
+                timesteps,
+                height,
+                width,
+                dtype,
+                action_mode=action_mode,
+            )
+            if action_mode:
+                return temb, timestep_proj
+
+            s_src = getattr(model_self, "_wam_current_s_src", None)
+            s_tgt = getattr(model_self, "_wam_current_s_tgt", None)
+            if s_src is None or s_tgt is None:
+                return temb, timestep_proj
+
+            s_src_tokens = _expand_time_to_tokens(s_src, temb.shape[1]).to(device=temb.device)
+            s_tgt_tokens = _expand_time_to_tokens(s_tgt, temb.shape[1]).to(device=temb.device)
+            temb_delta, timestep_proj_delta = conditioner.forward_conditioning(
+                s_src_tokens,
+                s_tgt_tokens,
+                timestep_proj.shape,
+            )
+            return (
+                temb + temb_delta.to(device=temb.device, dtype=temb.dtype),
+                timestep_proj
+                + timestep_proj_delta.to(device=timestep_proj.device, dtype=timestep_proj.dtype),
+            )
+
+        model._time_embed = MethodType(patched_time_embed, model)
+
 
 def _resolve_under_repo(repo_root: Path, raw_path: str) -> Path:
     path = Path(raw_path).expanduser()
@@ -169,3 +391,78 @@ def _validate_time_tensor(
         raise ValueError(f"{name} batch size must match z_src batch size.")
     if value.device != device:
         raise ValueError(f"{name} must be on the same device as z_src.")
+
+
+def _patch_size(model: nn.Module) -> tuple[int, int, int]:
+    raw_patch_size = getattr(model, "patch_size", (1, 2, 2))
+    if not isinstance(raw_patch_size, (tuple, list)) or len(raw_patch_size) != 3:
+        raise ValueError("LingBot model patch_size must have three dimensions.")
+    patch_size = tuple(int(value) for value in raw_patch_size)
+    if any(value <= 0 for value in patch_size):
+        raise ValueError("LingBot model patch_size values must be positive.")
+    return patch_size
+
+
+def _get_mesh_id(
+    frames: int,
+    height: int,
+    width: int,
+    time_type: int,
+    device: torch.device,
+) -> torch.Tensor:
+    frame_idx = torch.arange(frames, device=device)
+    height_idx = torch.arange(height, device=device)
+    width_idx = torch.arange(width, device=device)
+    frame_grid, height_grid, width_grid = torch.meshgrid(
+        frame_idx,
+        height_idx,
+        width_idx,
+        indexing="ij",
+    )
+    grid_id = torch.cat(
+        [
+            frame_grid.unsqueeze(0),
+            height_grid.unsqueeze(0),
+            width_grid.unsqueeze(0),
+        ],
+        dim=0,
+    ).flatten(1)
+    return torch.cat([grid_id, torch.full_like(grid_id[:1], time_type)], dim=0)
+
+
+def _extract_text_emb(context: Any) -> torch.Tensor | list[torch.Tensor]:
+    if isinstance(context, torch.Tensor):
+        return context
+    if isinstance(context, Mapping):
+        if "text_emb" not in context:
+            raise ValueError("video context dict must contain 'text_emb'.")
+        return context["text_emb"]
+    if isinstance(context, list):
+        if not context:
+            raise ValueError("video context list must not be empty.")
+        extracted: list[torch.Tensor] = []
+        for item in context:
+            value = _extract_text_emb(item)
+            if isinstance(value, list):
+                raise ValueError("nested video context lists are not supported.")
+            extracted.append(value)
+        return extracted
+    raise TypeError("video context must be a tensor, dict, or list of dict/tensor items.")
+
+
+def _normalize_text_emb_tensor(value: Any) -> torch.Tensor:
+    if not isinstance(value, torch.Tensor):
+        raise TypeError("text_emb must be a torch.Tensor.")
+    if value.ndim == 3 and value.shape[0] == 1:
+        return value.squeeze(0)
+    if value.ndim in {2, 3}:
+        return value
+    raise ValueError("text_emb tensor must have shape [L, D] or [B, L, D].")
+
+
+def _expand_time_to_tokens(s: torch.Tensor, token_count: int) -> torch.Tensor:
+    if s.ndim == 1:
+        return s[:, None].expand(s.shape[0], token_count)
+    if s.ndim == 2 and s.shape[1] == token_count:
+        return s
+    raise ValueError("s_src/s_tgt cannot be expanded to the requested token count.")
