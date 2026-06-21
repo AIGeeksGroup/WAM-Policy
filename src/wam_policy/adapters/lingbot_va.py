@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import importlib.util
+import inspect
+import sys
 from pathlib import Path
 from types import MethodType
+from types import ModuleType
 from typing import Any, Mapping
 
 import torch
 from torch import nn
 
 from wam_policy.utils.paths import resolve_repo_root
+from wam_policy.utils.runtime import resolve_device, resolve_lingbot_attn_mode, resolve_torch_dtype
 
 
 class LingBotVAAdapter:
@@ -20,9 +25,11 @@ class LingBotVAAdapter:
         self.checkpoint_path = self._resolve_checkpoint_path()
         self.device = self._resolve_device()
         self.torch_dtype = self._resolve_precision()
+        self.lingbot_attn_mode = resolve_lingbot_attn_mode(cfg)
 
     def load_pretrained_video_action_model(self) -> nn.Module:
         """Load the LingBot-VA transformer on server/runtime environments."""
+        self._install_flash_attention_stub_if_needed()
         try:
             from wan_va.modules.utils import load_transformer
         except ModuleNotFoundError as exc:
@@ -38,10 +45,12 @@ class LingBotVAAdapter:
                 str(self.checkpoint_path),
                 torch_dtype=self.torch_dtype,
                 torch_device=self.device,
+                attn_mode=self.lingbot_attn_mode,
             )
         except Exception as exc:
             raise RuntimeError(
-                f"Failed to load LingBot-VA transformer from {self.checkpoint_path}."
+                f"Failed to load LingBot-VA transformer from {self.checkpoint_path} "
+                f"with attn_mode={self.lingbot_attn_mode!r}."
             ) from exc
 
         if not isinstance(model, nn.Module):
@@ -80,7 +89,14 @@ class LingBotVAAdapter:
             model._wam_current_s_src = s_src
             model._wam_current_s_tgt = s_tgt
             try:
-                output = model(input_dict, action_mode=False, train_mode=False)
+                output = _call_lingbot_forward(
+                    model,
+                    input_dict,
+                    update_cache=0,
+                    cache_name=self._cache_name(),
+                    action_mode=False,
+                    train_mode=False,
+                )
             finally:
                 model._wam_current_s_src = None
                 model._wam_current_s_tgt = None
@@ -253,36 +269,24 @@ class LingBotVAAdapter:
         return _resolve_under_repo(self.repo_root, raw_path)
 
     def _resolve_device(self) -> torch.device:
-        runtime_cfg = self.cfg.get("runtime")
-        device_name = "auto"
-        if isinstance(runtime_cfg, Mapping):
-            raw_device = runtime_cfg.get("device", "auto")
-            if isinstance(raw_device, str) and raw_device:
-                device_name = raw_device
-
-        if device_name == "auto":
-            device_name = "cuda" if torch.cuda.is_available() else "cpu"
-        return torch.device(device_name)
+        return resolve_device(self.cfg)
 
     def _resolve_precision(self) -> torch.dtype:
-        runtime_cfg = self.cfg.get("runtime")
-        precision = "bf16"
-        if isinstance(runtime_cfg, Mapping):
-            raw_precision = runtime_cfg.get("precision", "bf16")
-            if isinstance(raw_precision, str) and raw_precision:
-                precision = raw_precision
+        return resolve_torch_dtype(self.cfg)
 
-        precision_map = {
-            "bf16": torch.bfloat16,
-            "bfloat16": torch.bfloat16,
-            "fp16": torch.float16,
-            "float16": torch.float16,
-            "fp32": torch.float32,
-            "float32": torch.float32,
-        }
-        if precision not in precision_map:
-            raise ValueError(f"Unsupported runtime.precision: {precision}")
-        return precision_map[precision]
+    def _cache_name(self) -> str:
+        runtime_cfg = self.cfg.get("runtime")
+        value = "pos"
+        if isinstance(runtime_cfg, Mapping):
+            raw_value = runtime_cfg.get("lingbot_cache_name", value)
+            if isinstance(raw_value, str) and raw_value:
+                value = raw_value
+        return value
+
+    def _install_flash_attention_stub_if_needed(self) -> None:
+        if self.lingbot_attn_mode != "torch":
+            return
+        _install_flash_attention_stub_if_missing()
 
     def _num_train_timesteps(self) -> float:
         flowmap_cfg = self.cfg.get("flowmap")
@@ -308,6 +312,7 @@ class LingBotVAAdapter:
         configure(hidden_dim=hidden_dim, timestep_proj_dim=timestep_proj_dim)
 
     def _patch_time_embed(self, model: nn.Module, conditioner: nn.Module) -> None:
+        self._patch_condition_embedder_forward(model, conditioner)
         if hasattr(model, "_wam_original_time_embed"):
             return
         original_time_embed = getattr(model, "_time_embed", None)
@@ -324,6 +329,7 @@ class LingBotVAAdapter:
             dtype: torch.dtype,
             action_mode: bool = False,
         ) -> tuple[torch.Tensor, torch.Tensor]:
+            model_self._wam_conditioning_was_applied = False
             temb, timestep_proj = model_self._wam_original_time_embed(
                 timesteps,
                 height,
@@ -337,6 +343,8 @@ class LingBotVAAdapter:
             s_src = getattr(model_self, "_wam_current_s_src", None)
             s_tgt = getattr(model_self, "_wam_current_s_tgt", None)
             if s_src is None or s_tgt is None:
+                return temb, timestep_proj
+            if getattr(model_self, "_wam_conditioning_was_applied", False):
                 return temb, timestep_proj
 
             s_src_tokens = _expand_time_to_tokens(s_src, temb.shape[1]).to(device=temb.device)
@@ -354,12 +362,103 @@ class LingBotVAAdapter:
 
         model._time_embed = MethodType(patched_time_embed, model)
 
+    def _patch_condition_embedder_forward(
+        self,
+        model: nn.Module,
+        conditioner: nn.Module,
+    ) -> None:
+        condition_embedder = getattr(model, "condition_embedder", None)
+        original_forward = getattr(condition_embedder, "forward", None)
+        if condition_embedder is None or not callable(original_forward):
+            return
+        if hasattr(condition_embedder, "_wam_original_forward"):
+            return
+
+        condition_embedder._wam_original_forward = original_forward
+
+        def patched_condition_forward(
+            condition_self: nn.Module,
+            timestep: torch.Tensor,
+            dtype: torch.dtype | None = None,
+        ) -> tuple[torch.Tensor, torch.Tensor]:
+            temb, timestep_proj = condition_self._wam_original_forward(timestep, dtype=dtype)
+            model._wam_conditioning_was_applied = False
+
+            s_src = getattr(model, "_wam_current_s_src", None)
+            s_tgt = getattr(model, "_wam_current_s_tgt", None)
+            if s_src is None or s_tgt is None:
+                return temb, timestep_proj
+
+            s_src_tokens = _expand_time_to_tokens(s_src, temb.shape[1]).to(device=temb.device)
+            s_tgt_tokens = _expand_time_to_tokens(s_tgt, temb.shape[1]).to(device=temb.device)
+            temb_delta, timestep_proj_delta = conditioner.forward_conditioning(
+                s_src_tokens,
+                s_tgt_tokens,
+                timestep_proj.shape,
+            )
+            model._wam_conditioning_was_applied = True
+            return (
+                temb + temb_delta.to(device=temb.device, dtype=temb.dtype),
+                timestep_proj
+                + timestep_proj_delta.to(device=timestep_proj.device, dtype=timestep_proj.dtype),
+            )
+
+        condition_embedder.forward = MethodType(patched_condition_forward, condition_embedder)
+
 
 def _resolve_under_repo(repo_root: Path, raw_path: str) -> Path:
     path = Path(raw_path).expanduser()
     if not path.is_absolute():
         path = repo_root / path
     return path.resolve()
+
+
+def _call_lingbot_forward(
+    model: nn.Module,
+    input_dict: Mapping[str, torch.Tensor],
+    **kwargs: Any,
+) -> Any:
+    forward = getattr(model, "forward", None)
+    if not callable(forward):
+        raise TypeError("LingBot model must expose a callable forward method.")
+
+    try:
+        signature = inspect.signature(forward)
+    except (TypeError, ValueError):
+        accepted_kwargs = kwargs
+    else:
+        accepts_kwargs = any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD
+            for parameter in signature.parameters.values()
+        )
+        accepted_kwargs = (
+            kwargs
+            if accepts_kwargs
+            else {key: value for key, value in kwargs.items() if key in signature.parameters}
+        )
+    return model(input_dict, **accepted_kwargs)
+
+
+def _install_flash_attention_stub_if_missing() -> None:
+    if (
+        importlib.util.find_spec("flash_attn_interface") is not None
+        or importlib.util.find_spec("flash_attn") is not None
+    ):
+        return
+
+    def _unavailable_flash_attn_func(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        raise RuntimeError(
+            "flash-attn is unavailable in this environment. WAM-Policy installed a "
+            "stub only so LingBot-VA can be imported with attn_mode='torch'. "
+            "Use runtime.lingbot_attn_mode='torch' or install a ROCm-compatible "
+            "attention backend before selecting flashattn."
+        )
+
+    for module_name in ("flash_attn_interface", "flash_attn"):
+        module = ModuleType(module_name)
+        module.flash_attn_func = _unavailable_flash_attn_func
+        sys.modules[module_name] = module
 
 
 def _validate_video_flowmap_inputs(

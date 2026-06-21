@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Mapping
 
-from wam_policy.opd.stages import train_video_forward_flowmap
 from wam_policy.utils.paths import resolve_repo_root
 
 
@@ -25,6 +24,12 @@ def run(cfg: Mapping[str, Any], dry_run: bool = False) -> dict[str, Any] | None:
         raise NotImplementedError(f"{stage} is not implemented yet. Current scope: video_ffm.")
 
     raise ValueError(f"Unknown stage: {stage}")
+
+
+def train_video_forward_flowmap(cfg: Mapping[str, Any]) -> dict[str, Any]:
+    from wam_policy.opd.stages import train_video_forward_flowmap as _train_video_ffm
+
+    return _train_video_ffm(cfg)
 
 
 def _static_video_ffm_check(cfg: Mapping[str, Any]) -> dict[str, Any]:

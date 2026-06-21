@@ -45,6 +45,7 @@ flowmap:
 runtime:
   device: auto
   precision: bf16
+  lingbot_attn_mode: torch
   allow_tf32: true
   compile: false
 

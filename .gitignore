@@ -14,6 +14,8 @@
 /logs/*
 /cache/*
 /wandb/*
+/slurm-*.out
+/slurm-*.err
 
 # Python cache
 __pycache__/
