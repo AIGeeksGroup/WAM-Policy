@@ -1,4 +1,4 @@
-# WAM-Policy
+# WAM-Policy: World Action Models with On-Policy Distillation for Quadruped Loco-Manipulation
 
 WAM-Policy is a research repo for distilling LingBot-VA style video-action world-action models with on-policy distillation.
 
