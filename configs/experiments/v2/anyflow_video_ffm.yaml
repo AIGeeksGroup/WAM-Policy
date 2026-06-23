@@ -49,6 +49,20 @@ runtime:
   allow_tf32: true
   compile: false
 
+logging:
+  wandb:
+    enabled: auto
+    project: WAM-Policy
+    entity: null
+    name: null
+    id: null
+    resume: null
+    mode: online
+    dir: wandb
+    tags:
+      - video_ffm
+      - lingbot_va
+
 train:
   seed: 42
   lr: 1.0e-5

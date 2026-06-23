@@ -7,24 +7,60 @@
 
 ## 1. 管理员提交命令
 
+提交前需要先准备两个 manifest：
+
+- `DEBUG_MANIFEST`：小样本 manifest，只用于 `00_env` 到 `05_video_forward` 诊断。
+- `FULL_MANIFEST`：完整或大样本 manifest，用于诊断通过后的 `06_train_long`。
+
+LingBot-VA 官方 RoboTwin dataset 已包含 WAN 2.2 video latents，管理员应在服务器上下载并转换成 WAM-Policy 当前 loader 支持的 `z_clean.pt`、`context.pt` 和 JSONL manifest：
+
+```bash
+huggingface-cli download \
+  --repo-type dataset \
+  robbyant/robotwin-clean-and-aug-lerobot \
+  --local-dir datasets/raw/robotwin-clean-and-aug-lerobot
+
+python3 scripts/tools/convert_lingbot_robotwin_latents.py \
+  --repo-root "$PWD" \
+  --source-root datasets/raw/robotwin-clean-and-aug-lerobot \
+  --output-root datasets/latents/robotwin_video_ffm_debug \
+  --manifest datasets/manifests/video_latents_debug.jsonl \
+  --max-samples 16 \
+  --overwrite
+
+export DEBUG_MANIFEST="$PWD/datasets/manifests/video_latents_debug.jsonl"
+
+python3 scripts/tools/convert_lingbot_robotwin_latents.py \
+  --repo-root "$PWD" \
+  --source-root datasets/raw/robotwin-clean-and-aug-lerobot \
+  --output-root datasets/latents/robotwin_video_ffm_full \
+  --manifest datasets/manifests/video_latents_full.jsonl \
+  --max-samples 0 \
+  --overwrite
+
+export FULL_MANIFEST="$PWD/datasets/manifests/video_latents_full.jsonl"
+```
+
+这个转换脚本只读取官方 dataset 里的 `.pth` latent，不加载 LingBot checkpoint，不需要 GPU。管理员脚本会先用 `DEBUG_MANIFEST` 跑诊断，诊断全部通过后再用 `FULL_MANIFEST` 跑训练。
+
 基础提交：
 
 ```bash
-sbatch --export=ALL,TEACHER_CKPT=/abs/path/to/transformer,MANIFEST=/abs/path/to/video_latents_debug.jsonl \
+sbatch --export=ALL,TEACHER_CKPT=/abs/path/to/transformer,DEBUG_MANIFEST=/abs/path/to/video_latents_debug.jsonl,FULL_MANIFEST=/abs/path/to/video_latents_full.jsonl \
   /shared/amdgpu/home/zeyu_zhang_ck1/WAM-Policy/scripts/slurm/video_ffm_admin_diagnostic.sbatch
 ```
 
 如果管理员只给较短窗口：
 
 ```bash
-sbatch --export=ALL,TEACHER_CKPT=/abs/path/to/transformer,MANIFEST=/abs/path/to/video_latents_debug.jsonl,TRAIN_MAX_STEPS=1000 \
+sbatch --export=ALL,TEACHER_CKPT=/abs/path/to/transformer,DEBUG_MANIFEST=/abs/path/to/video_latents_debug.jsonl,FULL_MANIFEST=/abs/path/to/video_latents_full.jsonl,TRAIN_MAX_STEPS=1000 \
   /shared/amdgpu/home/zeyu_zhang_ck1/WAM-Policy/scripts/slurm/video_ffm_admin_diagnostic.sbatch
 ```
 
 如果想尽量长跑：
 
 ```bash
-sbatch --export=ALL,TEACHER_CKPT=/abs/path/to/transformer,MANIFEST=/abs/path/to/video_latents_debug.jsonl,TRAIN_MAX_STEPS=10000 \
+sbatch --export=ALL,TEACHER_CKPT=/abs/path/to/transformer,DEBUG_MANIFEST=/abs/path/to/video_latents_debug.jsonl,FULL_MANIFEST=/abs/path/to/video_latents_full.jsonl,TRAIN_MAX_STEPS=10000 \
   /shared/amdgpu/home/zeyu_zhang_ck1/WAM-Policy/scripts/slurm/video_ffm_admin_diagnostic.sbatch
 ```
 
@@ -37,7 +73,32 @@ TRAIN_MAX_STEPS=5000
 TRAIN_SAVE_EVERY=500
 TRAIN_LOG_EVERY=10
 TRAIN_BATCH_SIZE=1
+WANDB_ENABLED=auto
+WANDB_PROJECT=WAM-Policy
+WANDB_ENTITY=<team-or-user>
+WANDB_RUN_NAME=video-ffm-<name>
+WANDB_RUN_ID=wam-video-ffm-<job-id>
+WANDB_MODE=online
+WANDB_DIR=wandb
+WANDB_UPLOAD_LOGS=true
 ```
+
+如果需要 Weights & Biases 远程监控，管理员至少需要在提交前设置：
+
+```bash
+export WANDB_API_KEY=<private-api-key>
+```
+
+如果 run 需要进入指定 W&B team/workspace，可以额外设置：
+
+```bash
+export WANDB_PROJECT=WAM-Policy
+export WANDB_ENTITY=<team-or-user>
+```
+
+`WANDB_ENABLED` 默认是 `auto`，因此只要环境里有 `WANDB_API_KEY` 就会自动启用 wandb；如果某次运行不想上报，即使有 key 也可以显式设置 `WANDB_ENABLED=false`。`WANDB_API_KEY` 只能通过环境变量传递，不要写进 Git、config 或日志文档。
+
+启用 wandb 时，脚本会用同一个 W&B run 记录训练指标，并在退出时上传 `admin-logs` artifact。artifact 包含 `status.txt`、各阶段 `.log`、Slurm `.out/.err` 和 checkpoint 文件列表，但不上传 checkpoint tensor 本体。若只想记录 metrics、不上传日志 artifact，可以设置 `WANDB_UPLOAD_LOGS=false`。
 
 ## 2. 输出目录
 
@@ -131,17 +192,28 @@ hostname
 slurm_job_id
 slurm_nodelist
 teacher_ckpt
-manifest
+debug_manifest
+full_manifest
 rocm-smi output
 PYTHON_BIN
+wandb_enabled
+wandb_effective_enabled
+wandb_project
+wandb_entity
+wandb_run_name
+wandb_run_id
+wandb_resume
+wandb_upload_logs
 ```
 
 常见问题：
 
 - `TEACHER_CKPT is required`：提交时没有传 checkpoint 路径。
-- `MANIFEST is required`：提交时没有传 manifest 路径。
+- `DEBUG_MANIFEST is required`：提交时没有传诊断 manifest 路径。
+- `FULL_MANIFEST is required`：提交时没有传训练 manifest 路径。
 - `test -e TEACHER_CKPT` 失败：checkpoint 路径不存在。
-- `test -f MANIFEST` 失败：manifest 路径不存在或不是文件。
+- `test -f DEBUG_MANIFEST` 失败：诊断 manifest 路径不存在或不是文件。
+- `test -f FULL_MANIFEST` 失败：训练 manifest 路径不存在或不是文件。
 - `rocm-smi not found`：不一定致命，但说明环境模块可能没配好。
 
 ### 01_static.log
@@ -211,7 +283,7 @@ first_param_dtype
 
 ### 04_manifest.log
 
-用途：读取 manifest 的第一条样本，确认 tensor/context shape。
+用途：读取 `DEBUG_MANIFEST` 的第一条样本，确认 tensor/context shape。
 
 重点看：
 
@@ -233,10 +305,23 @@ text_emb -> [B, L_text, D]
 常见问题：
 
 - manifest JSONL 格式错误。
+- converter 没有生成 `datasets/manifests/video_latents_debug.jsonl`。
 - `z_clean` 文件不存在。
 - `context` 文件不存在。
 - context 内没有 `text_emb`。
 - `text_emb` batch size 与 `z_clean` batch size 不一致。
+
+如果这里失败，先在登录/数据准备节点运行：
+
+```bash
+python3 scripts/tools/convert_lingbot_robotwin_latents.py \
+  --repo-root "$PWD" \
+  --source-root datasets/raw/robotwin-clean-and-aug-lerobot \
+  --output-root datasets/latents/robotwin_video_ffm_debug \
+  --manifest datasets/manifests/video_latents_debug.jsonl \
+  --max-samples 16 \
+  --dry-run
+```
 
 ### 05_video_forward.log
 
@@ -265,7 +350,7 @@ pred_u_all_finite: True
 
 ### 06_train_long.log
 
-用途：真正进入 Video-stream Forward Flow-map Training。
+用途：诊断全部通过后，使用 `FULL_MANIFEST` 真正进入 Video-stream Forward Flow-map Training。
 
 重点看：
 
@@ -273,6 +358,8 @@ pred_u_all_finite: True
 step=...
 loss/video_ffm=...
 ```
+
+如果启用了 wandb，同时确认 W&B run 页面是否出现相同 step/loss 指标。
 
 预期：
 
@@ -348,6 +435,8 @@ logs/admin_diagnostic/<JOB_ID>/
 experiments/checkpoints/v2/video_ffm_admin_debug/<JOB_ID>/latest.pt
 ```
 
+如果 wandb 已启用，也可以直接让我们查看同一个 W&B run 里的 `admin-logs` artifact；仍建议至少回传或截图 `status.txt`，以防 artifact 上传失败。
+
 ## 8. 当前默认训练参数
 
 管理员脚本默认：
@@ -360,6 +449,11 @@ TRAIN_BATCH_SIZE=1
 runtime.device=rocm
 runtime.lingbot_attn_mode=torch
 data.num_workers=0
+WANDB_ENABLED=auto
+WANDB_PROJECT=WAM-Policy
+WANDB_MODE=online
+WANDB_DIR=wandb
+WANDB_UPLOAD_LOGS=true
 ```
 
 这些默认值偏保守，目标是优先暴露 AMD 平台上真实 runtime/training 问题，而不是追求吞吐最大化。

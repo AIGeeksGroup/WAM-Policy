@@ -17,7 +17,7 @@ from wam_policy.data.video_latent_dataset import (
 )
 from wam_policy.models.lingbot_student import LingBotVideoFlowMapStudent
 from wam_policy.opd.losses import video_ffm_average_velocity_loss
-from wam_policy.utils.logging import log_step_metrics
+from wam_policy.utils.logging import TrainingLogger
 from wam_policy.utils.optim import build_adamw_optimizer
 from wam_policy.utils.paths import resolve_repo_root
 from wam_policy.utils.runtime import resolve_device, resolve_torch_dtype
@@ -56,17 +56,21 @@ class VideoFFMTrainer:
         if max_steps <= 0:
             raise ValueError("train.max_steps must be positive.")
 
+        logger = TrainingLogger(self.cfg)
         last_metrics: dict[str, float] = {}
-        for step in range(1, max_steps + 1):
-            batch = self._next_batch(dataloader)
-            last_metrics = self._train_step(batch)
-            if step % _train_int(self.cfg, "log_every", default=10) == 0:
-                log_step_metrics(step, last_metrics)
-            if step % _train_int(self.cfg, "save_every", default=500) == 0:
-                self._save_checkpoint(step, last_metrics)
+        try:
+            for step in range(1, max_steps + 1):
+                batch = self._next_batch(dataloader)
+                last_metrics = self._train_step(batch)
+                if step % _train_int(self.cfg, "log_every", default=10) == 0:
+                    logger.log_metrics(step, last_metrics)
+                if step % _train_int(self.cfg, "save_every", default=500) == 0:
+                    self._save_checkpoint(step, last_metrics)
 
-        self._save_checkpoint(max_steps, last_metrics)
-        return {"step": max_steps, "metrics": last_metrics}
+            self._save_checkpoint(max_steps, last_metrics)
+            return {"step": max_steps, "metrics": last_metrics}
+        finally:
+            logger.finish()
 
     def _build_student(self) -> None:
         build = getattr(self.student, "build", None)

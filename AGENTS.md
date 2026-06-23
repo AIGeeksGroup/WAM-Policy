@@ -6,10 +6,7 @@ and current implementation state.
 
 ## Environment Rules
 
-The current workspace is on an AMD login/controller node, likely a Slurm
-controller/login host, not a compute node.
-
-Allowed here:
+Allowed in lightweight agent sessions:
 
 - Read and edit files inside this `WAM-Policy` repository.
 - Run lightweight commands such as `pwd`, `ls`, `tree -L 2/3`, `find . -maxdepth 3`,
@@ -17,7 +14,7 @@ Allowed here:
 - Prepare configs, scripts, debug probes, and Slurm `sbatch`/`srun` templates.
 - Run very small syntax or import checks only when they are clearly lightweight.
 
-Do not run on the login node:
+Do not run in lightweight agent sessions or shared login environments:
 
 - Training, finetuning, evaluation, RoboTwin simulation, model inference, or GPU work.
 - `torchrun`, `deepspeed`, `accelerate launch`, distributed jobs, or long Python jobs.
@@ -145,7 +142,7 @@ Current code already includes:
 - Latent/context shape validation for the fake-model smoke path.
 - Checkpoint saving helper.
 
-Known AMD/server gaps:
+Known server gaps:
 
 - Real LingBot runtime dependencies and ROCm/PyTorch environment are not solved.
 - Real `wan_va.modules.utils.load_transformer` and checkpoint loading are not
@@ -185,11 +182,12 @@ The next useful work should be compute-node oriented:
 5. Only after those pass, run a tiny compute-node training job such as
    `train.max_steps=2`.
 
-Do not attempt these steps directly on the login node.
+Run these through compute-node `sbatch`/`srun` jobs rather than directly from
+lightweight agent sessions.
 
 ## Lightweight Verification Policy
 
-On the login node, prefer:
+For lightweight verification, prefer:
 
 - Static dry-run only when needed:
   `python scripts/train.py --config configs/experiments/v2/anyflow_video_ffm.yaml --dry-run static`

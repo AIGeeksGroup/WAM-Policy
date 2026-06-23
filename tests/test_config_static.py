@@ -16,6 +16,10 @@ def test_anyflow_video_ffm_config_loads() -> None:
     assert cfg["paths"]["lingbot_repo"] == "external/lingbot-va"
     assert cfg["paths"]["anyflow_repo"] == "external/AnyFlow"
     assert cfg["model"]["time_condition"] == "s_src_s_tgt_delta"
+    assert cfg["logging"]["wandb"]["enabled"] == "auto"
+    assert cfg["logging"]["wandb"]["project"] == "WAM-Policy"
+    assert cfg["logging"]["wandb"]["id"] is None
+    assert cfg["logging"]["wandb"]["resume"] is None
 
 
 def test_apply_overrides_updates_nested_values() -> None:
