@@ -13,6 +13,7 @@ from torch import nn
 
 from wam_policy.utils.paths import resolve_repo_root
 from wam_policy.utils.runtime import resolve_device, resolve_lingbot_attn_mode, resolve_torch_dtype
+from wam_policy.adapters.anyflow import estimate_instant_velocity_from_flowmap
 
 
 class LingBotVAAdapter:
@@ -378,6 +379,21 @@ class LingBotVAAdapter:
         if not isinstance(pred_u, torch.Tensor):
             raise TypeError("LingBot action flow-map hook must return a torch.Tensor.")
         return pred_u
+
+    def teacher_video_score_or_velocity(self, **kwargs: Any) -> torch.Tensor:
+        del kwargs
+        raise NotImplementedError(
+            "LingBot teacher video score/velocity binding needs server-side probe against "
+            "the real LingBot velocity forward."
+        )
+
+    def student_video_score_or_velocity_from_flowmap(
+        self,
+        pred_u: torch.Tensor,
+        **kwargs: Any,
+    ) -> torch.Tensor:
+        del kwargs
+        return estimate_instant_velocity_from_flowmap(pred_u)
 
     def _resolve_lingbot_repo(self) -> Path:
         paths_cfg = self.cfg.get("paths")

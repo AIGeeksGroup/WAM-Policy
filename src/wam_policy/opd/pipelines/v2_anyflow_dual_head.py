@@ -45,7 +45,7 @@ def run(cfg: Mapping[str, Any], dry_run: bool = False) -> dict[str, Any] | None:
     if stage == "video_dmd":
         if dry_run:
             return _static_stage_check(cfg, stage="video_dmd")
-        raise NotImplementedError("video_dmd non-dry-run trainer is not implemented yet.")
+        return train_video_dmd_opd(cfg)
 
     if stage == "action_dmd":
         if dry_run:
@@ -65,6 +65,12 @@ def train_action_forward_flowmap(cfg: Mapping[str, Any]) -> dict[str, Any]:
     from wam_policy.opd.stages import train_action_forward_flowmap as _train_action_ffm
 
     return _train_action_ffm(cfg)
+
+
+def train_video_dmd_opd(cfg: Mapping[str, Any]) -> dict[str, Any]:
+    from wam_policy.opd.stages import train_video_dmd_opd as _train_video_dmd
+
+    return _train_video_dmd(cfg)
 
 
 def _static_stage_check(cfg: Mapping[str, Any], stage: str) -> dict[str, Any]:
