@@ -60,15 +60,30 @@ class LingBotVAAdapter:
     def build_video_context(self, batch: Mapping[str, Any]) -> Any:
         return batch.get("context")
 
+    def build_action_context(self, batch: Mapping[str, Any]) -> Any:
+        return batch.get("context")
+
     def attach_video_time_pair_conditioner(
         self,
         model: nn.Module,
         conditioner: nn.Module,
     ) -> nn.Module:
+        model.wam_video_time_pair_conditioner = conditioner
         model.wam_time_pair_conditioner = conditioner
         self._configure_conditioner_from_model(model, conditioner)
-        self._patch_time_embed(model, conditioner)
+        self._patch_time_embed(model)
         self.install_video_flowmap_hook(model, conditioner)
+        return model
+
+    def attach_action_time_pair_conditioner(
+        self,
+        model: nn.Module,
+        conditioner: nn.Module,
+    ) -> nn.Module:
+        model.wam_action_time_pair_conditioner = conditioner
+        self._configure_conditioner_from_model(model, conditioner)
+        self._patch_time_embed(model)
+        self.install_action_flowmap_hook(model, conditioner)
         return model
 
     def install_video_flowmap_hook(
@@ -76,6 +91,7 @@ class LingBotVAAdapter:
         model: nn.Module,
         conditioner: nn.Module,
     ) -> nn.Module:
+        model.wam_video_time_pair_conditioner = conditioner
         model.wam_time_pair_conditioner = conditioner
 
         def wam_forward_video_flowmap(
@@ -86,6 +102,9 @@ class LingBotVAAdapter:
             context: Any,
         ) -> torch.Tensor:
             input_dict = self.build_lingbot_video_input(model, z_src, s_src, s_tgt, context)
+            model._wam_current_flowmap_mode = "video"
+            model._wam_current_video_s_src = s_src
+            model._wam_current_video_s_tgt = s_tgt
             model._wam_current_s_src = s_src
             model._wam_current_s_tgt = s_tgt
             try:
@@ -98,11 +117,58 @@ class LingBotVAAdapter:
                     train_mode=False,
                 )
             finally:
+                model._wam_current_flowmap_mode = None
+                model._wam_current_video_s_src = None
+                model._wam_current_video_s_tgt = None
                 model._wam_current_s_src = None
                 model._wam_current_s_tgt = None
             return self.lingbot_output_to_latent(output, z_src.shape, _patch_size(model))
 
         model.wam_forward_video_flowmap = wam_forward_video_flowmap
+        return model
+
+    def install_action_flowmap_hook(
+        self,
+        model: nn.Module,
+        conditioner: nn.Module,
+    ) -> nn.Module:
+        model.wam_action_time_pair_conditioner = conditioner
+
+        def wam_forward_action_flowmap(
+            *,
+            a_src: torch.Tensor,
+            s_src: torch.Tensor,
+            s_tgt: torch.Tensor,
+            context: Any,
+            z_condition: torch.Tensor | None = None,
+        ) -> torch.Tensor:
+            input_dict = self.build_lingbot_action_input(
+                model,
+                a_src,
+                s_src,
+                s_tgt,
+                context,
+                z_condition=z_condition,
+            )
+            model._wam_current_flowmap_mode = "action"
+            model._wam_current_action_s_src = s_src
+            model._wam_current_action_s_tgt = s_tgt
+            try:
+                output = _call_lingbot_forward(
+                    model,
+                    input_dict,
+                    update_cache=0,
+                    cache_name=self._cache_name(),
+                    action_mode=True,
+                    train_mode=False,
+                )
+            finally:
+                model._wam_current_flowmap_mode = None
+                model._wam_current_action_s_src = None
+                model._wam_current_action_s_tgt = None
+            return self.lingbot_output_to_action(output, a_src.shape)
+
+        model.wam_forward_action_flowmap = wam_forward_action_flowmap
         return model
 
     def build_lingbot_video_input(
@@ -147,6 +213,26 @@ class LingBotVAAdapter:
             "timesteps": timesteps,
             "grid_id": grid_id,
             "text_emb": text_emb,
+        }
+
+    def build_lingbot_action_input(
+        self,
+        model: nn.Module,
+        a_src: torch.Tensor,
+        s_src: torch.Tensor,
+        s_tgt: torch.Tensor,
+        context: Any,
+        z_condition: torch.Tensor | None = None,
+    ) -> dict[str, Any]:
+        del model
+        _validate_action_flowmap_inputs(a_src, s_src, s_tgt)
+        timesteps = (1.0 - s_src.to(dtype=torch.float32)) * self._num_train_timesteps()
+        timesteps = timesteps.to(device=a_src.device)
+        return {
+            "noisy_actions": a_src,
+            "timesteps": timesteps,
+            "context": context,
+            "z_condition": z_condition,
         }
 
     def normalize_video_context(
@@ -226,6 +312,22 @@ class LingBotVAAdapter:
         latent = latent.permute(0, 7, 1, 4, 2, 5, 3, 6)
         return latent.flatten(6, 7).flatten(4, 5).flatten(2, 3)
 
+    def lingbot_output_to_action(
+        self,
+        output: Any,
+        a_shape: torch.Size | tuple[int, ...],
+    ) -> torch.Tensor:
+        if isinstance(output, (tuple, list)):
+            output = output[0]
+        if not isinstance(output, torch.Tensor):
+            raise TypeError("LingBot action forward must return a tensor or tuple/list of tensors.")
+        if tuple(output.shape) != tuple(a_shape):
+            raise ValueError(
+                f"LingBot action output shape must match a_src shape: "
+                f"{tuple(output.shape)} != {tuple(a_shape)}"
+            )
+        return output
+
     def forward_video_flowmap(
         self,
         model: nn.Module,
@@ -246,6 +348,35 @@ class LingBotVAAdapter:
         pred_u = hook(z_src=z_src, s_src=s_src, s_tgt=s_tgt, context=context)
         if not isinstance(pred_u, torch.Tensor):
             raise TypeError("LingBot video flow-map hook must return a torch.Tensor.")
+        return pred_u
+
+    def forward_action_flowmap(
+        self,
+        model: nn.Module,
+        a_src: torch.Tensor,
+        s_src: torch.Tensor,
+        s_tgt: torch.Tensor,
+        context: Any,
+        z_condition: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        _validate_action_flowmap_inputs(a_src, s_src, s_tgt)
+
+        hook = getattr(model, "wam_forward_action_flowmap", None)
+        if hook is None:
+            raise NotImplementedError(
+                "LingBot action flow-map forward binding is not implemented yet. "
+                "Attach model.wam_forward_action_flowmap during server runtime debug."
+            )
+
+        pred_u = hook(
+            a_src=a_src,
+            s_src=s_src,
+            s_tgt=s_tgt,
+            context=context,
+            z_condition=z_condition,
+        )
+        if not isinstance(pred_u, torch.Tensor):
+            raise TypeError("LingBot action flow-map hook must return a torch.Tensor.")
         return pred_u
 
     def _resolve_lingbot_repo(self) -> Path:
@@ -311,8 +442,8 @@ class LingBotVAAdapter:
             return
         configure(hidden_dim=hidden_dim, timestep_proj_dim=timestep_proj_dim)
 
-    def _patch_time_embed(self, model: nn.Module, conditioner: nn.Module) -> None:
-        self._patch_condition_embedder_forward(model, conditioner)
+    def _patch_time_embed(self, model: nn.Module) -> None:
+        self._patch_condition_embedder_forward(model)
         if hasattr(model, "_wam_original_time_embed"):
             return
         original_time_embed = getattr(model, "_time_embed", None)
@@ -337,35 +468,26 @@ class LingBotVAAdapter:
                 dtype,
                 action_mode=action_mode,
             )
-            if action_mode:
-                return temb, timestep_proj
-
-            s_src = getattr(model_self, "_wam_current_s_src", None)
-            s_tgt = getattr(model_self, "_wam_current_s_tgt", None)
-            if s_src is None or s_tgt is None:
-                return temb, timestep_proj
             if getattr(model_self, "_wam_conditioning_was_applied", False):
                 return temb, timestep_proj
 
-            s_src_tokens = _expand_time_to_tokens(s_src, temb.shape[1]).to(device=temb.device)
-            s_tgt_tokens = _expand_time_to_tokens(s_tgt, temb.shape[1]).to(device=temb.device)
-            temb_delta, timestep_proj_delta = conditioner.forward_conditioning(
-                s_src_tokens,
-                s_tgt_tokens,
-                timestep_proj.shape,
+            conditioning = _flowmap_conditioning_for_model(
+                model_self,
+                token_count=temb.shape[1],
+                timestep_proj_shape=timestep_proj.shape,
+                device=temb.device,
             )
-            return (
-                temb + temb_delta.to(device=temb.device, dtype=temb.dtype),
-                timestep_proj
-                + timestep_proj_delta.to(device=timestep_proj.device, dtype=timestep_proj.dtype),
-            )
+            if conditioning is None:
+                return temb, timestep_proj
+
+            temb_delta, timestep_proj_delta = conditioning
+            return _add_conditioning_delta(temb, timestep_proj, temb_delta, timestep_proj_delta)
 
         model._time_embed = MethodType(patched_time_embed, model)
 
     def _patch_condition_embedder_forward(
         self,
         model: nn.Module,
-        conditioner: nn.Module,
     ) -> None:
         condition_embedder = getattr(model, "condition_embedder", None)
         original_forward = getattr(condition_embedder, "forward", None)
@@ -384,26 +506,74 @@ class LingBotVAAdapter:
             temb, timestep_proj = condition_self._wam_original_forward(timestep, dtype=dtype)
             model._wam_conditioning_was_applied = False
 
-            s_src = getattr(model, "_wam_current_s_src", None)
-            s_tgt = getattr(model, "_wam_current_s_tgt", None)
-            if s_src is None or s_tgt is None:
+            conditioning = _flowmap_conditioning_for_model(
+                model,
+                token_count=temb.shape[1],
+                timestep_proj_shape=timestep_proj.shape,
+                device=temb.device,
+            )
+            if conditioning is None:
                 return temb, timestep_proj
 
-            s_src_tokens = _expand_time_to_tokens(s_src, temb.shape[1]).to(device=temb.device)
-            s_tgt_tokens = _expand_time_to_tokens(s_tgt, temb.shape[1]).to(device=temb.device)
-            temb_delta, timestep_proj_delta = conditioner.forward_conditioning(
-                s_src_tokens,
-                s_tgt_tokens,
-                timestep_proj.shape,
-            )
+            temb_delta, timestep_proj_delta = conditioning
             model._wam_conditioning_was_applied = True
-            return (
-                temb + temb_delta.to(device=temb.device, dtype=temb.dtype),
-                timestep_proj
-                + timestep_proj_delta.to(device=timestep_proj.device, dtype=timestep_proj.dtype),
-            )
+            return _add_conditioning_delta(temb, timestep_proj, temb_delta, timestep_proj_delta)
 
         condition_embedder.forward = MethodType(patched_condition_forward, condition_embedder)
+
+
+def _flowmap_conditioning_for_model(
+    model: nn.Module,
+    token_count: int,
+    timestep_proj_shape: torch.Size | tuple[int, ...],
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor] | None:
+    mode = getattr(model, "_wam_current_flowmap_mode", None)
+    if mode is None and getattr(model, "_wam_current_s_src", None) is not None:
+        mode = "video"
+
+    if mode == "video":
+        conditioner = getattr(
+            model,
+            "wam_video_time_pair_conditioner",
+            getattr(model, "wam_time_pair_conditioner", None),
+        )
+        s_src = getattr(model, "_wam_current_video_s_src", None)
+        s_tgt = getattr(model, "_wam_current_video_s_tgt", None)
+        if s_src is None:
+            s_src = getattr(model, "_wam_current_s_src", None)
+        if s_tgt is None:
+            s_tgt = getattr(model, "_wam_current_s_tgt", None)
+    elif mode == "action":
+        conditioner = getattr(model, "wam_action_time_pair_conditioner", None)
+        s_src = getattr(model, "_wam_current_action_s_src", None)
+        s_tgt = getattr(model, "_wam_current_action_s_tgt", None)
+    else:
+        return None
+
+    if conditioner is None or s_src is None or s_tgt is None:
+        return None
+
+    s_src_tokens = _expand_time_to_tokens(s_src, token_count).to(device=device)
+    s_tgt_tokens = _expand_time_to_tokens(s_tgt, token_count).to(device=device)
+    return conditioner.forward_conditioning(
+        s_src_tokens,
+        s_tgt_tokens,
+        timestep_proj_shape,
+    )
+
+
+def _add_conditioning_delta(
+    temb: torch.Tensor,
+    timestep_proj: torch.Tensor,
+    temb_delta: torch.Tensor,
+    timestep_proj_delta: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    return (
+        temb + temb_delta.to(device=temb.device, dtype=temb.dtype),
+        timestep_proj
+        + timestep_proj_delta.to(device=timestep_proj.device, dtype=timestep_proj.dtype),
+    )
 
 
 def _resolve_under_repo(repo_root: Path, raw_path: str) -> Path:
@@ -476,20 +646,36 @@ def _validate_video_flowmap_inputs(
         raise ValueError("s_src must be strictly smaller than s_tgt for every sample.")
 
 
+def _validate_action_flowmap_inputs(
+    a_src: torch.Tensor,
+    s_src: torch.Tensor,
+    s_tgt: torch.Tensor,
+) -> None:
+    if not isinstance(a_src, torch.Tensor):
+        raise TypeError("a_src must be a torch.Tensor.")
+    if a_src.ndim == 0:
+        raise ValueError("a_src must have a batch dimension.")
+    _validate_time_tensor("s_src", s_src, a_src.shape[0], a_src.device, batch_name="a_src")
+    _validate_time_tensor("s_tgt", s_tgt, a_src.shape[0], a_src.device, batch_name="a_src")
+    if not torch.all(s_src < s_tgt).item():
+        raise ValueError("s_src must be strictly smaller than s_tgt for every sample.")
+
+
 def _validate_time_tensor(
     name: str,
     value: torch.Tensor,
     batch_size: int,
     device: torch.device,
+    batch_name: str = "z_src",
 ) -> None:
     if not isinstance(value, torch.Tensor):
         raise TypeError(f"{name} must be a torch.Tensor.")
     if value.ndim != 1:
         raise ValueError(f"{name} must have shape [B].")
     if value.shape[0] != batch_size:
-        raise ValueError(f"{name} batch size must match z_src batch size.")
+        raise ValueError(f"{name} batch size must match {batch_name} batch size.")
     if value.device != device:
-        raise ValueError(f"{name} must be on the same device as z_src.")
+        raise ValueError(f"{name} must be on the same device as {batch_name}.")
 
 
 def _patch_size(model: nn.Module) -> tuple[int, int, int]:

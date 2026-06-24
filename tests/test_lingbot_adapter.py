@@ -112,6 +112,63 @@ class FakeLingBotVideoModel(nn.Module):
         return z_src + 1.0
 
 
+class FakeLingBotActionModel(nn.Module):
+    def __init__(self, inner_dim: int = 4) -> None:
+        super().__init__()
+        self.inner_dim = inner_dim
+        self.condition_embedder = FakeConditionEmbedder(inner_dim=inner_dim)
+        self.captured_input: dict[str, torch.Tensor] | None = None
+        self.captured_action_mode: bool | None = None
+        self.last_time_embed: tuple[torch.Tensor, torch.Tensor] | None = None
+
+    def _time_embed(
+        self,
+        timesteps: torch.Tensor,
+        height: int,
+        width: int,
+        dtype: torch.dtype,
+        action_mode: bool = False,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        del action_mode
+        batch_size, token_frames = timesteps.shape
+        token_count = token_frames * height * width
+        temb = torch.ones(
+            batch_size,
+            token_count,
+            self.inner_dim,
+            device=timesteps.device,
+            dtype=dtype,
+        )
+        timestep_proj = torch.ones(
+            batch_size,
+            token_count,
+            6,
+            self.inner_dim,
+            device=timesteps.device,
+            dtype=dtype,
+        )
+        return temb, timestep_proj
+
+    def forward(
+        self,
+        input_dict: dict[str, torch.Tensor],
+        action_mode: bool = False,
+        train_mode: bool = False,
+    ) -> torch.Tensor:
+        del train_mode
+        self.captured_input = input_dict
+        self.captured_action_mode = action_mode
+        a_src = input_dict["noisy_actions"]
+        self.last_time_embed = self._time_embed(
+            input_dict["timesteps"][:, None],
+            1,
+            1,
+            a_src.dtype,
+            action_mode=action_mode,
+        )
+        return a_src + 1.0
+
+
 def test_lingbot_adapter_parses_paths_device_and_dtype(tmp_path: Path) -> None:
     adapter = LingBotVAAdapter(_cfg(tmp_path))
 
@@ -134,6 +191,14 @@ def test_build_video_context_returns_context_or_none(tmp_path: Path) -> None:
     assert adapter.build_video_context({}) is None
 
 
+def test_build_action_context_returns_context_or_none(tmp_path: Path) -> None:
+    adapter = LingBotVAAdapter(_cfg(tmp_path))
+    tensor_context = torch.tensor([1.0])
+
+    assert adapter.build_action_context({"context": tensor_context}) is tensor_context
+    assert adapter.build_action_context({}) is None
+
+
 def test_attach_video_time_pair_conditioner_sets_non_intrusive_attribute(tmp_path: Path) -> None:
     adapter = LingBotVAAdapter(_cfg(tmp_path))
     model = nn.Linear(2, 2)
@@ -143,6 +208,21 @@ def test_attach_video_time_pair_conditioner_sets_non_intrusive_attribute(tmp_pat
 
     assert returned is model
     assert model.wam_time_pair_conditioner is conditioner
+
+
+def test_attach_action_time_pair_conditioner_sets_mode_specific_attribute(tmp_path: Path) -> None:
+    adapter = LingBotVAAdapter(_cfg(tmp_path))
+    model = nn.Linear(2, 2)
+    video_conditioner = nn.Identity()
+    action_conditioner = nn.Identity()
+
+    adapter.attach_video_time_pair_conditioner(model, video_conditioner)
+    returned = adapter.attach_action_time_pair_conditioner(model, action_conditioner)
+
+    assert returned is model
+    assert model.wam_time_pair_conditioner is video_conditioner
+    assert model.wam_video_time_pair_conditioner is video_conditioner
+    assert model.wam_action_time_pair_conditioner is action_conditioner
 
 
 def test_attach_installs_video_flowmap_hook_and_builds_lingbot_input(
@@ -192,6 +272,42 @@ def test_hook_converts_lingbot_sequence_output_to_latent_shape(tmp_path: Path) -
 
     assert pred_u.shape == z_src.shape
     assert torch.equal(pred_u, torch.zeros_like(z_src))
+
+
+def test_attach_installs_action_flowmap_hook_and_builds_lingbot_input(
+    tmp_path: Path,
+) -> None:
+    adapter = LingBotVAAdapter(_cfg(tmp_path))
+    model = FakeLingBotActionModel()
+    conditioner = FlowTimePairEmbedding(hidden_dim=8)
+    a_src = torch.zeros(2, 4, 14)
+    s_src = torch.tensor([0.25, 0.5])
+    s_tgt = torch.tensor([0.75, 1.0])
+    context = [{"text_emb": torch.ones(5, 6)}, {"text_emb": torch.full((5, 6), 2.0)}]
+    z_condition = torch.zeros(2, 1, 2, 2, 2)
+
+    adapter.attach_action_time_pair_conditioner(model, conditioner)
+    pred_u = adapter.forward_action_flowmap(
+        model,
+        a_src,
+        s_src,
+        s_tgt,
+        context=context,
+        z_condition=z_condition,
+    )
+
+    assert hasattr(model, "wam_forward_action_flowmap")
+    assert torch.equal(pred_u, a_src + 1.0)
+    assert model.captured_action_mode is True
+    assert model.captured_input is not None
+    assert torch.equal(model.captured_input["noisy_actions"], a_src)
+    assert torch.allclose(model.captured_input["timesteps"], torch.tensor([750.0, 500.0]))
+    assert model.captured_input["context"] == context
+    assert torch.equal(model.captured_input["z_condition"], z_condition)
+    assert model.last_time_embed is not None
+    temb, timestep_proj = model.last_time_embed
+    assert temb.shape == (2, 1, 4)
+    assert timestep_proj.shape == (2, 1, 6, 4)
 
 
 def test_time_embed_patch_preserves_values_at_zero_init_and_skips_action_mode(
