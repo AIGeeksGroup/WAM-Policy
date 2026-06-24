@@ -1,0 +1,83 @@
+experiment:
+  name: anyflow_action_dmd_opd
+  version: v2
+  stage: action_dmd
+
+paths:
+  repo_root: .
+  lingbot_repo: external/lingbot-va
+  anyflow_repo: external/AnyFlow
+  output_dir: experiments/runs/v2/action_dmd
+  checkpoint_dir: experiments/checkpoints/v2/action_dmd
+
+teacher:
+  name: lingbot_va
+  checkpoint_path: experiments/pretrained_models/lingbot-va/PLACEHOLDER
+  frozen: true
+
+model:
+  backend: lingbot_va
+  student_type: action_flowmap
+  output_type: average_velocity
+  time_condition: s_src_s_tgt_delta
+  freeze_backbone: true
+  trainable_modules:
+    - action_time_pair_adapter
+    - action_head_adapter
+
+data:
+  mode: rollout_manifest
+  batch_size: 1
+  num_workers: 0
+
+opd:
+  rollout_manifest: datasets/manifests/student_rollouts_debug.jsonl
+  teacher_relabel_mode: online_or_cached
+  dmd:
+    enabled: true
+    weight: 0.1
+    score_source: teacher_velocity_adapter
+    student_score_source: flowmap_small_interval
+    small_delta_s: 0.02
+  anchor_ffm:
+    enabled: true
+    weight: 1.0
+
+flowmap:
+  time_convention: lingbot_s_noise0_data1
+  s_min: 0.0
+  s_max: 1.0
+  min_delta_s: 0.02
+  sample_strategy: uniform
+  target_type: average_velocity
+  eps_shared_between_src_tgt: true
+
+runtime:
+  device: auto
+  precision: bf16
+  lingbot_attn_mode: torch
+  allow_tf32: true
+  compile: false
+
+logging:
+  wandb:
+    enabled: auto
+    project: WAM-Policy
+    entity: null
+    name: null
+    id: null
+    resume: null
+    mode: online
+    dir: wandb
+    tags:
+      - action_dmd
+      - lingbot_va
+
+train:
+  seed: 42
+  lr: 1.0e-5
+  weight_decay: 0.0
+  max_steps: 1000
+  grad_clip_norm: 1.0
+  log_every: 10
+  save_every: 500

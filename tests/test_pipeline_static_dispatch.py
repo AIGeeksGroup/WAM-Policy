@@ -11,6 +11,9 @@ from wam_policy.utils.config import load_config
 
 
 CONFIG_PATH = Path("configs/experiments/v2/anyflow_video_ffm.yaml")
+ACTION_CONFIG_PATH = Path("configs/experiments/v2/anyflow_action_ffm.yaml")
+VIDEO_DMD_CONFIG_PATH = Path("configs/experiments/v2/anyflow_video_dmd_opd.yaml")
+ACTION_DMD_CONFIG_PATH = Path("configs/experiments/v2/anyflow_action_dmd_opd.yaml")
 
 
 def test_video_ffm_static_dispatch_succeeds() -> None:
@@ -23,13 +26,22 @@ def test_video_ffm_static_dispatch_succeeds() -> None:
     assert result["stage"] == "video_ffm"
 
 
-def test_unimplemented_stage_raises_clear_error() -> None:
-    cfg = load_config(CONFIG_PATH)
-    cfg = deepcopy(cfg)
-    cfg["experiment"]["stage"] = "action_ffm"
+@pytest.mark.parametrize(
+    ("config_path", "stage"),
+    [
+        (ACTION_CONFIG_PATH, "action_ffm"),
+        (VIDEO_DMD_CONFIG_PATH, "video_dmd"),
+        (ACTION_DMD_CONFIG_PATH, "action_dmd"),
+    ],
+)
+def test_new_stage_static_dispatch_succeeds(config_path: Path, stage: str) -> None:
+    cfg = load_config(config_path)
 
-    with pytest.raises(NotImplementedError, match="Current scope: video_ffm"):
-        run(cfg, dry_run=True)
+    result = run(cfg, dry_run=True)
+
+    assert result is not None
+    assert result["pipeline"] == "v2_anyflow_dual_head"
+    assert result["stage"] == stage
 
 
 def test_unknown_stage_raises_value_error() -> None:
