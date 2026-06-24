@@ -38,3 +38,21 @@ def test_probe_dmd_opd_static_source_runs_without_external_repo() -> None:
 
     assert "WAM DMD OPD Static Alignment" in result.stdout
     assert "video DMD trainer exists" in result.stdout
+
+
+def test_probe_action_dmd_static_source_runs_without_external_repo() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/tools/probe_dmd_opd_runtime.py",
+            "probe-static-source",
+            "--config",
+            "configs/experiments/v2/anyflow_action_dmd_opd.yaml",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "WAM DMD OPD Static Alignment" in result.stdout
+    assert "action DMD trainer exists" in result.stdout

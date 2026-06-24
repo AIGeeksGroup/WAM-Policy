@@ -140,14 +140,12 @@ def probe_rollout_manifest(cfg: Mapping[str, Any]) -> None:
 
 
 def probe_dmd_forward(cfg: Mapping[str, Any], stage: str, s_src: float, s_tgt: float) -> None:
-    if stage != "video_dmd":
-        raise NotImplementedError("Action DMD forward probe is added with ActionDMDOPDTrainer.")
     if not s_src < s_tgt:
         raise ValueError("--s-src must be smaller than --s-tgt.")
 
     import torch
 
-    from wam_policy.adapters.anyflow import build_video_flowmap_pair
+    from wam_policy.adapters.anyflow import build_action_flowmap_pair, build_video_flowmap_pair
     from wam_policy.adapters.lingbot_va import LingBotVAAdapter
     from wam_policy.data.rollout_manifest_dataset import RolloutManifestDataset
     from wam_policy.models.flow_map_heads import FlowTimePairEmbedding
@@ -158,12 +156,21 @@ def probe_dmd_forward(cfg: Mapping[str, Any], stage: str, s_src: float, s_tgt: f
         hidden_dim=_model_int(cfg, "time_pair_hidden_dim", default=256),
         mlp_hidden_dim=_model_optional_int(cfg, "time_pair_mlp_hidden_dim"),
     )
-    adapter.attach_video_time_pair_conditioner(model, conditioner)
+    if stage == "video_dmd":
+        adapter.attach_video_time_pair_conditioner(model, conditioner)
+    elif stage == "action_dmd":
+        adapter.attach_action_time_pair_conditioner(model, conditioner)
+    else:
+        raise ValueError(f"Unsupported DMD stage: {stage}")
     conditioner.to(device=adapter.device, dtype=adapter.torch_dtype)
     model.eval()
 
     dataset = RolloutManifestDataset.from_config(cfg)
     sample = dataset[0]
+    if stage == "action_dmd":
+        _probe_action_dmd_forward(adapter, model, sample, s_src, s_tgt)
+        return
+
     z_student = sample["z_student"]
     if not isinstance(z_student, torch.Tensor):
         raise ValueError("Video DMD forward probe requires z_student tensor.")
@@ -180,6 +187,50 @@ def probe_dmd_forward(cfg: Mapping[str, Any], stage: str, s_src: float, s_tgt: f
             s_src=pair.s_src,
             s_tgt=pair.s_tgt,
             context=context,
+        )
+    print(f"pred_u: {_tensor_summary(pred_u)}")
+    print(f"teacher_score: {_tensor_summary(teacher_score)}")
+
+
+def _probe_action_dmd_forward(
+    adapter: Any,
+    model: Any,
+    sample: Mapping[str, Any],
+    s_src: float,
+    s_tgt: float,
+) -> None:
+    import torch
+
+    from wam_policy.adapters.anyflow import build_action_flowmap_pair
+
+    a_student = sample["a_student"]
+    z_condition = sample["z_condition"]
+    if not isinstance(a_student, torch.Tensor):
+        raise ValueError("Action DMD forward probe requires a_student tensor.")
+    if not isinstance(z_condition, torch.Tensor):
+        raise ValueError("Action DMD forward probe requires student rollout z_condition tensor.")
+    a_student = a_student.unsqueeze(0).to(device=adapter.device, dtype=adapter.torch_dtype)
+    z_condition = z_condition.unsqueeze(0).to(device=adapter.device, dtype=adapter.torch_dtype)
+    s_src_tensor = torch.full((a_student.shape[0],), s_src, device=adapter.device)
+    s_tgt_tensor = torch.full((a_student.shape[0],), s_tgt, device=adapter.device)
+    pair = build_action_flowmap_pair(a_student, s_src_tensor, s_tgt_tensor)
+    context = adapter.build_action_context({"context": [sample["context"]]})
+
+    with torch.no_grad():
+        pred_u = adapter.forward_action_flowmap(
+            model,
+            pair.a_src,
+            pair.s_src,
+            pair.s_tgt,
+            context,
+            z_condition=z_condition,
+        )
+        teacher_score = adapter.teacher_action_score_or_velocity(
+            a_state=pair.a_src,
+            s_src=pair.s_src,
+            s_tgt=pair.s_tgt,
+            context=context,
+            z_condition=z_condition,
         )
     print(f"pred_u: {_tensor_summary(pred_u)}")
     print(f"teacher_score: {_tensor_summary(teacher_score)}")

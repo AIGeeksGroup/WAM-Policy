@@ -395,6 +395,21 @@ class LingBotVAAdapter:
         del kwargs
         return estimate_instant_velocity_from_flowmap(pred_u)
 
+    def teacher_action_score_or_velocity(self, **kwargs: Any) -> torch.Tensor:
+        del kwargs
+        raise NotImplementedError(
+            "LingBot teacher action score/velocity binding needs server-side probe against "
+            "the real LingBot action forward."
+        )
+
+    def student_action_score_or_velocity_from_flowmap(
+        self,
+        pred_u: torch.Tensor,
+        **kwargs: Any,
+    ) -> torch.Tensor:
+        del kwargs
+        return estimate_instant_velocity_from_flowmap(pred_u)
+
     def _resolve_lingbot_repo(self) -> Path:
         paths_cfg = self.cfg.get("paths")
         if not isinstance(paths_cfg, Mapping):

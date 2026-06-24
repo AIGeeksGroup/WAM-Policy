@@ -490,6 +490,185 @@ class VideoDMDOPDTrainer:
         )
 
 
+class ActionDMDOPDTrainer:
+    def __init__(
+        self,
+        cfg: Mapping[str, Any],
+        adapter: Any | None = None,
+        student: nn.Module | None = None,
+        rollout_dataset: Dataset[dict[str, Any]] | None = None,
+    ) -> None:
+        self.cfg = cfg
+        self.device = resolve_device(cfg)
+        self.dtype = resolve_torch_dtype(cfg)
+        self.adapter = adapter if adapter is not None else LingBotVAAdapter(cfg)
+        self.student = (
+            student
+            if student is not None
+            else LingBotActionFlowMapStudent(cfg, self.adapter)
+        )
+        self.rollout_dataset = (
+            rollout_dataset
+            if rollout_dataset is not None
+            else RolloutManifestDataset.from_config(cfg)
+        )
+        self.optimizer: torch.optim.Optimizer | None = None
+        self.loader_iter: Any | None = None
+
+    def train(self) -> dict[str, Any]:
+        set_seed(_train_int(self.cfg, "seed", default=42))
+        self._build_student()
+        self.student.to(device=self.device)
+        dataloader = self._build_dataloader()
+        self.optimizer = self._build_optimizer()
+
+        max_steps = _train_int(self.cfg, "max_steps", default=1000)
+        if max_steps <= 0:
+            raise ValueError("train.max_steps must be positive.")
+
+        logger = TrainingLogger(self.cfg)
+        last_metrics: dict[str, float] = {}
+        try:
+            for step in range(1, max_steps + 1):
+                batch = self._next_batch(dataloader)
+                last_metrics = self._train_step(batch)
+                if step % _train_int(self.cfg, "log_every", default=10) == 0:
+                    logger.log_metrics(step, last_metrics)
+                if step % _train_int(self.cfg, "save_every", default=500) == 0:
+                    self._save_checkpoint(step, last_metrics)
+
+            self._save_checkpoint(max_steps, last_metrics)
+            return {"step": max_steps, "metrics": last_metrics}
+        finally:
+            logger.finish()
+
+    def _build_student(self) -> None:
+        build = getattr(self.student, "build", None)
+        if callable(build):
+            build()
+
+    def _build_optimizer(self) -> torch.optim.Optimizer:
+        trainable_params = [param for param in self.student.parameters() if param.requires_grad]
+        if not trainable_params:
+            raise RuntimeError("No trainable parameters found for action DMD OPD training.")
+        return build_adamw_optimizer(
+            trainable_params,
+            lr=_train_float(self.cfg, "lr", default=1.0e-5),
+            weight_decay=_train_float(self.cfg, "weight_decay", default=0.0),
+        )
+
+    def _build_dataloader(self) -> DataLoader[dict[str, Any]]:
+        try:
+            dataset_len = len(self.rollout_dataset)
+        except TypeError:
+            dataset_len = None
+        if dataset_len == 0:
+            raise ValueError("Action DMD rollout dataset must not be empty.")
+        return DataLoader(
+            self.rollout_dataset,
+            batch_size=_data_int(self.cfg, "batch_size", default=1),
+            shuffle=False,
+            num_workers=_data_int(self.cfg, "num_workers", default=0),
+            collate_fn=rollout_manifest_collate_fn,
+        )
+
+    def _next_batch(self, dataloader: DataLoader[dict[str, Any]]) -> dict[str, Any]:
+        for _ in count():
+            if self.loader_iter is None:
+                self.loader_iter = iter(dataloader)
+            try:
+                return next(self.loader_iter)
+            except StopIteration:
+                self.loader_iter = None
+
+    def _train_step(self, batch: Mapping[str, Any]) -> dict[str, float]:
+        if self.optimizer is None:
+            raise RuntimeError("Optimizer has not been initialized.")
+
+        self.student.train()
+        if not isinstance(batch.get("a_student"), torch.Tensor):
+            raise ValueError("Action DMD rollout batch must contain tensor a_student.")
+        if not isinstance(batch.get("z_condition"), torch.Tensor):
+            raise ValueError(
+                "Action DMD rollout batch must contain tensor z_condition from student video rollout."
+            )
+        a_student = normalize_action_chunk_batch(batch["a_student"]).to(
+            device=self.device,
+            dtype=self.dtype,
+        )
+        z_condition = batch["z_condition"].to(device=self.device, dtype=self.dtype)
+        context = self.adapter.build_action_context(batch)
+
+        s_src, s_tgt = sample_s_pairs(
+            batch_size=a_student.shape[0],
+            s_min=_flowmap_float(self.cfg, "s_min", default=0.0),
+            s_max=_flowmap_float(self.cfg, "s_max", default=1.0),
+            min_delta_s=_flowmap_float(self.cfg, "min_delta_s", default=0.02),
+            device=self.device,
+        )
+        flowmap_pair = build_action_flowmap_pair(a_clean=a_student, s_src=s_src, s_tgt=s_tgt)
+        pred_u = self.student.forward_action_flowmap(
+            flowmap_pair.a_src,
+            flowmap_pair.s_src,
+            flowmap_pair.s_tgt,
+            context,
+            z_condition=z_condition,
+        )
+        teacher_score = self.adapter.teacher_action_score_or_velocity(
+            a_state=flowmap_pair.a_src,
+            s_src=flowmap_pair.s_src,
+            s_tgt=flowmap_pair.s_tgt,
+            context=context,
+            z_condition=z_condition,
+        )
+        student_score = self.adapter.student_action_score_or_velocity_from_flowmap(
+            pred_u=pred_u,
+            a_state=flowmap_pair.a_src,
+            s_src=flowmap_pair.s_src,
+            s_tgt=flowmap_pair.s_tgt,
+            context=context,
+            z_condition=z_condition,
+        )
+        dmd_loss, metrics = dmd_score_surrogate_loss(
+            student_state=pred_u,
+            teacher_score=teacher_score,
+            student_score=student_score,
+            weight=_opd_dmd_float(self.cfg, "weight", default=0.1),
+            metric_prefix="action_dmd",
+        )
+        total_loss = dmd_loss
+
+        if _opd_anchor_enabled(self.cfg):
+            anchor_loss, anchor_metrics = action_ffm_average_velocity_loss(
+                pred_u,
+                flowmap_pair.target_u,
+            )
+            anchor_weight = _opd_anchor_float(self.cfg, "weight", default=1.0)
+            total_loss = total_loss + anchor_weight * anchor_loss
+            metrics.update({f"anchor/{key}": value for key, value in anchor_metrics.items()})
+
+        metrics["loss/action_dmd_total"] = float(total_loss.detach().cpu())
+        self.optimizer.zero_grad(set_to_none=True)
+        total_loss.backward()
+        grad_clip_norm = _train_optional_float(self.cfg, "grad_clip_norm")
+        if grad_clip_norm is not None and grad_clip_norm > 0.0:
+            torch.nn.utils.clip_grad_norm_(self.student.parameters(), grad_clip_norm)
+        self.optimizer.step()
+        return metrics
+
+    def _save_checkpoint(self, step: int, metrics: Mapping[str, float]) -> None:
+        if self.optimizer is None:
+            raise RuntimeError("Optimizer has not been initialized.")
+        save_training_checkpoint(
+            student=self.student,
+            optimizer=self.optimizer,
+            cfg=self.cfg,
+            step=step,
+            metrics=metrics,
+            checkpoint_dir=_checkpoint_dir(self.cfg),
+        )
+
+
 def _checkpoint_dir(cfg: Mapping[str, Any]) -> Path:
     paths_cfg = cfg.get("paths")
     raw_path = "experiments/checkpoints/v2/video_ffm"

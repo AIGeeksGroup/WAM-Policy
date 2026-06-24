@@ -50,7 +50,7 @@ def run(cfg: Mapping[str, Any], dry_run: bool = False) -> dict[str, Any] | None:
     if stage == "action_dmd":
         if dry_run:
             return _static_stage_check(cfg, stage="action_dmd")
-        raise NotImplementedError("action_dmd non-dry-run trainer is not implemented yet.")
+        return train_action_dmd_opd(cfg)
 
     raise ValueError(f"Unknown stage: {stage}")
 
@@ -71,6 +71,12 @@ def train_video_dmd_opd(cfg: Mapping[str, Any]) -> dict[str, Any]:
     from wam_policy.opd.stages import train_video_dmd_opd as _train_video_dmd
 
     return _train_video_dmd(cfg)
+
+
+def train_action_dmd_opd(cfg: Mapping[str, Any]) -> dict[str, Any]:
+    from wam_policy.opd.stages import train_action_dmd_opd as _train_action_dmd
+
+    return _train_action_dmd(cfg)
 
 
 def _static_stage_check(cfg: Mapping[str, Any], stage: str) -> dict[str, Any]:
