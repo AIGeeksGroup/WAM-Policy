@@ -89,6 +89,10 @@ def probe_static_source(stage: str) -> None:
     _print_header("WAM DMD OPD Static Alignment")
     _print_check("rollout manifest dataset exists", "class RolloutManifestDataset" in dataset_source)
     _print_check("DMD surrogate loss exists", "def dmd_score_surrogate_loss" in losses_source)
+    _print_check("DMD surrogate_state config is consumed", "surrogate_state" in trainer_source)
+    _print_check("DMD teacher_score_source config is consumed", "teacher_score_source" in trainer_source)
+    _print_check("DMD small_delta_s config is consumed", "small_delta_s" in trainer_source)
+    _print_check("DMD cached teacher labels are supported", "cached_label" in trainer_source)
     _print_check("video DMD trainer exists", "class VideoDMDOPDTrainer" in trainer_source)
     _print_check(
         "video teacher score placeholder exists",
@@ -96,7 +100,11 @@ def probe_static_source(stage: str) -> None:
     )
     if stage == "action_dmd":
         _print_check("action DMD trainer exists", "class ActionDMDOPDTrainer" in trainer_source)
-    print("Real teacher score/velocity binding is validated only in probe-dmd-forward.")
+    print(
+        "Real teacher score/velocity binding is validated only in probe-dmd-forward. "
+        "Use teacher_score_source=cached_label for rollout manifests with cached labels, "
+        "or teacher_score_source=lingbot_velocity_forward after server binding succeeds."
+    )
 
 
 def probe_imports() -> None:
@@ -142,6 +150,7 @@ def probe_rollout_manifest(cfg: Mapping[str, Any]) -> None:
 def probe_dmd_forward(cfg: Mapping[str, Any], stage: str, s_src: float, s_tgt: float) -> None:
     if not s_src < s_tgt:
         raise ValueError("--s-src must be smaller than --s-tgt.")
+    _raise_if_probe_teacher_score_not_implemented(cfg)
 
     import torch
 
@@ -168,7 +177,7 @@ def probe_dmd_forward(cfg: Mapping[str, Any], stage: str, s_src: float, s_tgt: f
     dataset = RolloutManifestDataset.from_config(cfg)
     sample = dataset[0]
     if stage == "action_dmd":
-        _probe_action_dmd_forward(adapter, model, sample, s_src, s_tgt)
+        _probe_action_dmd_forward(cfg, adapter, model, sample, s_src, s_tgt)
         return
 
     z_student = sample["z_student"]
@@ -182,17 +191,35 @@ def probe_dmd_forward(cfg: Mapping[str, Any], stage: str, s_src: float, s_tgt: f
 
     with torch.no_grad():
         pred_u = adapter.forward_video_flowmap(model, pair.z_src, pair.s_src, pair.s_tgt, context)
-        teacher_score = adapter.teacher_video_score_or_velocity(
+        student_score = _resolve_probe_video_student_score(
+            cfg=cfg,
+            adapter=adapter,
+            model=model,
+            pred_u=pred_u,
             z_state=pair.z_src,
             s_src=pair.s_src,
             s_tgt=pair.s_tgt,
             context=context,
         )
+        teacher_score = _resolve_probe_teacher_score(
+            cfg=cfg,
+            stage="video_dmd",
+            adapter=adapter,
+            sample=sample,
+            reference=pair.z_src,
+            s_src=pair.s_src,
+            s_tgt=pair.s_tgt,
+            context=context,
+            z_condition=None,
+        )
     print(f"pred_u: {_tensor_summary(pred_u)}")
+    print(f"student_score: {_tensor_summary(student_score)}")
     print(f"teacher_score: {_tensor_summary(teacher_score)}")
+    print(f"teacher_score_all_finite: {bool(torch.isfinite(teacher_score).all().item())}")
 
 
 def _probe_action_dmd_forward(
+    cfg: Mapping[str, Any],
     adapter: Any,
     model: Any,
     sample: Mapping[str, Any],
@@ -215,6 +242,7 @@ def _probe_action_dmd_forward(
     s_tgt_tensor = torch.full((a_student.shape[0],), s_tgt, device=adapter.device)
     pair = build_action_flowmap_pair(a_student, s_src_tensor, s_tgt_tensor)
     context = adapter.build_action_context({"context": [sample["context"]]})
+    print("action_z_condition_source: student_rollout_manifest")
 
     with torch.no_grad():
         pred_u = adapter.forward_action_flowmap(
@@ -225,15 +253,259 @@ def _probe_action_dmd_forward(
             context,
             z_condition=z_condition,
         )
-        teacher_score = adapter.teacher_action_score_or_velocity(
+        student_score = _resolve_probe_action_student_score(
+            cfg=cfg,
+            adapter=adapter,
+            model=model,
+            pred_u=pred_u,
             a_state=pair.a_src,
             s_src=pair.s_src,
             s_tgt=pair.s_tgt,
             context=context,
             z_condition=z_condition,
         )
+        teacher_score = _resolve_probe_teacher_score(
+            cfg=cfg,
+            stage="action_dmd",
+            adapter=adapter,
+            sample=sample,
+            reference=pair.a_src,
+            s_src=pair.s_src,
+            s_tgt=pair.s_tgt,
+            context=context,
+            z_condition=z_condition,
+        )
     print(f"pred_u: {_tensor_summary(pred_u)}")
+    print(f"student_score: {_tensor_summary(student_score)}")
     print(f"teacher_score: {_tensor_summary(teacher_score)}")
+    print(f"teacher_score_all_finite: {bool(torch.isfinite(teacher_score).all().item())}")
+
+
+def _resolve_probe_teacher_score(
+    *,
+    cfg: Mapping[str, Any],
+    stage: str,
+    adapter: Any,
+    sample: Mapping[str, Any],
+    reference: Any,
+    s_src: Any,
+    s_tgt: Any,
+    context: Any,
+    z_condition: Any,
+) -> Any:
+    import torch
+
+    source = _dmd_choice(
+        cfg,
+        "teacher_score_source",
+        default="not_implemented",
+        allowed={"not_implemented", "lingbot_velocity_forward", "cached_label"},
+    )
+    print(f"teacher_score_source: {source}")
+    if source == "not_implemented":
+        raise RuntimeError(
+            "DMD teacher score source is not implemented. "
+            "Use teacher_score_source=lingbot_velocity_forward after server probe succeeds, "
+            "or use teacher_score_source=cached_label with teacher labels in rollout manifest."
+        )
+    if source == "cached_label":
+        key = "teacher_video_label" if stage == "video_dmd" else "teacher_action_label"
+        label = sample.get(key)
+        if not isinstance(label, torch.Tensor):
+            raise ValueError(f"teacher_score_source=cached_label requires {key} in rollout sample.")
+        label = label.unsqueeze(0).to(device=reference.device, dtype=reference.dtype)
+        return _validate_probe_score(key, label, reference)
+    if stage == "video_dmd":
+        score = adapter.teacher_video_score_or_velocity(
+            z_state=reference,
+            s_src=s_src,
+            s_tgt=s_tgt,
+            context=context,
+        )
+    else:
+        score = adapter.teacher_action_score_or_velocity(
+            a_state=reference,
+            s_src=s_src,
+            s_tgt=s_tgt,
+            context=context,
+            z_condition=z_condition,
+        )
+    return _validate_probe_score("teacher_score", score, reference)
+
+
+def _raise_if_probe_teacher_score_not_implemented(cfg: Mapping[str, Any]) -> None:
+    source = _dmd_choice(
+        cfg,
+        "teacher_score_source",
+        default="not_implemented",
+        allowed={"not_implemented", "lingbot_velocity_forward", "cached_label"},
+    )
+    if source == "not_implemented":
+        raise RuntimeError(
+            "DMD teacher score source is not implemented. "
+            "Use teacher_score_source=lingbot_velocity_forward after server probe succeeds, "
+            "or use teacher_score_source=cached_label with teacher labels in rollout manifest."
+        )
+
+
+def _resolve_probe_video_student_score(
+    *,
+    cfg: Mapping[str, Any],
+    adapter: Any,
+    model: Any,
+    pred_u: Any,
+    z_state: Any,
+    s_src: Any,
+    s_tgt: Any,
+    context: Any,
+) -> Any:
+    source = _dmd_choice(
+        cfg,
+        "student_score_source",
+        default="flowmap_small_interval",
+        allowed={"flowmap_small_interval", "current_interval_average_velocity"},
+    )
+    print(f"student_score_source: {source}")
+    if source == "current_interval_average_velocity":
+        score = adapter.student_video_score_or_velocity_from_flowmap(
+            pred_u=pred_u,
+            z_state=z_state,
+            s_src=s_src,
+            s_tgt=s_tgt,
+            context=context,
+        )
+        return _validate_probe_score("student_score", score, z_state)
+    s_small_tgt = _small_interval_tgt(cfg, s_src)
+    pred_small = adapter.forward_video_flowmap(model, z_state, s_src, s_small_tgt, context)
+    score = adapter.student_video_score_or_velocity_from_flowmap(
+        pred_u=pred_small,
+        z_state=z_state,
+        s_src=s_src,
+        s_tgt=s_small_tgt,
+        context=context,
+    )
+    print(f"student_small_delta_s: {((s_small_tgt - s_src).detach().cpu()).tolist()}")
+    return _validate_probe_score("student_score", score, z_state)
+
+
+def _resolve_probe_action_student_score(
+    *,
+    cfg: Mapping[str, Any],
+    adapter: Any,
+    model: Any,
+    pred_u: Any,
+    a_state: Any,
+    s_src: Any,
+    s_tgt: Any,
+    context: Any,
+    z_condition: Any,
+) -> Any:
+    source = _dmd_choice(
+        cfg,
+        "student_score_source",
+        default="flowmap_small_interval",
+        allowed={"flowmap_small_interval", "current_interval_average_velocity"},
+    )
+    print(f"student_score_source: {source}")
+    if source == "current_interval_average_velocity":
+        score = adapter.student_action_score_or_velocity_from_flowmap(
+            pred_u=pred_u,
+            a_state=a_state,
+            s_src=s_src,
+            s_tgt=s_tgt,
+            context=context,
+            z_condition=z_condition,
+        )
+        return _validate_probe_score("student_score", score, a_state)
+    s_small_tgt = _small_interval_tgt(cfg, s_src)
+    pred_small = adapter.forward_action_flowmap(
+        model,
+        a_state,
+        s_src,
+        s_small_tgt,
+        context,
+        z_condition=z_condition,
+    )
+    score = adapter.student_action_score_or_velocity_from_flowmap(
+        pred_u=pred_small,
+        a_state=a_state,
+        s_src=s_src,
+        s_tgt=s_small_tgt,
+        context=context,
+        z_condition=z_condition,
+    )
+    print(f"student_small_delta_s: {((s_small_tgt - s_src).detach().cpu()).tolist()}")
+    return _validate_probe_score("student_score", score, a_state)
+
+
+def _validate_probe_score(name: str, value: Any, reference: Any) -> Any:
+    import torch
+
+    if not isinstance(value, torch.Tensor):
+        raise TypeError(f"{name} must be a torch.Tensor.")
+    if value.shape != reference.shape:
+        raise ValueError(f"{name} shape must match reference: {value.shape} != {reference.shape}")
+    if value.device != reference.device:
+        raise ValueError(f"{name} device must match reference: {value.device} != {reference.device}")
+    if not torch.isfinite(value).all().item():
+        raise ValueError(f"{name} must contain only finite values.")
+    return value
+
+
+def _small_interval_tgt(cfg: Mapping[str, Any], s_src: Any) -> Any:
+    import torch
+
+    small_delta_s = _dmd_float(cfg, "small_delta_s", default=0.02)
+    s_min = _flowmap_float(cfg, "s_min", default=0.0)
+    s_max = _flowmap_float(cfg, "s_max", default=1.0)
+    if small_delta_s <= 0.0:
+        raise ValueError("opd.dmd.small_delta_s must be positive.")
+    if small_delta_s > s_max - s_min:
+        raise ValueError("opd.dmd.small_delta_s must not exceed flowmap.s_max - flowmap.s_min.")
+    s_tgt = torch.minimum(s_src + small_delta_s, torch.full_like(s_src, s_max))
+    if not torch.all(s_tgt > s_src).item():
+        raise ValueError("opd.dmd.small_delta_s must leave a positive small interval.")
+    return s_tgt
+
+
+def _dmd_choice(
+    cfg: Mapping[str, Any],
+    key: str,
+    *,
+    default: str,
+    allowed: set[str],
+) -> str:
+    dmd_cfg = _dmd_cfg(cfg)
+    value = dmd_cfg.get(key, default)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"opd.dmd.{key} must be a non-empty string.")
+    if value not in allowed:
+        joined = ", ".join(sorted(allowed))
+        raise ValueError(f"opd.dmd.{key} must be one of: {joined}.")
+    return value
+
+
+def _dmd_float(cfg: Mapping[str, Any], key: str, default: float) -> float:
+    value = _dmd_cfg(cfg).get(key, default)
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise ValueError(f"opd.dmd.{key} must be numeric.")
+    return float(value)
+
+
+def _flowmap_float(cfg: Mapping[str, Any], key: str, default: float) -> float:
+    flowmap_cfg = cfg.get("flowmap")
+    value = default
+    if isinstance(flowmap_cfg, Mapping):
+        value = flowmap_cfg.get(key, default)
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise ValueError(f"flowmap.{key} must be numeric.")
+    return float(value)
+
+
+def _dmd_cfg(cfg: Mapping[str, Any]) -> Mapping[str, Any]:
+    opd_cfg = cfg.get("opd")
+    dmd_cfg = opd_cfg.get("dmd") if isinstance(opd_cfg, Mapping) else None
+    return dmd_cfg if isinstance(dmd_cfg, Mapping) else {}
 
 
 def _stage(cfg: Mapping[str, Any]) -> str:

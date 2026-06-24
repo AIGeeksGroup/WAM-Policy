@@ -217,6 +217,8 @@ Current code already includes:
 - Action/context/z-condition shape validation for fake-model smoke paths.
 - Checkpoint saving helper.
 - Action FFM, DMD OPD static probe scripts and Slurm diagnostic scripts.
+- Unified v2 full-pipeline admin Slurm script:
+  `scripts/slurm/v2_full_pipeline_admin_diagnostic.sbatch`.
 - Runtime notes in `docs/experiments/v2_runtime.md`.
 
 Known server gaps:
@@ -231,6 +233,9 @@ Known server gaps:
 - Real action forward input/output binding still needs server validation.
 - Real teacher video/action score or velocity binding for DMD still needs
   server validation.
+- DMD configs default `opd.dmd.teacher_score_source=not_implemented`, which
+  intentionally fails non-dry-run DMD until set to `cached_label` or
+  `lingbot_velocity_forward`.
 - Real action manifest and rollout manifest shapes still need server validation.
 - RoboTwin rollout generation remains a server/runtime integration task.
 
@@ -259,18 +264,19 @@ spreading LingBot-specific logic into trainer or pipeline code.
 
 The next useful work should be compute-node oriented:
 
-1. Run `scripts/slurm/action_ffm_admin_diagnostic.sbatch` through
-   `05_action_forward` with real `TEACHER_CKPT` and `ACTION_DEBUG_MANIFEST`.
-2. If action forward fails, fix only `LingBotVAAdapter` action binding; do not
+1. Prepare real `TEACHER_CKPT`, video latent debug/full manifests, action chunk
+   debug/full manifests, and student rollout debug/full manifests.
+2. Submit `scripts/slurm/v2_full_pipeline_admin_diagnostic.sbatch` as the
+   primary admin workflow. It includes `video_ffm`, `action_ffm`, `video_dmd`,
+   and `action_dmd`.
+3. For DMD stages, set `DMD_TEACHER_SCORE_SOURCE=cached_label` when rollout
+   manifests include teacher labels, or `lingbot_velocity_forward` only after
+   the LingBot teacher velocity binding probe succeeds.
+4. If action forward fails, fix only `LingBotVAAdapter` action binding; do not
    spread LingBot-specific logic into trainers or datasets.
-3. Run `scripts/slurm/dmd_opd_admin_diagnostic.sbatch` with `STAGE=video_dmd`
-   and a real rollout debug manifest.
-4. Run the same DMD diagnostic with `STAGE=action_dmd`, verifying that
-   `z_condition` comes from student rollout data.
-5. If DMD teacher score/velocity binding fails at `05_dmd_forward`, fix the
-   relevant `LingBotVAAdapter.teacher_*_score_or_velocity` method.
-6. Only after forward probes pass, run tiny compute-node training jobs such as
-   `TRAIN_MAX_STEPS=2`.
+5. If DMD teacher score/velocity binding fails, fix the relevant
+   `LingBotVAAdapter.teacher_*_score_or_velocity` method.
+6. Use stage-specific Slurm scripts only as fallback tools for isolated debug.
 
 Run these through compute-node `sbatch`/`srun` jobs rather than directly from
 lightweight agent sessions.

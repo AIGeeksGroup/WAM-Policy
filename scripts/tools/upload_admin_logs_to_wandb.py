@@ -87,7 +87,7 @@ def upload_admin_logs_to_wandb(
         "mode": mode,
         "dir": str(wandb_dir),
         "job_type": "admin-diagnostic",
-        "tags": ["video_ffm", "admin_logs"],
+        "tags": ["wam_policy", "admin_logs"],
         "config": {
             "slurm_job_id": job_id,
             "admin_log_dir": str(log_dir),
@@ -150,9 +150,10 @@ def _write_checkpoint_listing(job_id: str, log_dir: Path, checkpoint_dir: Path) 
     listing_path = log_dir / f"checkpoint_files_{job_id}.txt"
     lines: list[str] = []
     if checkpoint_dir.is_dir():
-        for path in sorted(checkpoint_dir.iterdir()):
+        for path in sorted(checkpoint_dir.rglob("*")):
             if path.is_file():
-                lines.append(f"{path} {path.stat().st_size} bytes")
+                relative = path.relative_to(checkpoint_dir)
+                lines.append(f"{relative} {path.stat().st_size} bytes")
     else:
         lines.append(f"checkpoint_dir_missing: {checkpoint_dir}")
     listing_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -173,7 +174,7 @@ def _dedupe_existing_files(paths: Sequence[Path]) -> list[Path]:
 
 def _artifact_name(job_id: str) -> str:
     safe_job_id = re.sub(r"[^A-Za-z0-9_.-]+", "-", job_id).strip("-")
-    return f"wam-video-ffm-admin-logs-{safe_job_id or 'unknown'}"
+    return f"wam-policy-admin-logs-{safe_job_id or 'unknown'}"
 
 
 if __name__ == "__main__":

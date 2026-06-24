@@ -36,7 +36,11 @@ opd:
   dmd:
     enabled: true
     weight: 0.1
-    score_source: teacher_velocity_adapter
+    # pred_u is the current debug surrogate for server interface bring-up.
+    # The final clean-sample DMD objective should switch this to clean_sample
+    # after differentiable student rollout plumbing is validated.
+    surrogate_state: pred_u
+    teacher_score_source: not_implemented
     student_score_source: flowmap_small_interval
     small_delta_s: 0.02
   anchor_ffm:

@@ -346,6 +346,7 @@ class VideoDMDOPDTrainer:
 
     def train(self) -> dict[str, Any]:
         set_seed(_train_int(self.cfg, "seed", default=42))
+        _raise_if_teacher_score_not_implemented(self.cfg, stage="video_dmd")
         self._build_student()
         self.student.to(device=self.device)
         dataloader = self._build_dataloader()
@@ -437,21 +438,33 @@ class VideoDMDOPDTrainer:
             flowmap_pair.s_tgt,
             context,
         )
-        teacher_score = self.adapter.teacher_video_score_or_velocity(
-            z_state=flowmap_pair.z_src,
+        teacher_score = _resolve_video_teacher_score(
+            cfg=self.cfg,
+            adapter=self.adapter,
+            batch=batch,
+            reference=flowmap_pair.z_src,
             s_src=flowmap_pair.s_src,
             s_tgt=flowmap_pair.s_tgt,
             context=context,
         )
-        student_score = self.adapter.student_video_score_or_velocity_from_flowmap(
+        student_score = _resolve_video_student_score(
+            cfg=self.cfg,
+            adapter=self.adapter,
+            student=self.student,
             pred_u=pred_u,
             z_state=flowmap_pair.z_src,
             s_src=flowmap_pair.s_src,
             s_tgt=flowmap_pair.s_tgt,
             context=context,
         )
+        student_state = _resolve_dmd_student_state(
+            cfg=self.cfg,
+            pred_u=pred_u,
+            clean_sample=z_student,
+            sample_name="z_student",
+        )
         dmd_loss, metrics = dmd_score_surrogate_loss(
-            student_state=pred_u,
+            student_state=student_state,
             teacher_score=teacher_score,
             student_score=student_score,
             weight=_opd_dmd_float(self.cfg, "weight", default=0.1),
@@ -517,6 +530,7 @@ class ActionDMDOPDTrainer:
 
     def train(self) -> dict[str, Any]:
         set_seed(_train_int(self.cfg, "seed", default=42))
+        _raise_if_teacher_score_not_implemented(self.cfg, stage="action_dmd")
         self._build_student()
         self.student.to(device=self.device)
         dataloader = self._build_dataloader()
@@ -614,14 +628,20 @@ class ActionDMDOPDTrainer:
             context,
             z_condition=z_condition,
         )
-        teacher_score = self.adapter.teacher_action_score_or_velocity(
-            a_state=flowmap_pair.a_src,
+        teacher_score = _resolve_action_teacher_score(
+            cfg=self.cfg,
+            adapter=self.adapter,
+            batch=batch,
+            reference=flowmap_pair.a_src,
             s_src=flowmap_pair.s_src,
             s_tgt=flowmap_pair.s_tgt,
             context=context,
             z_condition=z_condition,
         )
-        student_score = self.adapter.student_action_score_or_velocity_from_flowmap(
+        student_score = _resolve_action_student_score(
+            cfg=self.cfg,
+            adapter=self.adapter,
+            student=self.student,
             pred_u=pred_u,
             a_state=flowmap_pair.a_src,
             s_src=flowmap_pair.s_src,
@@ -629,8 +649,14 @@ class ActionDMDOPDTrainer:
             context=context,
             z_condition=z_condition,
         )
+        student_state = _resolve_dmd_student_state(
+            cfg=self.cfg,
+            pred_u=pred_u,
+            clean_sample=a_student,
+            sample_name="a_student",
+        )
         dmd_loss, metrics = dmd_score_surrogate_loss(
-            student_state=pred_u,
+            student_state=student_state,
             teacher_score=teacher_score,
             student_score=student_score,
             weight=_opd_dmd_float(self.cfg, "weight", default=0.1),
@@ -711,6 +737,245 @@ def _move_optional_tensor(value: Any, device: torch.device, dtype: torch.dtype) 
     return value
 
 
+def _resolve_video_teacher_score(
+    *,
+    cfg: Mapping[str, Any],
+    adapter: Any,
+    batch: Mapping[str, Any],
+    reference: torch.Tensor,
+    s_src: torch.Tensor,
+    s_tgt: torch.Tensor,
+    context: Any,
+) -> torch.Tensor:
+    source = _opd_dmd_choice(
+        cfg,
+        "teacher_score_source",
+        default="not_implemented",
+        allowed={"not_implemented", "lingbot_velocity_forward", "cached_label"},
+    )
+    if source == "not_implemented":
+        raise RuntimeError(_dmd_teacher_not_implemented_message())
+    if source == "cached_label":
+        label = _cached_teacher_label(
+            batch=batch,
+            key="teacher_video_label",
+            reference=reference,
+            normalize=normalize_video_latent_batch,
+        )
+        return _validate_dmd_score("teacher_video_label", label, reference)
+    score = adapter.teacher_video_score_or_velocity(
+        z_state=reference,
+        s_src=s_src,
+        s_tgt=s_tgt,
+        context=context,
+    )
+    return _validate_dmd_score("teacher_video_score", score, reference)
+
+
+def _resolve_action_teacher_score(
+    *,
+    cfg: Mapping[str, Any],
+    adapter: Any,
+    batch: Mapping[str, Any],
+    reference: torch.Tensor,
+    s_src: torch.Tensor,
+    s_tgt: torch.Tensor,
+    context: Any,
+    z_condition: torch.Tensor,
+) -> torch.Tensor:
+    source = _opd_dmd_choice(
+        cfg,
+        "teacher_score_source",
+        default="not_implemented",
+        allowed={"not_implemented", "lingbot_velocity_forward", "cached_label"},
+    )
+    if source == "not_implemented":
+        raise RuntimeError(_dmd_teacher_not_implemented_message())
+    if source == "cached_label":
+        label = _cached_teacher_label(
+            batch=batch,
+            key="teacher_action_label",
+            reference=reference,
+            normalize=normalize_action_chunk_batch,
+        )
+        return _validate_dmd_score("teacher_action_label", label, reference)
+    score = adapter.teacher_action_score_or_velocity(
+        a_state=reference,
+        s_src=s_src,
+        s_tgt=s_tgt,
+        context=context,
+        z_condition=z_condition,
+    )
+    return _validate_dmd_score("teacher_action_score", score, reference)
+
+
+def _resolve_video_student_score(
+    *,
+    cfg: Mapping[str, Any],
+    adapter: Any,
+    student: nn.Module,
+    pred_u: torch.Tensor,
+    z_state: torch.Tensor,
+    s_src: torch.Tensor,
+    s_tgt: torch.Tensor,
+    context: Any,
+) -> torch.Tensor:
+    source = _opd_dmd_choice(
+        cfg,
+        "student_score_source",
+        default="flowmap_small_interval",
+        allowed={"flowmap_small_interval", "current_interval_average_velocity"},
+    )
+    if source == "current_interval_average_velocity":
+        score = adapter.student_video_score_or_velocity_from_flowmap(
+            pred_u=pred_u,
+            z_state=z_state,
+            s_src=s_src,
+            s_tgt=s_tgt,
+            context=context,
+        )
+        return _validate_dmd_score("student_video_score", score, z_state)
+
+    s_small_tgt = _small_interval_tgt(cfg, s_src)
+    pred_small = student.forward_video_flowmap(z_state, s_src, s_small_tgt, context)
+    score = adapter.student_video_score_or_velocity_from_flowmap(
+        pred_u=pred_small,
+        z_state=z_state,
+        s_src=s_src,
+        s_tgt=s_small_tgt,
+        context=context,
+    )
+    return _validate_dmd_score("student_video_score", score, z_state)
+
+
+def _resolve_action_student_score(
+    *,
+    cfg: Mapping[str, Any],
+    adapter: Any,
+    student: nn.Module,
+    pred_u: torch.Tensor,
+    a_state: torch.Tensor,
+    s_src: torch.Tensor,
+    s_tgt: torch.Tensor,
+    context: Any,
+    z_condition: torch.Tensor,
+) -> torch.Tensor:
+    source = _opd_dmd_choice(
+        cfg,
+        "student_score_source",
+        default="flowmap_small_interval",
+        allowed={"flowmap_small_interval", "current_interval_average_velocity"},
+    )
+    if source == "current_interval_average_velocity":
+        score = adapter.student_action_score_or_velocity_from_flowmap(
+            pred_u=pred_u,
+            a_state=a_state,
+            s_src=s_src,
+            s_tgt=s_tgt,
+            context=context,
+            z_condition=z_condition,
+        )
+        return _validate_dmd_score("student_action_score", score, a_state)
+
+    s_small_tgt = _small_interval_tgt(cfg, s_src)
+    pred_small = student.forward_action_flowmap(
+        a_state,
+        s_src,
+        s_small_tgt,
+        context,
+        z_condition=z_condition,
+    )
+    score = adapter.student_action_score_or_velocity_from_flowmap(
+        pred_u=pred_small,
+        a_state=a_state,
+        s_src=s_src,
+        s_tgt=s_small_tgt,
+        context=context,
+        z_condition=z_condition,
+    )
+    return _validate_dmd_score("student_action_score", score, a_state)
+
+
+def _resolve_dmd_student_state(
+    *,
+    cfg: Mapping[str, Any],
+    pred_u: torch.Tensor,
+    clean_sample: torch.Tensor,
+    sample_name: str,
+) -> torch.Tensor:
+    source = _opd_dmd_choice(
+        cfg,
+        "surrogate_state",
+        default="pred_u",
+        allowed={"pred_u", "clean_sample"},
+    )
+    if source == "pred_u":
+        return pred_u
+    return _validate_dmd_score(sample_name, clean_sample, pred_u)
+
+
+def _cached_teacher_label(
+    *,
+    batch: Mapping[str, Any],
+    key: str,
+    reference: torch.Tensor,
+    normalize: Any,
+) -> torch.Tensor:
+    label = batch.get(key)
+    if not isinstance(label, torch.Tensor):
+        raise ValueError(
+            f"opd.dmd.teacher_score_source=cached_label requires rollout batch tensor {key}."
+        )
+    label = normalize(label).to(device=reference.device, dtype=reference.dtype)
+    return label
+
+
+def _validate_dmd_score(name: str, value: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+    if not isinstance(value, torch.Tensor):
+        raise TypeError(f"{name} must be a torch.Tensor.")
+    if value.shape != reference.shape:
+        raise ValueError(f"{name} shape must match DMD reference: {value.shape} != {reference.shape}")
+    if value.device != reference.device:
+        raise ValueError(f"{name} device must match DMD reference: {value.device} != {reference.device}")
+    if not torch.isfinite(value).all().item():
+        raise ValueError(f"{name} must contain only finite values.")
+    return value
+
+
+def _small_interval_tgt(cfg: Mapping[str, Any], s_src: torch.Tensor) -> torch.Tensor:
+    small_delta_s = _opd_dmd_float(cfg, "small_delta_s", default=0.02)
+    s_min = _flowmap_float(cfg, "s_min", default=0.0)
+    s_max = _flowmap_float(cfg, "s_max", default=1.0)
+    if small_delta_s <= 0.0:
+        raise ValueError("opd.dmd.small_delta_s must be positive.")
+    if small_delta_s > s_max - s_min:
+        raise ValueError("opd.dmd.small_delta_s must not exceed flowmap.s_max - flowmap.s_min.")
+    s_max_tensor = torch.full_like(s_src, s_max)
+    s_tgt = torch.minimum(s_src + small_delta_s, s_max_tensor)
+    if not torch.all(s_tgt > s_src).item():
+        raise ValueError("opd.dmd.small_delta_s must leave a positive small interval.")
+    return s_tgt
+
+
+def _raise_if_teacher_score_not_implemented(cfg: Mapping[str, Any], *, stage: str) -> None:
+    source = _opd_dmd_choice(
+        cfg,
+        "teacher_score_source",
+        default="not_implemented",
+        allowed={"not_implemented", "lingbot_velocity_forward", "cached_label"},
+    )
+    if source == "not_implemented":
+        raise RuntimeError(f"{stage}: {_dmd_teacher_not_implemented_message()}")
+
+
+def _dmd_teacher_not_implemented_message() -> str:
+    return (
+        "DMD teacher score source is not implemented. "
+        "Use teacher_score_source=lingbot_velocity_forward after server probe succeeds, "
+        "or use teacher_score_source=cached_label with teacher labels in rollout manifest."
+    )
+
+
 def _section(cfg: Mapping[str, Any], section: str) -> Mapping[str, Any]:
     value = cfg.get(section)
     return value if isinstance(value, Mapping) else {}
@@ -742,6 +1007,23 @@ def _flowmap_float(cfg: Mapping[str, Any], key: str, default: float) -> float:
 def _opd_dmd_float(cfg: Mapping[str, Any], key: str, default: float) -> float:
     dmd_cfg = _nested_section(cfg, "opd", "dmd")
     return _float_value(dmd_cfg.get(key, default), f"opd.dmd.{key}")
+
+
+def _opd_dmd_choice(
+    cfg: Mapping[str, Any],
+    key: str,
+    *,
+    default: str,
+    allowed: set[str],
+) -> str:
+    dmd_cfg = _nested_section(cfg, "opd", "dmd")
+    value = dmd_cfg.get(key, default)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"opd.dmd.{key} must be a non-empty string.")
+    if value not in allowed:
+        joined = ", ".join(sorted(allowed))
+        raise ValueError(f"opd.dmd.{key} must be one of: {joined}.")
+    return value
 
 
 def _opd_anchor_float(cfg: Mapping[str, Any], key: str, default: float) -> float:

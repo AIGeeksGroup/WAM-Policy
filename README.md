@@ -1,37 +1,60 @@
-# WAM-Policy: World Action Models with On-Policy Distillation for Quadruped Loco-Manipulation
+# WAM-Policy: World Action Models with On-Policy Distillation
 
 WAM-Policy is a research repo for distilling LingBot-VA style video-action world-action models with on-policy distillation.
 
-This repo uses a single-root layout. Source code, configs, scripts, docs, and tests are tracked by Git. External source repos, pretrained models, datasets, checkpoints, runs, logs, and caches live under fixed local directories but are ignored by Git.
+The tracked repo contains source code, configs, scripts, docs, tests, and lightweight adapters. External source repos, pretrained models, datasets, checkpoints, run outputs, logs, caches, and W&B files live under ignored runtime directories and must not be committed. See `WAM-Policy_repo_structure.md` and `AGENTS.md` for repo boundaries and agent rules.
 
-See `WAM-Policy_repo_structure.md` for the current repo structure and maintenance rules.
+## Run WAM-Policy v2 Full Pipeline
 
-For the current WAM-Policy v2 local smoke checks and Action-FFM/DMD-OPD Slurm
-entrypoints, see `docs/experiments/v2_runtime.md`.
+The admin-facing v2 workflow is a staged Slurm job:
 
-## Setup WAM-Policy Video-stream Forward Flow-map Training
-
-### 1. Clone WAM-Policy on the training server
-
-Clone the WAM-Policy repository on the server where Slurm jobs will be submitted, then enter the repo root:
-
-```bash
-git clone git@github.com:AIGeeksGroup/WAM-Policy.git
-cd WAM-Policy
+```text
+video_ffm -> action_ffm -> video_dmd -> action_dmd
 ```
 
-### 2. Create ignored local/runtime directories
+It runs diagnostics first, then smoke training, then long training:
 
-WAM-Policy keeps external repos, pretrained models, datasets, run outputs, logs, caches, and Weights & Biases files under fixed paths inside the repo root. These paths are intentionally ignored by Git and must not be committed.
+```text
+00_env
+01_static_all
+02_import
+03_load_model
+04_video_manifest_debug
+05_video_forward_debug
+06_action_manifest_debug
+07_action_forward_debug
+08_rollout_manifest_debug
+09_video_dmd_forward_debug
+10_action_dmd_forward_debug
+11_video_ffm_train_smoke
+12_action_ffm_train_smoke
+13_video_dmd_train_smoke
+14_action_dmd_train_smoke
+15_video_ffm_train_long_full_manifest
+16_action_ffm_train_long_full_manifest
+17_video_dmd_train_long_full_manifest
+18_action_dmd_train_long_full_manifest
+19_collect_artifacts
+```
 
-Create the local directory layout described in `WAM-Policy_repo_structure.md`:
+Each stage stops on first failure and appends the first failing stage to:
+
+```text
+logs/v2_full_pipeline_admin/<JOB_ID>/status.txt
+```
+
+Use this workflow on a compute node through Slurm. Do not run real LingBot loading, checkpoint loading, GPU work, RoboTwin simulation, or long training from a lightweight login/agent session.
+
+### 1. Prepare Runtime Directories
+
+From the repo root on the training server:
 
 ```bash
 mkdir -p \
   external \
   experiments/pretrained_models/lingbot-va \
-  experiments/checkpoints/v2/video_ffm \
-  experiments/runs/v2/video_ffm \
+  experiments/checkpoints/v2 \
+  experiments/runs/v2 \
   datasets/raw \
   datasets/processed \
   datasets/latents \
@@ -43,26 +66,28 @@ mkdir -p \
   wandb
 ```
 
-Do not add `.gitkeep` files or placeholder files to these directories.
+Do not add `.gitkeep` files or placeholders to ignored runtime directories.
 
-### 3. Install the LingBot-VA source repo
+### 2. Install External Repos
 
-WAM-Policy expects the LingBot-VA source repo at `external/lingbot-va`. The runtime config uses this path as `paths.lingbot_repo`.
+WAM-Policy expects LingBot-VA at `external/lingbot-va` and AnyFlow at `external/AnyFlow`:
 
 ```bash
 git clone https://github.com/Robbyant/lingbot-va.git external/lingbot-va
 test -d external/lingbot-va/wan_va
+
+git clone <AnyFlow repo URL> external/AnyFlow
+test -d external/AnyFlow
 ```
 
-### 4. Download the LingBot-VA RoboTwin teacher checkpoint
+The current local/fake v2 path does not import AnyFlow runtime internals directly, but the config and bootstrap path keep it available for server work.
 
-Download the public LingBot-VA RoboTwin post-trained checkpoint from Hugging Face into the ignored pretrained-model directory. This downloads the full model snapshot, including the `transformer/`, `text_encoder/`, `tokenizer/`, `vae/`, and asset files.
+### 3. Prepare Teacher Checkpoint
 
-Run large downloads only on a server or node where administrator policy allows them.
+Download the LingBot-VA RoboTwin post-trained checkpoint into the ignored pretrained-model directory on the server:
 
 ```bash
 python3 -m pip install -U huggingface_hub
-
 export HF_HOME="$PWD/cache/huggingface"
 
 python3 - <<'PY'
@@ -76,101 +101,99 @@ snapshot_download(
 PY
 ```
 
-For WAM-Policy video Forward Flow-map Training, the teacher checkpoint path should point to the downloaded `transformer/` subdirectory:
+The v2 scripts usually point at the `transformer/` subdirectory:
 
 ```bash
 export TEACHER_CKPT="$PWD/experiments/pretrained_models/lingbot-va/lingbot-va-posttrain-robotwin/transformer"
-
 test -d "$TEACHER_CKPT"
-ls -lh "$TEACHER_CKPT"
 ```
 
-Keep `TEACHER_CKPT` exported in the shell used to submit the Slurm job. The admin Slurm script passes it into WAM-Policy as `teacher.checkpoint_path`.
+### 4. Prepare Manifests
 
-### 5. Prepare the video latent manifest
+The full pipeline requires six manifests.
 
-WAM-Policy video Forward Flow-map Training uses precomputed LingBot-VA/WAN 2.2 video latents. You do not need to run LingBot-VA on a Mac to create these latents. Administrators should prepare them on the server from the official RoboTwin dataset.
-
-Download the public RoboTwin dataset with precomputed WAN 2.2 latents:
+Video FFM manifests contain precomputed video latents and text context:
 
 ```bash
-huggingface-cli download \
-  --repo-type dataset \
-  robbyant/robotwin-clean-and-aug-lerobot \
-  --local-dir datasets/raw/robotwin-clean-and-aug-lerobot
+export VIDEO_DEBUG_MANIFEST="$PWD/datasets/manifests/video_latents_debug.jsonl"
+export VIDEO_FULL_MANIFEST="$PWD/datasets/manifests/video_latents_full.jsonl"
 ```
 
-Convert a small debug subset into the WAM-Policy manifest format:
+The legacy video aliases are still accepted by the unified Slurm script:
 
 ```bash
-python3 scripts/tools/convert_lingbot_robotwin_latents.py \
-  --repo-root "$PWD" \
-  --source-root datasets/raw/robotwin-clean-and-aug-lerobot \
-  --output-root datasets/latents/robotwin_video_ffm_debug \
-  --manifest datasets/manifests/video_latents_debug.jsonl \
-  --max-samples 16 \
-  --overwrite
+export DEBUG_MANIFEST="$VIDEO_DEBUG_MANIFEST"
+export FULL_MANIFEST="$VIDEO_FULL_MANIFEST"
 ```
 
-Use the debug manifest for the diagnostic stages:
+Action FFM manifests contain clean action chunks, context, and optional `z_condition`:
 
 ```bash
-export DEBUG_MANIFEST="$PWD/datasets/manifests/video_latents_debug.jsonl"
+export ACTION_DEBUG_MANIFEST="$PWD/datasets/manifests/action_chunks_debug.jsonl"
+export ACTION_FULL_MANIFEST="$PWD/datasets/manifests/action_chunks_full.jsonl"
 ```
 
-Convert the full manifest for the training stage:
+DMD OPD manifests contain student rollouts:
 
 ```bash
-python3 scripts/tools/convert_lingbot_robotwin_latents.py \
-  --repo-root "$PWD" \
-  --source-root datasets/raw/robotwin-clean-and-aug-lerobot \
-  --output-root datasets/latents/robotwin_video_ffm_full \
-  --manifest datasets/manifests/video_latents_full.jsonl \
-  --max-samples 0 \
-  --overwrite
-
-export FULL_MANIFEST="$PWD/datasets/manifests/video_latents_full.jsonl"
+export ROLLOUT_DEBUG_MANIFEST="$PWD/datasets/manifests/student_rollouts_debug.jsonl"
+export ROLLOUT_FULL_MANIFEST="$PWD/datasets/manifests/student_rollouts_full.jsonl"
 ```
 
-The converter reads LingBot `.pth` files under `latents/**/*.pth`, writes split `z_clean.pt` and `context.pt` files under `datasets/latents/`, and writes JSONL manifests that the current WAM-Policy dataset loader can read. Keep both `DEBUG_MANIFEST` and `FULL_MANIFEST` exported in the shell used to submit the Slurm job.
+The DMD long-training stages cannot run without rollout manifests. This repo path does not yet implement RoboTwin online rollout collection, so those manifests must be prepared ahead of time. For `teacher_score_source=cached_label`, rollout records must also point to cached `teacher_video_label` and `teacher_action_label` tensors.
 
-### 6. Enable Weights & Biases and submit the Slurm job
+### 5. Choose DMD Teacher Source
 
-WAM-Policy keeps Weights & Biases optional. The default config has `logging.wandb.enabled=auto`: wandb turns on when `WANDB_API_KEY` is present in the environment and stays off when no key is present.
-
-Install the optional dependency only when remote experiment tracking is needed:
-
-```bash
-python3 -m pip install -e '.[wandb]'
-```
-
-Set the API key as an environment variable. Do not commit it to Git or write it into config files:
-
-```bash
-export WANDB_API_KEY="<private-api-key>"
-```
-
-Optionally set the entity or project if the run should go to a specific W&B team/workspace:
-
-```bash
-export WANDB_ENTITY="<team-or-user>"
-export WANDB_PROJECT="WAM-Policy"
-```
-
-Submit the admin Slurm script once. It runs diagnostics first and automatically enters long training only if all diagnostic stages pass:
-
-```bash
-sbatch --export=ALL,TEACHER_CKPT="$TEACHER_CKPT",DEBUG_MANIFEST="$DEBUG_MANIFEST",FULL_MANIFEST="$FULL_MANIFEST" \
-  scripts/slurm/video_ffm_admin_diagnostic.sbatch
-```
-
-The script runs:
+DMD config defaults to:
 
 ```text
-00_env -> 01_static -> 02_import -> 03_load_model -> 04_manifest -> 05_video_forward -> 06_train_long
+opd.dmd.teacher_score_source=not_implemented
 ```
 
-`00_env` through `05_video_forward` use `DEBUG_MANIFEST`. If any diagnostic stage fails, the job stops at the first failing stage. If all diagnostics pass, `06_train_long` starts automatically with `FULL_MANIFEST`. By default the training stage uses:
+That default intentionally fails at DMD forward/training time until the teacher score path is selected.
+
+Use cached labels when rollout manifests already contain teacher labels:
+
+```bash
+export DMD_TEACHER_SCORE_SOURCE=cached_label
+```
+
+Use real LingBot teacher velocity only after the server probe confirms the binding:
+
+```bash
+export DMD_TEACHER_SCORE_SOURCE=lingbot_velocity_forward
+```
+
+Current DMD surrogate defaults are debug-oriented:
+
+```bash
+export DMD_SURROGATE_STATE=pred_u
+export DMD_STUDENT_SCORE_SOURCE=flowmap_small_interval
+export DMD_SMALL_DELTA_S=0.02
+```
+
+`DMD_SURROGATE_STATE=pred_u` is a server interface debug surrogate, not the final clean-sample DMD objective. Switch to `clean_sample` only when the differentiable rollout path is validated.
+
+### 6. Submit the Full Pipeline
+
+Export the required environment variables, then submit:
+
+```bash
+export REPO_ROOT="$PWD"
+
+sbatch --export=ALL scripts/slurm/v2_full_pipeline_admin_diagnostic.sbatch
+```
+
+For a short end-to-end smoke before long training, reduce both smoke and long steps:
+
+```bash
+export TRAIN_SMOKE_MAX_STEPS=1
+export TRAIN_MAX_STEPS=2
+
+sbatch --export=ALL scripts/slurm/v2_full_pipeline_admin_diagnostic.sbatch
+```
+
+Default long-training controls:
 
 ```text
 TRAIN_MAX_STEPS=5000
@@ -179,44 +202,76 @@ TRAIN_LOG_EVERY=10
 TRAIN_BATCH_SIZE=1
 ```
 
-For a shorter first smoke run, submit with:
-
-```bash
-sbatch --export=ALL,TEACHER_CKPT="$TEACHER_CKPT",DEBUG_MANIFEST="$DEBUG_MANIFEST",FULL_MANIFEST="$FULL_MANIFEST",TRAIN_MAX_STEPS=2 \
-  scripts/slurm/video_ffm_admin_diagnostic.sbatch
-```
-
-Logs and checkpoints are written under ignored runtime directories:
+Training stages use isolated directories:
 
 ```text
-logs/admin_diagnostic/<JOB_ID>/
-experiments/runs/v2/video_ffm_admin_debug/<JOB_ID>/
-experiments/checkpoints/v2/video_ffm_admin_debug/<JOB_ID>/
+experiments/runs/v2/video_ffm_admin/<JOB_ID>/
+experiments/runs/v2/action_ffm_admin/<JOB_ID>/
+experiments/runs/v2/video_dmd_admin/<JOB_ID>/
+experiments/runs/v2/action_dmd_admin/<JOB_ID>/
+
+experiments/checkpoints/v2/video_ffm_admin/<JOB_ID>/
+experiments/checkpoints/v2/action_ffm_admin/<JOB_ID>/
+experiments/checkpoints/v2/video_dmd_admin/<JOB_ID>/
+experiments/checkpoints/v2/action_dmd_admin/<JOB_ID>/
 ```
 
-When wandb is enabled, the script also uploads admin logs to the same W&B run as an `admin-logs` artifact:
+### 7. W&B Safety
 
-```text
-logs/admin_diagnostic/<JOB_ID>/status.txt
-logs/admin_diagnostic/<JOB_ID>/*.log
-slurm-wam-video-ffm-admin-<JOB_ID>.out
-slurm-wam-video-ffm-admin-<JOB_ID>.err
-logs/admin_diagnostic/<JOB_ID>/checkpoint_files_<JOB_ID>.txt
-```
-
-The upload includes a checkpoint file listing, not the checkpoint tensors themselves. Set `WANDB_UPLOAD_LOGS=false` to keep wandb metrics enabled but skip log artifact upload.
-
-Check the first status file after submission:
+W&B is optional. With `WANDB_ENABLED=auto`, it activates only when `WANDB_API_KEY` is present:
 
 ```bash
-cat logs/admin_diagnostic/<JOB_ID>/status.txt
+export WANDB_API_KEY="<private-api-key>"
+export WANDB_PROJECT="WAM-Policy"
+export WANDB_ENTITY="<team-or-user>"
 ```
 
-Set `WANDB_ENABLED=false` explicitly if a run should not report to wandb even when `WANDB_API_KEY` is present.
+Do not commit secrets. The admin script may upload a log artifact containing `status.txt`, per-stage logs, Slurm output/error files, and a checkpoint file listing. It does not upload checkpoint tensors, manifests, datasets, or secrets. Disable log artifact upload while keeping metrics enabled with:
+
+```bash
+export WANDB_UPLOAD_LOGS=false
+```
+
+Disable W&B entirely with:
+
+```bash
+export WANDB_ENABLED=false
+```
+
+### 8. Debug Fallback Scripts
+
+Use the unified full-pipeline script first. Stage-specific scripts remain available for narrower debugging:
+
+```text
+scripts/slurm/video_ffm_admin_diagnostic.sbatch
+scripts/slurm/action_ffm_admin_diagnostic.sbatch
+scripts/slurm/dmd_opd_admin_diagnostic.sbatch
+```
+
+They are useful when a single stage fails and you want to iterate only on that binding or manifest path.
+
+## Local Lightweight Checks
+
+Local checks should stay static/fake/lightweight:
+
+```bash
+python scripts/train.py --config configs/experiments/v2/anyflow_video_ffm.yaml --dry-run static
+python scripts/train.py --config configs/experiments/v2/anyflow_action_ffm.yaml --dry-run static
+python scripts/train.py --config configs/experiments/v2/anyflow_video_dmd_opd.yaml --dry-run static
+python scripts/train.py --config configs/experiments/v2/anyflow_action_dmd_opd.yaml --dry-run static
+
+python scripts/tools/probe_action_ffm_runtime.py probe-static-source \
+  --config configs/experiments/v2/anyflow_action_ffm.yaml
+python scripts/tools/probe_dmd_opd_runtime.py probe-static-source \
+  --config configs/experiments/v2/anyflow_video_dmd_opd.yaml
+python scripts/tools/probe_dmd_opd_runtime.py probe-static-source \
+  --config configs/experiments/v2/anyflow_action_dmd_opd.yaml
+```
+
+Do not run full pytest, real checkpoint loading, LingBot/RoboTwin runtime, GPU, ROCm, torchrun, or RoboTwin simulation in lightweight sessions.
 
 References:
 
 - LingBot-VA source repo: https://github.com/Robbyant/lingbot-va
 - LingBot-VA RoboTwin checkpoint: https://huggingface.co/robbyant/lingbot-va-posttrain-robotwin
 - LingBot-VA RoboTwin dataset: https://huggingface.co/datasets/robbyant/robotwin-clean-and-aug-lerobot
-- Hugging Face Hub download guide: https://huggingface.co/docs/huggingface_hub/en/guides/download

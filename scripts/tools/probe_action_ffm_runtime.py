@@ -121,7 +121,22 @@ def probe_static_source(cfg: Mapping[str, Any]) -> None:
 
     _print_header("LingBot Action Source Hints")
     _print_check("model source mentions action_mode", "action_mode" in model_source)
-    _print_check("train source mentions action_dict", "action_dict" in train_source)
+    _print_check("LingBot source mentions action_dict", "action_dict" in train_source or "action_dict" in model_source)
+    _print_check("LingBot source mentions latent_dict", "latent_dict" in train_source or "latent_dict" in model_source)
+    _print_check("LingBot source mentions forward_train", "forward_train" in train_source or "forward_train" in model_source)
+    _print_check("model source mentions update_cache", "update_cache" in model_source)
+    _print_check("model source mentions action_mode", "action_mode" in model_source)
+    _print_check(
+        "WAM action input contract uses noisy_actions/timesteps/context/z_condition",
+        all(
+            token in adapter_source
+            for token in ("noisy_actions", "timesteps", "context", "z_condition")
+        ),
+    )
+    print(
+        "WAM action input contract: noisy_actions, timesteps, context, z_condition; "
+        "forward binding currently calls LingBot with action_mode=True and update_cache=0."
+    )
     print("action forward binding still requires server-side probe against the real LingBot action contract.")
 
 
@@ -237,15 +252,30 @@ def probe_action_forward(cfg: Mapping[str, Any], s_src: float, s_tgt: float) -> 
         print(f"{key}: {_tensor_summary(value)}")
 
     _print_header("No-Grad Action Forward")
-    with torch.no_grad():
-        pred_u = adapter.forward_action_flowmap(
-            model,
-            flowmap_pair.a_src,
-            flowmap_pair.s_src,
-            flowmap_pair.s_tgt,
-            context,
-            z_condition=z_condition,
+    try:
+        with torch.no_grad():
+            pred_u = adapter.forward_action_flowmap(
+                model,
+                flowmap_pair.a_src,
+                flowmap_pair.s_src,
+                flowmap_pair.s_tgt,
+                context,
+                z_condition=z_condition,
+            )
+    except Exception as exc:
+        _print_header("Action Forward Failure Diagnostics")
+        print(
+            _format_action_forward_diagnostics(
+                model=model,
+                input_dict=input_dict,
+                a_src=flowmap_pair.a_src,
+                z_condition=z_condition,
+            )
         )
+        raise RuntimeError(
+            "probe-action-forward failed. Inspect the diagnostics above and localize "
+            "LingBot action binding fixes to src/wam_policy/adapters/lingbot_va.py."
+        ) from exc
     print(f"pred_u: {_tensor_summary(pred_u)}")
     print(f"pred_u_matches_a_src_shape: {tuple(pred_u.shape) == tuple(flowmap_pair.a_src.shape)}")
     print(f"pred_u_all_finite: {bool(torch.isfinite(pred_u).all().item())}")
@@ -300,6 +330,27 @@ def _tensor_summary(value: Any) -> str:
         f"dtype={getattr(value, 'dtype', None)} "
         f"device={getattr(value, 'device', None)}"
     )
+
+
+def _format_action_forward_diagnostics(
+    *,
+    model: Any,
+    input_dict: Mapping[str, Any],
+    a_src: Any,
+    z_condition: Any,
+) -> str:
+    lines = [
+        f"input_keys: {sorted(input_dict.keys())}",
+        f"a_src: {_tensor_summary(a_src)}",
+        f"z_condition: {_tensor_summary(z_condition)}",
+        f"model_forward_signature: {_safe_signature(getattr(model, 'forward', None))}",
+        "expected_lingbot_hints: action_dict, latent_dict, action_mode, forward_train, update_cache",
+        "fix_location: src/wam_policy/adapters/lingbot_va.py",
+        "current_wam_contract: noisy_actions, timesteps, context, z_condition",
+    ]
+    for key, value in input_dict.items():
+        lines.append(f"input[{key}]: {_tensor_summary(value)}")
+    return "\n".join(lines)
 
 
 def _module_status(module_name: str) -> str:
