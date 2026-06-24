@@ -66,6 +66,42 @@ def average_velocity_mse_loss(
     return loss, metrics
 
 
+def dmd_score_surrogate_loss(
+    student_state: torch.Tensor,
+    teacher_score: torch.Tensor,
+    student_score: torch.Tensor,
+    weight: torch.Tensor | float | None = None,
+    metric_prefix: str = "video_dmd",
+) -> tuple[torch.Tensor, dict[str, float]]:
+    """DMD-style surrogate whose gradient flows only through student_state."""
+    _validate_tensor("student_state", student_state)
+    _validate_tensor("teacher_score", teacher_score)
+    _validate_tensor("student_score", student_score)
+    if student_state.shape != teacher_score.shape or student_state.shape != student_score.shape:
+        raise ValueError("student_state, teacher_score, and student_score shapes must match.")
+    if student_state.device != teacher_score.device or student_state.device != student_score.device:
+        raise ValueError("student_state, teacher_score, and student_score must be on the same device.")
+    _validate_finite("student_state", student_state)
+    _validate_finite("teacher_score", teacher_score)
+    _validate_finite("student_score", student_score)
+
+    correction = student_score.detach() - teacher_score.detach()
+    per_sample = (student_state * correction).reshape(student_state.shape[0], -1).sum(dim=1)
+    if weight is not None:
+        per_sample = per_sample * _normalize_weight(weight, per_sample)
+    loss = per_sample.mean()
+    _validate_finite("loss", loss)
+
+    metrics = {
+        f"loss/{metric_prefix}": float(loss.detach().cpu()),
+        f"stat/{metric_prefix}/correction_abs_mean": float(correction.detach().abs().mean().cpu()),
+        f"stat/{metric_prefix}/student_state_abs_mean": float(
+            student_state.detach().abs().mean().cpu()
+        ),
+    }
+    return loss, metrics
+
+
 def _expand_mask(mask: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     if mask.shape == target.shape:
         return mask
@@ -86,6 +122,19 @@ def _validate_tensor(name: str, value: torch.Tensor) -> None:
 def _validate_finite(name: str, value: torch.Tensor) -> None:
     if not torch.isfinite(value).all().item():
         raise ValueError(f"{name} must contain only finite values.")
+
+
+def _normalize_weight(weight: torch.Tensor | float, per_sample: torch.Tensor) -> torch.Tensor:
+    if isinstance(weight, torch.Tensor):
+        if weight.device != per_sample.device:
+            raise ValueError("weight must be on the same device as student_state.")
+        _validate_finite("weight", weight)
+        if weight.ndim == 0:
+            return weight.to(dtype=per_sample.dtype)
+        if weight.shape != per_sample.shape:
+            raise ValueError(f"weight shape must be scalar or [B], got {weight.shape}.")
+        return weight.to(dtype=per_sample.dtype)
+    return torch.tensor(float(weight), device=per_sample.device, dtype=per_sample.dtype)
 
 
 def _is_broadcastable(source_shape: torch.Size, target_shape: torch.Size) -> bool:

@@ -28,6 +28,15 @@ class ActionFlowMapPair:
     target_u: torch.Tensor
 
 
+@dataclass(frozen=True)
+class FlowMapSegment:
+    s_src: torch.Tensor
+    s_mid: torch.Tensor | None
+    s_tgt: torch.Tensor
+    step_index: int | None
+    num_steps: int | None
+
+
 def sample_s_pairs(
     batch_size: int,
     s_min: float,
@@ -121,6 +130,54 @@ def average_velocity_target_s(
 
     delta_s = expand_time_like(z_src, s_tgt - s_src)
     return (z_tgt - z_src) / delta_s
+
+
+def sample_flowmap_backward_segment(
+    batch_size: int,
+    s_min: float,
+    s_max: float,
+    min_delta_s: float,
+    device: torch.device,
+    step_index: int | None = None,
+    num_steps: int | None = None,
+) -> FlowMapSegment:
+    """Sample a valid two-time segment for DMD/OPD probes using LingBot s ordering."""
+    s_src, s_tgt = sample_s_pairs(
+        batch_size=batch_size,
+        s_min=s_min,
+        s_max=s_max,
+        min_delta_s=min_delta_s,
+        device=device,
+    )
+    return FlowMapSegment(
+        s_src=s_src,
+        s_mid=None,
+        s_tgt=s_tgt,
+        step_index=step_index,
+        num_steps=num_steps,
+    )
+
+
+def estimate_instant_velocity_from_flowmap(
+    pred_u: torch.Tensor,
+    delta_s: torch.Tensor | float | None = None,
+) -> torch.Tensor:
+    """Use the predicted average velocity as a local instantaneous velocity estimate."""
+    _validate_tensor("pred_u", pred_u)
+    if delta_s is not None:
+        if isinstance(delta_s, torch.Tensor):
+            _validate_tensor("delta_s", delta_s)
+            if not torch.all(delta_s > 0).item():
+                raise ValueError("delta_s must be positive.")
+        elif float(delta_s) <= 0.0:
+            raise ValueError("delta_s must be positive.")
+    return pred_u
+
+
+def flowmap_dmd_weight(s_src: torch.Tensor, s_tgt: torch.Tensor) -> torch.Tensor:
+    """Return the positive segment length used as the default DMD surrogate weight."""
+    _validate_time_pair(s_src, s_tgt, batch_size=s_src.shape[0])
+    return s_tgt - s_src
 
 
 def _resolve_eps(
