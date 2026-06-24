@@ -80,9 +80,15 @@ Design stages:
 
 Current implemented scope is narrower than the full design:
 
-- Implemented: Stage 1 video-head Forward Flow-map Training (`video_ffm`).
-- Not implemented yet: action-head FFM, video/action DMD, OPD rollout,
-  RoboTwin online evaluation, distributed training, FSDP/DeepSpeed/ZeRO.
+- Implemented and fake-testable locally:
+  - Stage 1 video-head Forward Flow-map Training (`video_ffm`).
+  - Stage 1 action-head Forward Flow-map Training (`action_ffm`).
+  - Stage 2 video DMD-style OPD trainer skeleton (`video_dmd`).
+  - Stage 2 action DMD-style OPD trainer skeleton (`action_dmd`).
+- Not implemented or not server-validated yet: real LingBot action forward
+  binding, real LingBot teacher score/velocity binding for DMD, RoboTwin online
+  rollout generation, distributed training, FSDP/DeepSpeed/ZeRO, and long
+  training validation.
 
 ## Time Convention and Math Invariants
 
@@ -106,15 +112,26 @@ Video FFM construction:
 - First implementation uses average-velocity prediction, not endpoint
   prediction.
 
+Action FFM construction:
+
+- `A_s = (1 - s) * eps + s * A_clean`
+- `target_u = (A_tgt - A_src) / (s_tgt - s_src)`
+- `pred_u.shape == target_u.shape == A_clean.shape`
+- First implementation also uses average-velocity prediction, not endpoint
+  prediction.
+
 ## Current Implementation State
 
 Main entrypoint:
 
 - `scripts/train.py`
 - config: `configs/experiments/v2/anyflow_video_ffm.yaml`
+- config: `configs/experiments/v2/anyflow_action_ffm.yaml`
+- config: `configs/experiments/v2/anyflow_video_dmd_opd.yaml`
+- config: `configs/experiments/v2/anyflow_action_dmd_opd.yaml`
 - pipeline: `src/wam_policy/opd/pipelines/v2_anyflow_dual_head.py`
 
-Current non-dry-run path:
+Current `video_ffm` non-dry-run path:
 
 ```text
 config
@@ -130,17 +147,77 @@ config
 -> checkpoint save
 ```
 
+Current `action_ffm` non-dry-run path:
+
+```text
+config
+-> bootstrap external repos
+-> v2_anyflow_dual_head pipeline
+-> ActionFFMTrainer
+-> action chunk manifest dataset
+-> s_src/s_tgt action flow-map pair
+-> LingBotActionFlowMapStudent
+-> LingBotVAAdapter action hook
+-> average-velocity loss
+-> optimizer step
+-> checkpoint save
+```
+
+Current `video_dmd` local/fake-testable path:
+
+```text
+config
+-> bootstrap external repos
+-> v2_anyflow_dual_head pipeline
+-> VideoDMDOPDTrainer
+-> rollout manifest dataset
+-> z_student rollout state
+-> student video flow-map forward
+-> adapter teacher/student video score-or-velocity interfaces
+-> DMD-style surrogate loss plus optional FFM anchor
+-> optimizer step
+-> checkpoint save
+```
+
+Current `action_dmd` local/fake-testable path:
+
+```text
+config
+-> bootstrap external repos
+-> v2_anyflow_dual_head pipeline
+-> ActionDMDOPDTrainer
+-> rollout manifest dataset
+-> a_student rollout state
+-> z_condition from student video rollout
+-> student action flow-map forward
+-> adapter teacher/student action score-or-velocity interfaces
+-> DMD-style surrogate loss plus optional FFM anchor
+-> optimizer step
+-> checkpoint save
+```
+
 Current code already includes:
 
 - Config loading, `--set` overrides, and static dry-run dispatch.
 - AnyFlow-style `s_src/s_tgt` pair utilities.
+- Action flow-map pair utilities and lightweight DMD segment/weight utilities.
 - Video latent JSONL manifest dataset and collate.
+- Action chunk JSONL manifest dataset and collate.
+- Rollout manifest dataset and `OnPolicyChunkRecord` schema.
 - Video FFM average-velocity loss.
+- Action FFM average-velocity loss.
+- DMD-style gradient surrogate loss.
 - LingBot-VA adapter boundary and student wrapper.
+- Separate video/action student wrappers.
 - WAM-side video forward hook installation.
-- Two-time conditioner injection into LingBot `_time_embed`.
+- WAM-side action flow-map hook skeleton.
+- Mode-specific video/action two-time conditioner injection into LingBot
+  `_time_embed`, with `wam_time_pair_conditioner` retained as a video alias.
 - Latent/context shape validation for the fake-model smoke path.
+- Action/context/z-condition shape validation for fake-model smoke paths.
 - Checkpoint saving helper.
+- Action FFM, DMD OPD static probe scripts and Slurm diagnostic scripts.
+- Runtime notes in `docs/experiments/v2_runtime.md`.
 
 Known server gaps:
 
@@ -151,6 +228,16 @@ Known server gaps:
   `condition_embedder.time_proj.out_features`, and forward return shape may
   differ from the fake test model.
 - Real `z_clean` and `text_emb` manifest shapes still need server validation.
+- Real action forward input/output binding still needs server validation.
+- Real teacher video/action score or velocity binding for DMD still needs
+  server validation.
+- Real action manifest and rollout manifest shapes still need server validation.
+- RoboTwin rollout generation remains a server/runtime integration task.
+
+Important action DMD invariant:
+
+- `ActionDMDOPDTrainer` requires `z_condition` from the student video rollout.
+- Do not silently fall back to teacher video condition for action DMD.
 
 ## Adapter and Dependency Rules
 
@@ -172,15 +259,18 @@ spreading LingBot-specific logic into trainer or pipeline code.
 
 The next useful work should be compute-node oriented:
 
-1. Prepare or run a minimal `sbatch`/`srun` probe to confirm `wan_va` import.
-2. Probe `LingBotVAAdapter.load_pretrained_video_action_model()` with the real
-   checkpoint on a compute node.
-3. Inspect real LingBot `patch_size`, `_time_embed` signature,
-   `condition_embedder.time_proj.out_features`, and video forward return shape.
-4. Validate one tiny manifest sample: `z_clean` shape and `context.text_emb`
-   shape.
-5. Only after those pass, run a tiny compute-node training job such as
-   `train.max_steps=2`.
+1. Run `scripts/slurm/action_ffm_admin_diagnostic.sbatch` through
+   `05_action_forward` with real `TEACHER_CKPT` and `ACTION_DEBUG_MANIFEST`.
+2. If action forward fails, fix only `LingBotVAAdapter` action binding; do not
+   spread LingBot-specific logic into trainers or datasets.
+3. Run `scripts/slurm/dmd_opd_admin_diagnostic.sbatch` with `STAGE=video_dmd`
+   and a real rollout debug manifest.
+4. Run the same DMD diagnostic with `STAGE=action_dmd`, verifying that
+   `z_condition` comes from student rollout data.
+5. If DMD teacher score/velocity binding fails at `05_dmd_forward`, fix the
+   relevant `LingBotVAAdapter.teacher_*_score_or_velocity` method.
+6. Only after forward probes pass, run tiny compute-node training jobs such as
+   `TRAIN_MAX_STEPS=2`.
 
 Run these through compute-node `sbatch`/`srun` jobs rather than directly from
 lightweight agent sessions.
@@ -191,6 +281,14 @@ For lightweight verification, prefer:
 
 - Static dry-run only when needed:
   `python scripts/train.py --config configs/experiments/v2/anyflow_video_ffm.yaml --dry-run static`
+- Static dry-run for the other v2 stage configs:
+  - `python scripts/train.py --config configs/experiments/v2/anyflow_action_ffm.yaml --dry-run static`
+  - `python scripts/train.py --config configs/experiments/v2/anyflow_video_dmd_opd.yaml --dry-run static`
+  - `python scripts/train.py --config configs/experiments/v2/anyflow_action_dmd_opd.yaml --dry-run static`
+- Static source probes:
+  - `python scripts/tools/probe_action_ffm_runtime.py probe-static-source --config configs/experiments/v2/anyflow_action_ffm.yaml`
+  - `python scripts/tools/probe_dmd_opd_runtime.py probe-static-source --config configs/experiments/v2/anyflow_video_dmd_opd.yaml`
+  - `python scripts/tools/probe_dmd_opd_runtime.py probe-static-source --config configs/experiments/v2/anyflow_action_dmd_opd.yaml`
 - Small, targeted file reads or scoped searches.
 - Targeted unit tests only if they are clearly lightweight and relevant.
 
