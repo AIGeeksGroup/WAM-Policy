@@ -6,6 +6,9 @@ This repo uses a single-root layout. Source code, configs, scripts, docs, and te
 
 See `WAM-Policy_repo_structure.md` for the current repo structure and maintenance rules.
 
+For the current WAM-Policy v2 local smoke checks and Action-FFM/DMD-OPD Slurm
+entrypoints, see `docs/experiments/v2_runtime.md`.
+
 ## Setup WAM-Policy Video-stream Forward Flow-map Training
 
 ### 1. Clone WAM-Policy on the training server
