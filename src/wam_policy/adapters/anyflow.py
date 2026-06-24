@@ -17,6 +17,17 @@ class VideoFlowMapPair:
     target_u: torch.Tensor
 
 
+@dataclass(frozen=True)
+class ActionFlowMapPair:
+    a_clean: torch.Tensor
+    eps: torch.Tensor
+    s_src: torch.Tensor
+    s_tgt: torch.Tensor
+    a_src: torch.Tensor
+    a_tgt: torch.Tensor
+    target_u: torch.Tensor
+
+
 def sample_s_pairs(
     batch_size: int,
     s_min: float,
@@ -55,24 +66,8 @@ def build_video_flowmap_pair(
     eps: torch.Tensor | None = None,
 ) -> VideoFlowMapPair:
     """Build Z_src, Z_tgt and the average-velocity target in LingBot s direction."""
-    _validate_tensor("z_clean", z_clean)
-    _validate_time_pair(s_src, s_tgt, batch_size=z_clean.shape[0])
-    _validate_same_device("s_src", s_src, "z_clean", z_clean)
-    _validate_same_device("s_tgt", s_tgt, "z_clean", z_clean)
-
-    if eps is None:
-        eps = torch.randn_like(z_clean)
-    else:
-        _validate_tensor("eps", eps)
-        if eps.shape != z_clean.shape:
-            raise ValueError(f"eps shape must match z_clean shape: {eps.shape} != {z_clean.shape}")
-        _validate_same_device("eps", eps, "z_clean", z_clean)
-
-    s_src_like = expand_time_like(z_clean, s_src)
-    s_tgt_like = expand_time_like(z_clean, s_tgt)
-
-    z_src = (1.0 - s_src_like) * eps + s_src_like * z_clean
-    z_tgt = (1.0 - s_tgt_like) * eps + s_tgt_like * z_clean
+    eps = _resolve_eps("eps", eps, "z_clean", z_clean, s_src, s_tgt)
+    z_src, z_tgt = _interpolate_clean_noise(z_clean, eps, s_src, s_tgt)
     target_u = average_velocity_target_s(z_src, z_tgt, s_src, s_tgt)
 
     return VideoFlowMapPair(
@@ -82,6 +77,28 @@ def build_video_flowmap_pair(
         s_tgt=s_tgt,
         z_src=z_src,
         z_tgt=z_tgt,
+        target_u=target_u,
+    )
+
+
+def build_action_flowmap_pair(
+    a_clean: torch.Tensor,
+    s_src: torch.Tensor,
+    s_tgt: torch.Tensor,
+    eps: torch.Tensor | None = None,
+) -> ActionFlowMapPair:
+    """Build A_src, A_tgt and the average-velocity target in LingBot s direction."""
+    eps = _resolve_eps("eps", eps, "a_clean", a_clean, s_src, s_tgt)
+    a_src, a_tgt = _interpolate_clean_noise(a_clean, eps, s_src, s_tgt)
+    target_u = average_velocity_target_s(a_src, a_tgt, s_src, s_tgt)
+
+    return ActionFlowMapPair(
+        a_clean=a_clean,
+        eps=eps,
+        s_src=s_src,
+        s_tgt=s_tgt,
+        a_src=a_src,
+        a_tgt=a_tgt,
         target_u=target_u,
     )
 
@@ -104,6 +121,42 @@ def average_velocity_target_s(
 
     delta_s = expand_time_like(z_src, s_tgt - s_src)
     return (z_tgt - z_src) / delta_s
+
+
+def _resolve_eps(
+    eps_name: str,
+    eps: torch.Tensor | None,
+    clean_name: str,
+    clean: torch.Tensor,
+    s_src: torch.Tensor,
+    s_tgt: torch.Tensor,
+) -> torch.Tensor:
+    _validate_tensor(clean_name, clean)
+    _validate_time_pair(s_src, s_tgt, batch_size=clean.shape[0])
+    _validate_same_device("s_src", s_src, clean_name, clean)
+    _validate_same_device("s_tgt", s_tgt, clean_name, clean)
+
+    if eps is None:
+        return torch.randn_like(clean)
+
+    _validate_tensor(eps_name, eps)
+    if eps.shape != clean.shape:
+        raise ValueError(f"{eps_name} shape must match {clean_name} shape: {eps.shape} != {clean.shape}")
+    _validate_same_device(eps_name, eps, clean_name, clean)
+    return eps
+
+
+def _interpolate_clean_noise(
+    clean: torch.Tensor,
+    eps: torch.Tensor,
+    s_src: torch.Tensor,
+    s_tgt: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    s_src_like = expand_time_like(clean, s_src)
+    s_tgt_like = expand_time_like(clean, s_tgt)
+    src = (1.0 - s_src_like) * eps + s_src_like * clean
+    tgt = (1.0 - s_tgt_like) * eps + s_tgt_like * clean
+    return src, tgt
 
 
 def _validate_s_pair_config(

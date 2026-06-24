@@ -8,6 +8,33 @@ def video_ffm_average_velocity_loss(
     target_u: torch.Tensor,
     mask: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, dict[str, float]]:
+    return average_velocity_mse_loss(
+        pred_u=pred_u,
+        target_u=target_u,
+        mask=mask,
+        metric_prefix="video_ffm",
+    )
+
+
+def action_ffm_average_velocity_loss(
+    pred_u: torch.Tensor,
+    target_u: torch.Tensor,
+    mask: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    return average_velocity_mse_loss(
+        pred_u=pred_u,
+        target_u=target_u,
+        mask=mask,
+        metric_prefix="action_ffm",
+    )
+
+
+def average_velocity_mse_loss(
+    pred_u: torch.Tensor,
+    target_u: torch.Tensor,
+    mask: torch.Tensor | None = None,
+    metric_prefix: str = "ffm",
+) -> tuple[torch.Tensor, dict[str, float]]:
     _validate_tensor("pred_u", pred_u)
     _validate_tensor("target_u", target_u)
     if pred_u.shape != target_u.shape:
@@ -32,7 +59,7 @@ def video_ffm_average_velocity_loss(
     _validate_finite("loss", loss)
 
     metrics = {
-        "loss/video_ffm": float(loss.detach().cpu()),
+        f"loss/{metric_prefix}": float(loss.detach().cpu()),
         "stat/pred_u_abs_mean": float(pred_u.detach().abs().mean().cpu()),
         "stat/target_u_abs_mean": float(target_u.detach().abs().mean().cpu()),
     }
