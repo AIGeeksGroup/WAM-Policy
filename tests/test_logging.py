@@ -96,19 +96,57 @@ def test_training_logger_initializes_and_logs_to_wandb(
     assert calls["finish"] == 1
 
 
+def test_training_logger_logs_wandb_videos(tmp_path: Path, monkeypatch: Any) -> None:
+    calls = _install_fake_wandb(monkeypatch)
+    video_path = tmp_path / "teacher.mp4"
+    video_path.write_bytes(b"fake-video")
+
+    logger = TrainingLogger(_cfg(tmp_path, enabled=True))
+    logger.log_videos({"offline_video_stream/teacher_25step": video_path}, fps=10)
+    assert logger.run_url == "https://wandb.test/run"
+    logger.finish()
+
+    assert calls["video"] == [(str(video_path), 10, "mp4")]
+    assert calls["log"] == [
+        (
+            None,
+            {
+                "offline_video_stream/teacher_25step": {
+                    "path": str(video_path),
+                    "fps": 10,
+                    "format": "mp4",
+                }
+            },
+        )
+    ]
+    assert calls["finish"] == 1
+
+
 def _install_fake_wandb(monkeypatch: Any) -> dict[str, Any]:
-    calls: dict[str, Any] = {"init": None, "log": [], "finish": 0}
+    calls: dict[str, Any] = {"init": None, "log": [], "finish": 0, "video": []}
 
-    def fake_init(**kwargs: Any) -> object:
+    class FakeRun:
+        url = "https://wandb.test/run"
+
+    def fake_init(**kwargs: Any) -> FakeRun:
         calls["init"] = kwargs
-        return object()
+        return FakeRun()
 
-    def fake_log(metrics: dict[str, float], step: int) -> None:
+    def fake_log(metrics: dict[str, Any], step: int | None = None) -> None:
         calls["log"].append((step, metrics))
+
+    def fake_video(path: str, fps: int, format: str) -> dict[str, Any]:
+        calls["video"].append((path, fps, format))
+        return {"path": path, "fps": fps, "format": format}
 
     def fake_finish() -> None:
         calls["finish"] += 1
 
-    fake_wandb = SimpleNamespace(init=fake_init, log=fake_log, finish=fake_finish)
+    fake_wandb = SimpleNamespace(
+        init=fake_init,
+        log=fake_log,
+        Video=fake_video,
+        finish=fake_finish,
+    )
     monkeypatch.setitem(sys.modules, "wandb", fake_wandb)
     return calls

@@ -20,6 +20,8 @@ set -euo pipefail
 #   export ROLLOUT_DEBUG_MANIFEST=$REPO_ROOT/datasets/manifests/student_rollouts_debug.jsonl
 #   export ROLLOUT_FULL_MANIFEST=$REPO_ROOT/datasets/manifests/student_rollouts_full.jsonl
 #   export DMD_TEACHER_SCORE_SOURCE=cached_label
+#   export RUN_OFFLINE_VISUALIZATION=true
+#   export RUN_ROBOTWIN_VISUALIZATION=true
 #   sbatch --export=ALL scripts/slurm/v2_full_pipeline_admin_diagnostic.sbatch
 #
 # DMD_TEACHER_SCORE_SOURCE defaults to not_implemented. Set it to cached_label
@@ -37,12 +39,14 @@ VIDEO_FFM_CONFIG="${VIDEO_FFM_CONFIG:-configs/experiments/v2/anyflow_video_ffm.y
 ACTION_FFM_CONFIG="${ACTION_FFM_CONFIG:-configs/experiments/v2/anyflow_action_ffm.yaml}"
 VIDEO_DMD_CONFIG="${VIDEO_DMD_CONFIG:-configs/experiments/v2/anyflow_video_dmd_opd.yaml}"
 ACTION_DMD_CONFIG="${ACTION_DMD_CONFIG:-configs/experiments/v2/anyflow_action_dmd_opd.yaml}"
+VIS_CONFIG="${VIS_CONFIG:-configs/experiments/v2/anyflow_visualization.yaml}"
 
 JOB_ID="${SLURM_JOB_ID:-manual_$(date +%Y%m%d_%H%M%S)}"
 LOG_DIR="$REPO_ROOT/logs/v2_full_pipeline_admin/$JOB_ID"
 STATUS_FILE="$LOG_DIR/status.txt"
 RUN_BASE="$REPO_ROOT/experiments/runs/v2"
 CHECKPOINT_BASE="$REPO_ROOT/experiments/checkpoints/v2"
+VIS_OUTPUT_BASE="$REPO_ROOT/results/v2/visualization_admin/$JOB_ID"
 SLURM_OUTPUT_DIR="${SLURM_SUBMIT_DIR:-$REPO_ROOT}"
 SLURM_OUT_FILE="$SLURM_OUTPUT_DIR/slurm-wam-v2-full-pipeline-admin-${JOB_ID}.out"
 SLURM_ERR_FILE="$SLURM_OUTPUT_DIR/slurm-wam-v2-full-pipeline-admin-${JOB_ID}.err"
@@ -69,6 +73,18 @@ DMD_SURROGATE_STATE="${DMD_SURROGATE_STATE:-pred_u}"
 DMD_STUDENT_SCORE_SOURCE="${DMD_STUDENT_SCORE_SOURCE:-flowmap_small_interval}"
 DMD_SMALL_DELTA_S="${DMD_SMALL_DELTA_S:-0.02}"
 
+RUN_OFFLINE_VISUALIZATION="${RUN_OFFLINE_VISUALIZATION:-true}"
+RUN_ROBOTWIN_VISUALIZATION="${RUN_ROBOTWIN_VISUALIZATION:-true}"
+ROBOTWIN_ROLLOUT_COMMAND="${ROBOTWIN_ROLLOUT_COMMAND:-}"
+ROBOTWIN_ROLLOUT_WORKDIR="${ROBOTWIN_ROLLOUT_WORKDIR:-}"
+VIS_MAX_CHUNKS="${VIS_MAX_CHUNKS:-16}"
+VIS_ROBOTWIN_MAX_CHUNKS="${VIS_ROBOTWIN_MAX_CHUNKS:-32}"
+VIS_FPS="${VIS_FPS:-10}"
+VIS_TEACHER_STEPS="${VIS_TEACHER_STEPS:-25}"
+VIS_STUDENT_STEPS="${VIS_STUDENT_STEPS:-4}"
+VIS_TEACHER_GUIDANCE_SCALE="${VIS_TEACHER_GUIDANCE_SCALE:-1.0}"
+VIS_TEACHER_SNR_SHIFT="${VIS_TEACHER_SNR_SHIFT:-5.0}"
+
 WANDB_ENABLED="${WANDB_ENABLED:-auto}"
 WANDB_PROJECT="${WANDB_PROJECT:-WAM-Policy}"
 WANDB_RUN_NAME="${WANDB_RUN_NAME:-v2-full-pipeline-${JOB_ID}}"
@@ -79,7 +95,7 @@ WANDB_DIR="${WANDB_DIR:-wandb}"
 WANDB_UPLOAD_LOGS="${WANDB_UPLOAD_LOGS:-true}"
 
 cd "$REPO_ROOT"
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" "$VIS_OUTPUT_BASE"
 
 stage_run_dir() {
   printf '%s/%s_admin/%s\n' "$RUN_BASE" "$1" "$JOB_ID"
@@ -137,6 +153,7 @@ echo "STARTED:${JOB_ID}:$(date -Is)" | tee "$STATUS_FILE"
 echo "repo_root: $REPO_ROOT" | tee -a "$STATUS_FILE"
 echo "log_dir: $LOG_DIR" | tee -a "$STATUS_FILE"
 echo "checkpoint_base: $CHECKPOINT_BASE" | tee -a "$STATUS_FILE"
+echo "visualization_output_base: $VIS_OUTPUT_BASE" | tee -a "$STATUS_FILE"
 
 if [[ -n "${ENV_SETUP:-}" ]]; then
   # shellcheck disable=SC1090
@@ -184,6 +201,19 @@ if [[ "$WANDB_EFFECTIVE_ENABLED" == "true" ]]; then
   )
   if [[ -n "${WANDB_ENTITY:-}" ]]; then
     WANDB_OVERRIDES+=(--set "logging.wandb.entity=${WANDB_ENTITY}")
+  fi
+fi
+
+ROBOTWIN_VIS_OVERRIDES=()
+if [[ -n "$ROBOTWIN_ROLLOUT_COMMAND" ]]; then
+  ROBOTWIN_VIS_OVERRIDES+=(
+    --set visualization.robotwin_rollout.runner=external_command
+    --set "visualization.robotwin_rollout.command=${ROBOTWIN_ROLLOUT_COMMAND}"
+  )
+  if [[ -n "$ROBOTWIN_ROLLOUT_WORKDIR" ]]; then
+    ROBOTWIN_VIS_OVERRIDES+=(
+      --set "visualization.robotwin_rollout.workdir=${ROBOTWIN_ROLLOUT_WORKDIR}"
+    )
   fi
 fi
 
@@ -264,6 +294,28 @@ run_train_stage() {
     "$@"
 }
 
+run_visualization_stage() {
+  local stage="$1"
+  local mode="$2"
+  local enabled="$3"
+  shift 3
+
+  case "$enabled" in
+    0|false|False|FALSE|no|No|NO|off|Off|OFF)
+      run_shell_stage "$stage" "echo '${mode} visualization skipped'"
+      return 0
+      ;;
+  esac
+
+  run_stage "$stage" \
+    "$PYTHON_BIN" scripts/visualize_v2.py "$mode" \
+    --config "$VIS_CONFIG" \
+    --require-external-exists \
+    "${COMMON_OVERRIDES[@]}" \
+    "${WANDB_OVERRIDES[@]}" \
+    "$@"
+}
+
 run_shell_stage "00_env" "
 set -euo pipefail
 echo hostname: \$(hostname)
@@ -282,6 +334,15 @@ echo dmd_teacher_score_source: ${DMD_TEACHER_SCORE_SOURCE@Q}
 echo dmd_surrogate_state: ${DMD_SURROGATE_STATE@Q}
 echo dmd_student_score_source: ${DMD_STUDENT_SCORE_SOURCE@Q}
 echo dmd_small_delta_s: ${DMD_SMALL_DELTA_S@Q}
+echo run_offline_visualization: ${RUN_OFFLINE_VISUALIZATION@Q}
+echo run_robotwin_visualization: ${RUN_ROBOTWIN_VISUALIZATION@Q}
+echo robotwin_rollout_command: ${ROBOTWIN_ROLLOUT_COMMAND@Q}
+echo vis_output_base: ${VIS_OUTPUT_BASE@Q}
+echo vis_max_chunks: ${VIS_MAX_CHUNKS@Q}
+echo vis_robotwin_max_chunks: ${VIS_ROBOTWIN_MAX_CHUNKS@Q}
+echo vis_fps: ${VIS_FPS@Q}
+echo vis_teacher_steps: ${VIS_TEACHER_STEPS@Q}
+echo vis_student_steps: ${VIS_STUDENT_STEPS@Q}
 echo train_max_steps: ${TRAIN_MAX_STEPS@Q}
 echo train_smoke_max_steps: ${TRAIN_SMOKE_MAX_STEPS@Q}
 echo wandb_enabled: ${WANDB_ENABLED@Q}
@@ -297,6 +358,7 @@ test -f ${VIDEO_FFM_CONFIG@Q}
 test -f ${ACTION_FFM_CONFIG@Q}
 test -f ${VIDEO_DMD_CONFIG@Q}
 test -f ${ACTION_DMD_CONFIG@Q}
+test -f ${VIS_CONFIG@Q}
 test -e ${TEACHER_CKPT@Q}
 test -f ${VIDEO_DEBUG_MANIFEST@Q}
 test -f ${VIDEO_FULL_MANIFEST@Q}
@@ -330,6 +392,8 @@ ${PYTHON_BIN@Q} scripts/train.py --config ${VIDEO_FFM_CONFIG@Q} --dry-run static
 ${PYTHON_BIN@Q} scripts/train.py --config ${ACTION_FFM_CONFIG@Q} --dry-run static
 ${PYTHON_BIN@Q} scripts/train.py --config ${VIDEO_DMD_CONFIG@Q} --dry-run static
 ${PYTHON_BIN@Q} scripts/train.py --config ${ACTION_DMD_CONFIG@Q} --dry-run static
+${PYTHON_BIN@Q} scripts/visualize_v2.py offline-video-stream --config ${VIS_CONFIG@Q} --dry-run static
+${PYTHON_BIN@Q} scripts/visualize_v2.py robotwin-rollout --config ${VIS_CONFIG@Q} --dry-run static
 ${PYTHON_BIN@Q} scripts/tools/probe_video_ffm_runtime.py probe-static-source --config ${VIDEO_FFM_CONFIG@Q}
 ${PYTHON_BIN@Q} scripts/tools/probe_action_ffm_runtime.py probe-static-source --config ${ACTION_FFM_CONFIG@Q}
 ${PYTHON_BIN@Q} scripts/tools/probe_dmd_opd_runtime.py probe-static-source --config ${VIDEO_DMD_CONFIG@Q}
@@ -339,10 +403,17 @@ ${PYTHON_BIN@Q} -m py_compile \
   scripts/tools/probe_video_ffm_runtime.py \
   scripts/tools/probe_action_ffm_runtime.py \
   scripts/tools/probe_dmd_opd_runtime.py \
+  scripts/tools/probe_visualization_runtime.py \
   scripts/tools/upload_admin_logs_to_wandb.py \
+  scripts/tools/upload_visualization_outputs_to_wandb.py \
+  scripts/visualize_v2.py \
   src/wam_policy/adapters/anyflow.py \
   src/wam_policy/adapters/lingbot_va.py \
   src/wam_policy/adapters/robotwin.py \
+  src/wam_policy/visualization/offline.py \
+  src/wam_policy/visualization/robotwin.py \
+  src/wam_policy/visualization/static.py \
+  src/wam_policy/visualization/video.py \
   src/wam_policy/data/action_dataset.py \
   src/wam_policy/data/rollout_manifest_dataset.py \
   src/wam_policy/opd/losses.py \
@@ -542,15 +613,46 @@ run_train_stage \
   "$TRAIN_BATCH_SIZE" \
   "${DMD_OVERRIDES[@]}"
 
-run_shell_stage "19_collect_artifacts" "
+run_visualization_stage \
+  "19_offline_video_stream_visualization" \
+  offline-video-stream \
+  "$RUN_OFFLINE_VISUALIZATION" \
+  --set "data.manifest=${VIDEO_FULL_MANIFEST}" \
+  --set "visualization.offline_video_stream.student_checkpoint_path=$(stage_ckpt_dir video_dmd)/latest.pt" \
+  --set "visualization.offline_video_stream.output_dir=${VIS_OUTPUT_BASE}/offline_video_stream" \
+  --set "visualization.offline_video_stream.max_chunks=${VIS_MAX_CHUNKS}" \
+  --set "visualization.offline_video_stream.fps=${VIS_FPS}" \
+  --set "visualization.offline_video_stream.teacher_steps=${VIS_TEACHER_STEPS}" \
+  --set "visualization.offline_video_stream.student_steps=${VIS_STUDENT_STEPS}" \
+  --set "visualization.offline_video_stream.teacher_guidance_scale=${VIS_TEACHER_GUIDANCE_SCALE}" \
+  --set "visualization.offline_video_stream.teacher_snr_shift=${VIS_TEACHER_SNR_SHIFT}"
+
+run_visualization_stage \
+  "20_robotwin_rollout_visualization" \
+  robotwin-rollout \
+  "$RUN_ROBOTWIN_VISUALIZATION" \
+  --set "visualization.robotwin_rollout.video_checkpoint_path=$(stage_ckpt_dir video_dmd)/latest.pt" \
+  --set "visualization.robotwin_rollout.action_checkpoint_path=$(stage_ckpt_dir action_dmd)/latest.pt" \
+  --set "visualization.robotwin_rollout.output_dir=${VIS_OUTPUT_BASE}/robotwin_rollout" \
+  --set "visualization.robotwin_rollout.max_chunks=${VIS_ROBOTWIN_MAX_CHUNKS}" \
+  --set "visualization.robotwin_rollout.fps=${VIS_FPS}" \
+  "${ROBOTWIN_VIS_OVERRIDES[@]}"
+
+run_shell_stage "21_collect_artifacts" "
 set -euo pipefail
 echo status_file: ${STATUS_FILE@Q}
 echo log_dir: ${LOG_DIR@Q}
 echo checkpoint_base: ${CHECKPOINT_BASE@Q}
+echo visualization_output_base: ${VIS_OUTPUT_BASE@Q}
 find ${CHECKPOINT_BASE@Q} -path '*/${JOB_ID}/*' -type f | sort > ${LOG_DIR@Q}/checkpoint_files_${JOB_ID}.txt
 cat ${LOG_DIR@Q}/checkpoint_files_${JOB_ID}.txt
+if [[ -d ${VIS_OUTPUT_BASE@Q} ]]; then
+  find ${VIS_OUTPUT_BASE@Q} -type f | sort > ${LOG_DIR@Q}/visualization_files_${JOB_ID}.txt
+  cat ${LOG_DIR@Q}/visualization_files_${JOB_ID}.txt
+fi
 "
 
 echo "SUCCESS:${JOB_ID}:$(date -Is)" | tee -a "$STATUS_FILE"
 echo "Full v2 admin pipeline completed. Logs: $LOG_DIR" | tee -a "$STATUS_FILE"
 echo "Checkpoint base: $CHECKPOINT_BASE" | tee -a "$STATUS_FILE"
+echo "Visualization outputs: $VIS_OUTPUT_BASE" | tee -a "$STATUS_FILE"

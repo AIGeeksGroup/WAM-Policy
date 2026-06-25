@@ -34,7 +34,9 @@ It runs diagnostics first, then smoke training, then long training:
 16_action_ffm_train_long_full_manifest
 17_video_dmd_train_long_full_manifest
 18_action_dmd_train_long_full_manifest
-19_collect_artifacts
+19_offline_video_stream_visualization
+20_robotwin_rollout_visualization
+21_collect_artifacts
 ```
 
 Each stage stops on first failure and appends the first failing stage to:
@@ -88,6 +90,7 @@ Download the LingBot-VA RoboTwin post-trained checkpoint into the ignored pretra
 
 ```bash
 python3 -m pip install -U huggingface_hub
+python3 -m pip install -e '.[wandb,visualization]'
 export HF_HOME="$PWD/cache/huggingface"
 
 python3 - <<'PY'
@@ -140,7 +143,7 @@ export ROLLOUT_DEBUG_MANIFEST="$PWD/datasets/manifests/student_rollouts_debug.js
 export ROLLOUT_FULL_MANIFEST="$PWD/datasets/manifests/student_rollouts_full.jsonl"
 ```
 
-The DMD long-training stages cannot run without rollout manifests. This repo path does not yet implement RoboTwin online rollout collection, so those manifests must be prepared ahead of time. For `teacher_score_source=cached_label`, rollout records must also point to cached `teacher_video_label` and `teacher_action_label` tensors.
+The DMD long-training stages cannot run without rollout manifests. For `teacher_score_source=cached_label`, rollout records must also point to cached `teacher_video_label` and `teacher_action_label` tensors.
 
 ### 5. Choose DMD Teacher Source
 
@@ -202,6 +205,61 @@ TRAIN_LOG_EVERY=10
 TRAIN_BATCH_SIZE=1
 ```
 
+Visualization stages run after long training by default:
+
+```text
+RUN_OFFLINE_VISUALIZATION=true
+RUN_ROBOTWIN_VISUALIZATION=true
+VIS_MAX_CHUNKS=16
+VIS_ROBOTWIN_MAX_CHUNKS=32
+VIS_TEACHER_STEPS=25
+VIS_STUDENT_STEPS=4
+VIS_FPS=10
+```
+
+Offline video-stream visualization uses the full video manifest and the final video DMD checkpoint by default. It compares LingBot-VA teacher 25-step video sampling against WAM-Policy_v2 student 4-step flow-map sampling from the same context and initial noise. It does not force a WAM-side chunk frame count; it uses the latent frame dimension in the manifest sample. If reliable episode/chunk metadata is present, chunks are stitched in order. Otherwise, independent chunks are rendered as a comparison grid.
+
+RoboTwin rollout visualization uses the final video and action DMD checkpoints. The WAM-side workflow is wired through `RoboTwinAdapter.rollout_student_episode`. The current server-ready path is `visualization.robotwin_rollout.runner=external_command`: set `ROBOTWIN_ROLLOUT_COMMAND` to a site-specific command that runs the real closed-loop RoboTwin rollout and writes the JSON file named by `WAM_ROBOTWIN_RESULT_JSON`. That JSON must point to:
+
+```text
+actual_observation_video
+student_imagined_video
+actual_vs_imagined_video
+```
+
+The command also receives `WAM_ROBOTWIN_REQUEST_JSON` and `WAM_ROBOTWIN_OUTPUT_DIR`. The request JSON includes output paths, checkpoint paths, task name, seed, fps, and max chunk count.
+
+For dedicated visualization diagnostics, submit:
+
+```bash
+export REPO_ROOT="$PWD"
+export TEACHER_CKPT="$PWD/experiments/pretrained_models/lingbot-va/lingbot-va-posttrain-robotwin/transformer"
+export VIDEO_FULL_MANIFEST="$PWD/datasets/manifests/video_latents_full.jsonl"
+export VIDEO_STUDENT_CKPT="$PWD/experiments/checkpoints/v2/video_dmd/latest.pt"
+export ACTION_STUDENT_CKPT="$PWD/experiments/checkpoints/v2/action_dmd/latest.pt"
+export ROBOTWIN_ROLLOUT_COMMAND="/path/to/server_robotwin_rollout_command"
+
+sbatch --export=ALL scripts/slurm/v2_visualization_admin_diagnostic.sbatch
+```
+
+The visualization admin job is staged:
+
+```text
+00_env
+01_import
+02_video_encoder_probe
+03_vae_decode_probe
+04_teacher_student_sampling_probe
+05_decode_and_encode_probe
+06_visualization_full
+07_wandb_upload
+08_collect_artifacts
+```
+
+`03_vae_decode_probe` explicitly loads the LingBot/Wan VAE through `LingBotVAAdapter` and decodes a manifest latent on the configured ROCm device. It also reports source-level CUDA dependency warnings from the LingBot/Wan files scanned during `01_import`. If VAE decode fails, summaries identify the failure as `vae_decode`, include the import/op/device error, and point back to `src/wam_policy/adapters/lingbot_va.py`.
+
+Video encoding defaults to GPU-first probing (`ffmpeg` VAAPI/AMF when available), then CPU ffmpeg/libx264 or imageio, then GIF, PNG frames, and finally saved RGB tensor. Each summary records the selected backend, codec, fps, output path, and W&B upload status where applicable.
+
 Training stages use isolated directories:
 
 ```text
@@ -214,6 +272,24 @@ experiments/checkpoints/v2/video_ffm_admin/<JOB_ID>/
 experiments/checkpoints/v2/action_ffm_admin/<JOB_ID>/
 experiments/checkpoints/v2/video_dmd_admin/<JOB_ID>/
 experiments/checkpoints/v2/action_dmd_admin/<JOB_ID>/
+```
+
+Visualization outputs are written under:
+
+```text
+results/v2/visualization_admin/<JOB_ID>/offline_video_stream/
+results/v2/visualization_admin/<JOB_ID>/robotwin_rollout/
+```
+
+When W&B is enabled, videos are logged to the same run using these keys:
+
+```text
+offline_video_stream/teacher_25step
+offline_video_stream/student_4step
+offline_video_stream/teacher_vs_student
+robotwin_rollout/actual_observation
+robotwin_rollout/student_imagined_video
+robotwin_rollout/actual_vs_imagined
 ```
 
 ### 7. W&B Safety
@@ -246,6 +322,7 @@ Use the unified full-pipeline script first. Stage-specific scripts remain availa
 scripts/slurm/video_ffm_admin_diagnostic.sbatch
 scripts/slurm/action_ffm_admin_diagnostic.sbatch
 scripts/slurm/dmd_opd_admin_diagnostic.sbatch
+scripts/slurm/v2_visualization_admin_diagnostic.sbatch
 ```
 
 They are useful when a single stage fails and you want to iterate only on that binding or manifest path.
@@ -259,6 +336,10 @@ python scripts/train.py --config configs/experiments/v2/anyflow_video_ffm.yaml -
 python scripts/train.py --config configs/experiments/v2/anyflow_action_ffm.yaml --dry-run static
 python scripts/train.py --config configs/experiments/v2/anyflow_video_dmd_opd.yaml --dry-run static
 python scripts/train.py --config configs/experiments/v2/anyflow_action_dmd_opd.yaml --dry-run static
+python scripts/visualize_v2.py offline-video-stream --config configs/experiments/v2/anyflow_visualization.yaml --dry-run static
+python scripts/visualize_v2.py robotwin-rollout --config configs/experiments/v2/anyflow_visualization.yaml --dry-run static
+python scripts/tools/probe_visualization_runtime.py probe-static-source \
+  --config configs/experiments/v2/anyflow_visualization.yaml
 
 python scripts/tools/probe_action_ffm_runtime.py probe-static-source \
   --config configs/experiments/v2/anyflow_action_ffm.yaml

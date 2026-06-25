@@ -1,0 +1,98 @@
+experiment:
+  name: anyflow_visualization
+  version: v2
+  stage: visualization
+
+paths:
+  repo_root: .
+  lingbot_repo: external/lingbot-va
+  anyflow_repo: external/AnyFlow
+  output_dir: results/v2/visualization
+  checkpoint_dir: experiments/checkpoints/v2
+
+teacher:
+  name: lingbot_va
+  checkpoint_path: experiments/pretrained_models/lingbot-va/PLACEHOLDER
+  frozen: true
+
+model:
+  backend: lingbot_va
+  student_type: dual_head_flowmap
+  output_type: average_velocity
+  time_condition: s_src_s_tgt_delta
+  freeze_backbone: true
+  trainable_modules:
+    - video_time_pair_adapter
+    - video_head_adapter
+    - action_time_pair_adapter
+    - action_head_adapter
+
+data:
+  mode: video_latent_manifest
+  manifest: datasets/manifests/video_latents_debug.jsonl
+  latent_root: datasets/latents
+  batch_size: 1
+  num_workers: 0
+
+flowmap:
+  time_convention: lingbot_s_noise0_data1
+  s_min: 0.0
+  s_max: 1.0
+  min_delta_s: 0.02
+  sample_strategy: uniform
+  target_type: average_velocity
+  eps_shared_between_src_tgt: true
+  lingbot_num_train_timesteps: 1000
+
+runtime:
+  device: auto
+  precision: bf16
+  lingbot_attn_mode: torch
+  allow_tf32: true
+  compile: false
+
+logging:
+  wandb:
+    enabled: auto
+    project: WAM-Policy
+    entity: null
+    name: null
+    id: null
+    resume: null
+    mode: online
+    dir: wandb
+    tags:
+      - visualization
+      - lingbot_va
+
+visualization:
+  offline_video_stream:
+    output_dir: results/v2/visualization/offline_video_stream
+    student_checkpoint_path: experiments/checkpoints/v2/video_ffm/latest.pt
+    checkpoint_strict: false
+    selection_mode: auto
+    max_chunks: 16
+    grid_columns: null
+    teacher_steps: 25
+    teacher_snr_shift: 5.0
+    teacher_guidance_scale: 1.0
+    student_steps: 4
+    fps: 10
+    seed: 42
+  robotwin_rollout:
+    output_dir: results/v2/visualization/robotwin_rollout
+    video_checkpoint_path: experiments/checkpoints/v2/video_dmd/latest.pt
+    action_checkpoint_path: experiments/checkpoints/v2/action_dmd/latest.pt
+    # Set runner=external_command on the server when a RoboTwin rollout command
+    # is available. The command receives WAM_ROBOTWIN_REQUEST_JSON,
+    # WAM_ROBOTWIN_RESULT_JSON, and WAM_ROBOTWIN_OUTPUT_DIR environment vars.
+    runner: not_implemented
+    command: null
+    workdir: null
+    result_json: null
+    timeout_seconds: null
+    checkpoint_strict: false
+    max_chunks: 32
+    fps: 10
+    task_name: null
+    seed: 0

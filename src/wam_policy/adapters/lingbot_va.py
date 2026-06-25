@@ -58,6 +58,194 @@ class LingBotVAAdapter:
             raise TypeError("LingBot-VA load_transformer did not return a torch.nn.Module.")
         return model
 
+    def load_video_vae(self) -> nn.Module:
+        """Load the LingBot/Wan VAE used for decoding video latents."""
+        self._install_flash_attention_stub_if_needed()
+        try:
+            from wan_va.modules.utils import load_vae
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "Unable to import LingBot-VA VAE loader. Ensure external/lingbot-va "
+                "is bootstrapped and LingBot-VA dependencies are installed."
+            ) from exc
+
+        vae_path = self._resolve_lingbot_model_root() / "vae"
+        try:
+            vae = load_vae(
+                str(vae_path),
+                torch_dtype=self.torch_dtype,
+                torch_device=self.device,
+            )
+        except Exception as exc:
+            raise RuntimeError(f"Failed to load LingBot-VA VAE from {vae_path}.") from exc
+        if not isinstance(vae, nn.Module):
+            raise TypeError("LingBot-VA load_vae did not return a torch.nn.Module.")
+        return vae
+
+    @torch.no_grad()
+    def sample_teacher_video(
+        self,
+        model: nn.Module,
+        z_noise: torch.Tensor,
+        context: Any,
+        *,
+        num_steps: int = 25,
+        snr_shift: float = 5.0,
+        guidance_scale: float = 1.0,
+        negative_context: Any | None = None,
+        frame_start_id: int = 0,
+        update_cache_on_final_step: bool = False,
+    ) -> torch.Tensor:
+        """Run LingBot's native video diffusion sampler from a supplied noise latent."""
+        if num_steps <= 0:
+            raise ValueError("num_steps must be positive.")
+        if snr_shift <= 0.0:
+            raise ValueError("snr_shift must be positive.")
+        if guidance_scale < 1.0:
+            raise ValueError("guidance_scale must be >= 1.0.")
+        if z_noise.ndim != 5:
+            raise ValueError("z_noise must have shape [B, C, F, H, W].")
+
+        try:
+            from wan_va.utils import FlowMatchScheduler
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "Unable to import LingBot-VA FlowMatchScheduler. Ensure external/lingbot-va "
+                "is bootstrapped and LingBot-VA dependencies are installed."
+            ) from exc
+
+        scheduler = FlowMatchScheduler(shift=snr_shift, sigma_min=0.0, extra_one_step=True)
+        scheduler.set_timesteps(num_steps)
+        timesteps = scheduler.timesteps.to(device=z_noise.device, dtype=torch.float32)
+        timesteps = torch.cat([timesteps, timesteps.new_zeros(1)], dim=0)
+
+        model.eval()
+        latents = z_noise.clone()
+        text_emb = self.normalize_video_context(
+            context,
+            batch_size=latents.shape[0],
+            device=latents.device,
+            dtype=latents.dtype,
+        )
+        negative_text_emb = None
+        if guidance_scale > 1.0:
+            negative_text_emb = (
+                self.normalize_video_context(
+                    negative_context,
+                    batch_size=latents.shape[0],
+                    device=latents.device,
+                    dtype=latents.dtype,
+                )
+                if negative_context is not None
+                else torch.zeros_like(text_emb)
+            )
+
+        for step_index, timestep in enumerate(timesteps):
+            last_step = step_index == len(timesteps) - 1
+            input_dict = self.build_lingbot_teacher_video_input(
+                model=model,
+                z_latents=latents,
+                timestep=timestep,
+                text_emb=text_emb,
+                frame_start_id=frame_start_id,
+            )
+            if negative_text_emb is not None:
+                input_dict = _repeat_video_input_for_cfg(input_dict, negative_text_emb)
+
+            output = _call_lingbot_forward(
+                model,
+                input_dict,
+                update_cache=1 if update_cache_on_final_step and last_step else 0,
+                cache_name=self._cache_name(),
+                action_mode=False,
+                train_mode=False,
+            )
+            if last_step:
+                continue
+
+            output_shape = (
+                latents.shape
+                if negative_text_emb is None
+                else torch.Size((latents.shape[0] * 2, *latents.shape[1:]))
+            )
+            pred = self.lingbot_output_to_latent(output, output_shape, _patch_size(model))
+            if negative_text_emb is not None:
+                pred_cond, pred_uncond = pred.chunk(2, dim=0)
+                pred = pred_uncond + guidance_scale * (pred_cond - pred_uncond)
+
+            latents = scheduler.step(pred, timestep.detach().cpu(), latents, return_dict=False)
+
+        return latents
+
+    def build_lingbot_teacher_video_input(
+        self,
+        *,
+        model: nn.Module,
+        z_latents: torch.Tensor,
+        timestep: torch.Tensor,
+        text_emb: torch.Tensor,
+        frame_start_id: int = 0,
+    ) -> dict[str, torch.Tensor]:
+        if z_latents.ndim != 5:
+            raise ValueError("z_latents must have shape [B, C, F, H, W].")
+        patch_size = _patch_size(model)
+        batch_size, _, frames, height, width = z_latents.shape
+        patch_f, patch_h, patch_w = patch_size
+        if frames % patch_f or height % patch_h or width % patch_w:
+            raise ValueError(
+                f"z_latents shape {tuple(z_latents.shape)} is not divisible "
+                f"by patch_size {patch_size}."
+            )
+        timestep_value = timestep.to(device=z_latents.device, dtype=torch.float32)
+        timesteps = timestep_value.expand(batch_size, frames)
+        grid_id = _get_mesh_id(
+            frames // patch_f,
+            height // patch_h,
+            width // patch_w,
+            time_type=0,
+            device=z_latents.device,
+            frame_shift=frame_start_id,
+        )
+        grid_id = grid_id[None].expand(batch_size, -1, -1)
+        if text_emb.shape[0] != batch_size:
+            raise ValueError("text_emb batch size must match z_latents batch size.")
+        return {
+            "noisy_latents": z_latents,
+            "timesteps": timesteps,
+            "grid_id": grid_id,
+            "text_emb": text_emb,
+        }
+
+    @torch.no_grad()
+    def decode_video_latents(self, vae: nn.Module, latents: torch.Tensor) -> torch.Tensor:
+        """Decode normalized LingBot video latents to uint8 frames [B, F, H, W, C]."""
+        if latents.ndim != 5:
+            raise ValueError("latents must have shape [B, C, F, H, W].")
+
+        try:
+            vae_device = next(vae.parameters()).device
+        except StopIteration:
+            vae_device = self.device
+        vae_dtype = getattr(vae, "dtype", self.torch_dtype)
+        latents = latents.to(device=vae_device, dtype=vae_dtype)
+
+        config = getattr(vae, "config", None)
+        if config is None:
+            raise ValueError("LingBot VAE must expose a config with latent statistics.")
+        z_dim = int(getattr(config, "z_dim", latents.shape[1]))
+        latents_mean = torch.tensor(
+            getattr(config, "latents_mean"),
+            device=latents.device,
+            dtype=latents.dtype,
+        ).view(1, z_dim, 1, 1, 1)
+        latents_std = torch.tensor(
+            getattr(config, "latents_std"),
+            device=latents.device,
+            dtype=latents.dtype,
+        ).view(1, z_dim, 1, 1, 1)
+        decoded = vae.decode(latents * latents_std + latents_mean, return_dict=False)[0]
+        return _decoded_video_to_uint8(decoded)
+
     def build_video_context(self, batch: Mapping[str, Any]) -> Any:
         return batch.get("context")
 
@@ -430,6 +618,11 @@ class LingBotVAAdapter:
             raise ValueError("Config teacher.checkpoint_path must be a non-empty string.")
         return _resolve_under_repo(self.repo_root, raw_path)
 
+    def _resolve_lingbot_model_root(self) -> Path:
+        if self.checkpoint_path.name == "transformer":
+            return self.checkpoint_path.parent
+        return self.checkpoint_path
+
     def _resolve_device(self) -> torch.device:
         return resolve_device(self.cfg)
 
@@ -725,8 +918,9 @@ def _get_mesh_id(
     width: int,
     time_type: int,
     device: torch.device,
+    frame_shift: int = 0,
 ) -> torch.Tensor:
-    frame_idx = torch.arange(frames, device=device)
+    frame_idx = torch.arange(frame_shift, frames + frame_shift, device=device)
     height_idx = torch.arange(height, device=device)
     width_idx = torch.arange(width, device=device)
     frame_grid, height_grid, width_grid = torch.meshgrid(
@@ -744,6 +938,36 @@ def _get_mesh_id(
         dim=0,
     ).flatten(1)
     return torch.cat([grid_id, torch.full_like(grid_id[:1], time_type)], dim=0)
+
+
+def _repeat_video_input_for_cfg(
+    input_dict: Mapping[str, torch.Tensor],
+    negative_text_emb: torch.Tensor,
+) -> dict[str, torch.Tensor]:
+    return {
+        "noisy_latents": input_dict["noisy_latents"].repeat(2, 1, 1, 1, 1),
+        "timesteps": input_dict["timesteps"].repeat(2, 1),
+        "grid_id": input_dict["grid_id"].repeat(2, 1, 1),
+        "text_emb": torch.cat([input_dict["text_emb"], negative_text_emb], dim=0),
+    }
+
+
+def _decoded_video_to_uint8(video: torch.Tensor) -> torch.Tensor:
+    if not isinstance(video, torch.Tensor):
+        raise TypeError("VAE decode output must be a torch.Tensor.")
+    if video.ndim != 5:
+        raise ValueError("VAE decode output must have shape [B, C, F, H, W] or [B, F, H, W, C].")
+    if video.shape[1] in {1, 3}:
+        frames = video.permute(0, 2, 3, 4, 1)
+    elif video.shape[-1] in {1, 3}:
+        frames = video
+    else:
+        raise ValueError(f"Unsupported VAE decoded video shape: {tuple(video.shape)}")
+
+    frames = frames.detach().float().cpu()
+    if frames.numel() > 0 and frames.min().item() < 0.0:
+        frames = (frames + 1.0) / 2.0
+    return frames.clamp(0.0, 1.0).mul(255.0).round().to(torch.uint8)
 
 
 def _extract_text_emb(context: Any) -> torch.Tensor | list[torch.Tensor]:

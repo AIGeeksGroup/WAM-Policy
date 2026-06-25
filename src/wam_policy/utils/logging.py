@@ -31,11 +31,48 @@ class TrainingLogger:
             return
         self._wandb.log(dict(metrics), step=step)
 
+    def log_videos(
+        self,
+        videos: Mapping[str, str | Path],
+        *,
+        fps: int,
+        step: int | None = None,
+    ) -> dict[str, bool]:
+        status: dict[str, bool] = {}
+        for key, path in sorted(videos.items()):
+            print(f"video/{key}: {Path(path)}")
+        if self._wandb is None:
+            return {key: False for key in videos}
+        payload: dict[str, Any] = {}
+        for key, raw_path in videos.items():
+            path = Path(raw_path)
+            suffix = path.suffix.lower().lstrip(".")
+            if suffix not in {"mp4", "gif"}:
+                print(f"wandb_video_skipped/{key}: unsupported_video_suffix={path.suffix}")
+                status[key] = False
+                continue
+            payload[key] = self._wandb.Video(str(path), fps=fps, format=suffix)
+            status[key] = True
+        if not payload:
+            return status
+        if step is None:
+            self._wandb.log(payload)
+        else:
+            self._wandb.log(payload, step=step)
+        return status
+
     def finish(self) -> None:
         if self._wandb is None or self._wandb_run is None:
             return
         self._wandb.finish()
         self._wandb_run = None
+
+    @property
+    def run_url(self) -> str | None:
+        if self._wandb_run is None:
+            return None
+        url = getattr(self._wandb_run, "url", None)
+        return url if isinstance(url, str) and url else None
 
     def _init_wandb(self, wandb_cfg: Mapping[str, Any]) -> None:
         try:

@@ -33,3 +33,26 @@ def save_training_checkpoint(
     torch.save(payload, latest_path)
     torch.save(payload, step_path)
     return {"latest": latest_path, "step": step_path}
+
+
+def load_student_checkpoint(
+    student: nn.Module,
+    checkpoint_path: str | Path,
+    *,
+    strict: bool = True,
+    map_location: str | torch.device = "cpu",
+) -> dict[str, Any]:
+    """Load a WAM student checkpoint saved by save_training_checkpoint."""
+    path = Path(checkpoint_path).expanduser().resolve()
+    if not path.is_file():
+        raise FileNotFoundError(f"Student checkpoint does not exist: {path}")
+
+    payload = torch.load(path, map_location=map_location, weights_only=False)
+    if not isinstance(payload, Mapping):
+        raise TypeError(f"Student checkpoint must contain a mapping: {path}")
+    state_dict = payload.get("model")
+    if not isinstance(state_dict, Mapping):
+        raise ValueError(f"Student checkpoint missing model state_dict: {path}")
+
+    student.load_state_dict(state_dict, strict=strict)
+    return dict(payload)

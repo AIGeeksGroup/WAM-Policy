@@ -11,6 +11,10 @@ dependencies = [
 wandb = [
     "wandb>=0.16",
 ]
+visualization = [
+    "imageio[ffmpeg]>=2.34",
+    "numpy>=1.24",
+]
 
 [tool.ruff]
 line-length = 100
