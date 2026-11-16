@@ -319,6 +319,7 @@
     transition: background-size .3s cubic-bezier(.32, .72, 0, 1), opacity .06s;
   }
 
+  .topbar .hdr-actions { display: flex; align-items: center; gap: 10px; }
   .topbar .hdr-btn { height: 36px; padding: 0 17px; }
 
   /* ---------- sim to real ---------- */
@@ -491,6 +492,8 @@
     .res-btn { height: 34px; padding: 0 14px; font-size: 13.5px; }
     .row-views { grid-template-columns: repeat(4, 1fr); }
     .task-tabs { gap: 6px; }
+    .topbar .hdr-actions { gap: 6px; }
+    .topbar .hdr-btn { height: 32px; padding: 0 12px; font-size: 13px; }
     .task-tabs-grid { grid-template-columns: repeat(2, max-content); }
     .runs { grid-template-columns: 1fr; gap: 24px; }
     .row-four .tag { font-size: 8px; }
@@ -510,7 +513,10 @@
   <div class="shell">
     <header class="topbar">
       <a class="brand" href="#top" aria-label="Back to top">WAM-Policy</a>
-      <a class="res-btn hdr-btn" href="#sim2real">Sim to Real</a>
+      <nav class="hdr-actions" aria-label="Sections">
+        <a class="res-btn hdr-btn" href="#sim2real">Sim to Real</a>
+        <a class="res-btn hdr-btn" href="#mujoco">MuJoCo Simulation</a>
+      </nav>
     </header>
 
     <main class="hero">
