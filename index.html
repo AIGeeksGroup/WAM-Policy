@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WAM-Policy: World Action Models with On-Policy Distillation for Quadruped Loco-Manipulation</title>
+<meta name="description" content="WAM-Policy: World Action Models with On-Policy Distillation for Quadruped Loco-Manipulation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #080808;
+    --paper-2: #0b0b0b;
+    --card: #121212;
+    --rule: #1e1e1e;
+    --rule-strong: #2e2e2e;
+    --ink: #fafafa;
+    --muted: #8c8c8c;
+    --dim: #6f6f6f;
+    --green: #00c47c;
+    --green-rgb: 0 196 124;
+    --green-wash: rgb(var(--green-rgb) / 0.12);
+    --radius: 16px;
+    --container: 1200px;
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * { box-sizing: border-box; }
+
+  html { background: var(--paper); scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.6 var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* subtle grid + side rails, in the spirit of maincode.com */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.028) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, #000 30%, transparent 85%);
+  }
+
+  .rails {
+    position: fixed;
+    inset: 0 max(24px, calc(50% - var(--container) / 2));
+    border-left: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+    pointer-events: none;
+  }
+
+  .glow {
+    position: absolute;
+    top: -220px;
+    left: 50%;
+    width: 900px;
+    height: 520px;
+    transform: translateX(-50%);
+    background: radial-gradient(closest-side, rgb(var(--green-rgb) / 0.16), transparent);
+    filter: blur(20px);
+    pointer-events: none;
+  }
+
+  .shell {
+    position: relative;
+    width: min(var(--container), calc(100% - 48px));
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    margin: 0 auto;
+    padding: 0 clamp(20px, 4vw, 56px);
+  }
+
+  .shell > main { flex: 1 0 auto; }
+
+  /* ---------- top bar (maincode-style header) ---------- */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+    margin: 0 calc(-1 * clamp(20px, 4vw, 56px));
+    padding: 0 clamp(20px, 4vw, 56px);
+    background: rgba(11, 11, 11, .78);
+    -webkit-backdrop-filter: saturate(1.4) blur(12px);
+    backdrop-filter: saturate(1.4) blur(12px);
+    border-bottom: 0;
+  }
+
+  .topbar .brand {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+    font: 600 17px/1 var(--font-sans);
+    letter-spacing: -.02em;
+  }
+
+  .topbar .brand::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    background: var(--green);
+    box-shadow: 0 0 12px rgb(var(--green-rgb) / .7);
+  }
+
+  .topbar .nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 11px;
+    color: #b3b3b3;
+    font: 450 14.5px/1 var(--font-sans);
+    text-decoration: none;
+    transition: color .15s;
+  }
+
+  .topbar .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 11px;
+    right: 11px;
+    bottom: 3px;
+    height: 1px;
+    background: var(--green);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    transition: transform .28s cubic-bezier(.19, 1, .22, 1);
+  }
+
+  .topbar .nav-link:hover { color: var(--ink); }
+  .topbar .nav-link:hover::after { transform: scaleX(1); }
+
+  /* ---------- hero ---------- */
+  .hero {
+    position: relative;
+    padding: clamp(28px, 4.5vw, 56px) 0 clamp(56px, 8vw, 96px);
+    text-align: center;
+  }
+
+  .affil-logos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 22px 48px;
+  }
+
+  .affil-logos a {
+    display: block;
+    line-height: 0;
+    opacity: .88;
+    transition: opacity .2s var(--ease-out), transform .2s var(--ease-out);
+  }
+
+  .affil-logos a:hover { opacity: 1; transform: translateY(-1px); }
+
+  .affil-logos img { display: block; width: auto; }
+  .logo-usyd { height: 44px; }
+  .logo-unsw { height: 44px; }
+  .logo-maincode { height: 24px; }
+  .logo-latrobe { height: 38px; }
+
+  h1 {
+    max-width: 1020px;
+    margin: 40px auto 0;
+    font-size: clamp(34px, 4.6vw, 62px);
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -.035em;
+    text-wrap: balance;
+  }
+
+  h1 .name {
+    color: var(--green);
+  }
+
+  h1 .colon { color: var(--green); }
+
+  /* ---------- authors ---------- */
+  .authors {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px 30px;
+    max-width: 920px;
+    margin: 44px auto 0;
+    font-size: clamp(16px, 1.5vw, 19px);
+    font-weight: 500;
+  }
+
+  .authors a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color .2s var(--ease-out), border-color .2s var(--ease-out);
+  }
+
+  .authors a:hover {
+    color: var(--green);
+    border-color: rgb(var(--green-rgb) / .5);
+  }
+
+  sup {
+    margin-left: 2px;
+    color: var(--green);
+    font: 500 .62em/0 var(--font-mono);
+  }
+
+  .affiliations {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 26px;
+    margin: 18px auto 0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+
+  .affiliations sup { color: var(--muted); }
+
+  .notes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 22px;
+    margin: 22px auto 0;
+    font: 400 12.5px/1.6 var(--font-mono);
+    letter-spacing: .02em;
+    color: var(--dim);
+  }
+
+  .notes sup { color: var(--dim); }
+
+  /* ---------- resource buttons: maincode header buttons (data-btn="trace") ---------- */
+  .res-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 34px auto 0;
+  }
+
+  .res-btn {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 17px;
+    border: 1px solid rgb(255 255 255 / .12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .045);
+    color: var(--ink);
+    font: 500 14px/1 var(--font-sans);
+    letter-spacing: -.01em;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color .18s var(--ease-out), border-color .18s var(--ease-out), color .12s;
+  }
+
+  .res-btn svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    fill: #ffffff;
+  }
+
+  /* the green outline draws itself from the left, top and bottom at once */
+  .res-btn::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    padding: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(var(--green), var(--green)) no-repeat 0 0 / 0% 100%;
+    opacity: 0;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    transition: opacity .18s var(--ease-out), background-size 0s linear .18s;
+  }
+
+  .res-btn:hover,
+  .res-btn:focus-visible {
+    background-color: rgb(var(--green-rgb) / .06);
+    outline: none;
+  }
+
+  .res-btn:hover::before,
+  .res-btn:focus-visible::before {
+    background-size: 100% 100%;
+    opacity: 1;
+    transition: background-size .3s cubic-bezier(.32, .72, 0, 1), opacity .06s;
+  }
+
+  .topbar .hdr-btn { height: 36px; padding: 0 17px; }
+
+  /* ---------- sim to real ---------- */
+  .chapter {
+    padding: 0 0 clamp(56px, 8vw, 96px);
+    scroll-margin-top: 84px;
+  }
+
+  .divider {
+    width: 72px;
+    height: 1px;
+    margin: 0 auto clamp(40px, 6vw, 64px);
+    background: var(--rule-strong);
+  }
+
+  .chapter h2 {
+    margin: 0;
+    text-align: center;
+    font-size: clamp(28px, 3.2vw, 42px);
+    font-weight: 600;
+    letter-spacing: -.03em;
+  }
+
+  .chapter-sub {
+    max-width: 760px;
+    margin: 14px auto 0;
+    font: 500 13.5px/1.7 var(--font-mono);
+    letter-spacing: .02em;
+    color: var(--muted);
+    text-align: center;
+    text-wrap: balance;
+  }
+
+  .chapter-sub b {
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  .task { margin-top: clamp(28px, 4vw, 44px); }
+
+  .task-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 0 22px;
+  }
+
+  .task-btn { cursor: pointer; font-family: var(--font-sans); }
+
+  /* the playing task: green outline + green label */
+  .task-btn[aria-selected="true"] {
+    color: var(--green);
+    background-color: rgb(var(--green-rgb) / .06);
+  }
+
+  .task-btn[aria-selected="true"]::before {
+    background-size: 100% 100%;
+    opacity: 1;
+    transition: background-size .3s cubic-bezier(.32, .72, 0, 1), opacity .06s;
+  }
+
+  .side-heads {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 10px;
+    font: 450 14.5px/1.4 var(--font-sans);
+    color: #b3b3b3;
+    text-align: center;
+  }
+
+  .row { display: grid; gap: 0; }
+  .row-exo { grid-template-columns: repeat(2, 1fr); }
+  .row-views { grid-template-columns: repeat(8, 1fr); }
+
+  .tile {
+    position: relative;
+    margin: 0;
+    min-width: 0;
+    background: #000;
+    overflow: hidden;
+  }
+
+  .tile video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+
+  .tag {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgb(0 0 0 / .55);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    color: var(--green);
+    font: 500 12px/1.2 var(--font-mono);
+    letter-spacing: .02em;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .row-views .tag {
+    top: 5px;
+    left: 5px;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+
+  /* ---------- mujoco simulation ---------- */
+  .task-tabs-grid {
+    display: grid;
+    grid-template-columns: repeat(5, max-content);
+    justify-content: center;
+  }
+
+  .task-tabs-grid .task-btn { width: 100%; }
+
+  .runs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 24px;
+  }
+
+  .run-title {
+    margin-bottom: 10px;
+    font: 450 14.5px/1.4 var(--font-sans);
+    color: #b3b3b3;
+    text-align: center;
+  }
+
+  .row-one { grid-template-columns: 1fr; }
+  .row-four { grid-template-columns: repeat(4, 1fr); }
+
+  .row-four .tag {
+    top: 5px;
+    left: 5px;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+
+  /* ---------- footer ---------- */
+  footer {
+    position: relative;
+    border-top: 1px solid var(--rule);
+    padding: 26px 0 40px;
+    font: 400 12px/1.6 var(--font-mono);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--dim);
+    text-align: center;
+  }
+
+  @media (max-width: 720px) {
+    .rails { display: none; }
+    .shell { width: 100%; padding: 0 20px; }
+    .authors { gap: 8px 20px; }
+    .affiliations { flex-direction: column; gap: 4px; }
+    .notes { flex-direction: column; gap: 2px; }
+    .affil-logos { gap: 18px 28px; }
+    .res-links { gap: 8px; margin-top: 28px; }
+    .res-btn { height: 34px; padding: 0 14px; font-size: 13.5px; }
+    .row-views { grid-template-columns: repeat(4, 1fr); }
+    .task-tabs { gap: 6px; }
+    .task-tabs-grid { grid-template-columns: repeat(2, max-content); }
+    .runs { grid-template-columns: 1fr; gap: 24px; }
+    .row-four .tag { font-size: 8px; }
+    .task-btn { height: 32px; padding: 0 12px; font-size: 13px; }
+    .tag { font-size: 10px; padding: 3px 6px; }
+    .row-views .tag { font-size: 8px; }
+    .logo-usyd, .logo-unsw { height: 34px; }
+    .logo-maincode { height: 19px; }
+    .logo-latrobe { height: 30px; }
+  }
+</style>
+</head>
+<body id="top">
+  <div class="rails" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Back to top">WAM-Policy</a>
+      <a class="res-btn hdr-btn" href="#sim2real">Sim to Real</a>
+    </header>
+
+    <main class="hero">
+      <div class="affil-logos" aria-label="Affiliations">
+        <a href="https://www.sydney.edu.au/engineering/our-research/research-centres-and-institutes/australian-centre-for-robotics.html" target="_blank" rel="noopener noreferrer"><img class="logo-usyd" src="logo/usyd.svg" alt="The University of Sydney, Australian Centre for Robotics"></a>
+        <a href="https://www.unsw.edu.au/" target="_blank" rel="noopener noreferrer"><img class="logo-unsw" src="logo/unsw.svg" alt="UNSW Sydney"></a>
+        <a href="https://maincode.com/" target="_blank" rel="noopener noreferrer"><img class="logo-maincode" src="logo/maincode.svg" alt="Maincode"></a>
+        <a href="https://www.latrobe.edu.au/" target="_blank" rel="noopener noreferrer"><img class="logo-latrobe" src="logo/latrobe.svg" alt="La Trobe University"></a>
+      </div>
+
+      <h1><span class="name">WAM-Policy</span><span class="colon">:</span> World Action Models with On-Policy Distillation for Quadruped Loco-Manipulation</h1>
+
+      <div class="authors" aria-label="Authors">
+        <span><a href="https://github.com/JalenLoong" target="_blank" rel="noopener noreferrer">Junlin Long</a><sup>1*</sup></span>
+        <span><a href="https://github.com/Ethan-Xu-Deng" target="_blank" rel="noopener noreferrer">Xu Deng</a><sup>2*</sup></span>
+        <span><a href="https://scholar.google.com/citations?user=eg_nBF0AAAAJ&amp;hl=en" target="_blank" rel="noopener noreferrer">Yiran Wang</a><sup>1</sup></span>
+        <span><a href="https://au.linkedin.com/in/yue-yang-982714286" target="_blank" rel="noopener noreferrer">Yue Yang</a><sup>3†</sup></span>
+        <span><a href="https://yangyangkiki.github.io/" target="_blank" rel="noopener noreferrer">Yang Zhao</a><sup>4†</sup></span>
+        <span><a href="https://steve-zeyu-zhang.github.io/" target="_blank" rel="noopener noreferrer">Zeyu Zhang</a><sup>3‡</sup></span>
+      </div>
+
+      <div class="affiliations" aria-label="Affiliations">
+        <span><sup>1</sup>Australian Centre for Robotics, USYD</span>
+        <span><sup>2</sup>UNSW Sydney</span>
+        <span><sup>3</sup>Maincode</span>
+        <span><sup>4</sup>La Trobe University</span>
+      </div>
+
+      <p class="notes">
+        <span><sup>*</sup>Equal contribution.</span>
+        <span><sup>†</sup>Corresponding authors.</span>
+        <span><sup>‡</sup>Project lead.</span>
+      </p>
+
+      <div class="res-links" role="group" aria-label="Project resources">
+        <a class="res-btn" href="https://arxiv.org/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.8423 0a1.0037 1.0037 0 0 0-.922.6078c-.1536.3687-.0438.6275.2938 1.1113l6.9185 8.3597-1.0223 1.1058a1.0393 1.0393 0 0 0 .003 1.4229l1.2292 1.3135-5.4391 6.4444c-.2803.299-.4538.823-.2971 1.1986a1.0253 1.0253 0 0 0 .9585.635.9133.9133 0 0 0 .6891-.3405l5.783-6.126 7.4902 8.0051a.8527.8527 0 0 0 .6835.2597.9575.9575 0 0 0 .8777-.6138c.1577-.377-.017-.7502-.306-1.1407l-7.0518-8.3418 1.0632-1.13a.9626.9626 0 0 0 .0089-1.3165L4.6336.4639s-.3733-.4535-.768-.463zm0 .272h.0166c.2179.0052.4874.2715.5644.3639l.005.006.0052.0055 10.169 10.9905a.6915.6915 0 0 1-.0072.945l-1.0666 1.133-1.4982-1.7724-8.5994-10.39c-.3286-.472-.352-.6183-.2592-.841a.7307.7307 0 0 1 .6704-.4401Zm14.341 1.5701a.877.877 0 0 0-.6554.2418l-5.6962 6.1584 1.6944 1.8319 5.3089-6.5138c.3251-.4335.479-.6603.3247-1.0292a1.1205 1.1205 0 0 0-.9763-.689zm-7.6557 12.2823 1.3186 1.4135-5.7864 6.1295a.6494.6494 0 0 1-.4959.26.7516.7516 0 0 1-.706-.4669c-.1119-.2682.0359-.6864.2442-.9083l.0051-.0055.0047-.0055z"/></svg><span>Paper</span></a>
+        <a class="res-btn" href="https://github.com/AIGeeksGroup/WAM-Policy/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg><span>Code</span></a>
+        <a class="res-btn" href="https://huggingface.co/AIGeeksGroup/WAM-Policy" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12.025 1.13c-5.77 0-10.449 4.647-10.449 10.378 0 1.112.178 2.181.503 3.185.064-.222.203-.444.416-.577a.96.96 0 0 1 .524-.15c.293 0 .584.124.84.284.278.173.48.408.71.694.226.282.458.611.684.951v-.014c.017-.324.106-.622.264-.874s.403-.487.762-.543c.3-.047.596.06.787.203s.31.313.4.467c.15.257.212.468.233.542.01.026.653 1.552 1.657 2.54.616.605 1.01 1.223 1.082 1.912.055.537-.096 1.059-.38 1.572.637.121 1.294.187 1.967.187.657 0 1.298-.063 1.921-.178-.287-.517-.44-1.041-.384-1.581.07-.69.465-1.307 1.081-1.913 1.004-.987 1.647-2.513 1.657-2.539.021-.074.083-.285.233-.542.09-.154.208-.323.4-.467a1.08 1.08 0 0 1 .787-.203c.359.056.604.29.762.543s.247.55.265.874v.015c.225-.34.457-.67.683-.952.23-.286.432-.52.71-.694.257-.16.547-.284.84-.285a.97.97 0 0 1 .524.151c.228.143.373.388.43.625l.006.04a10.3 10.3 0 0 0 .534-3.273c0-5.731-4.678-10.378-10.449-10.378M8.327 6.583a1.5 1.5 0 0 1 .713.174 1.487 1.487 0 0 1 .617 2.013c-.183.343-.762-.214-1.102-.094-.38.134-.532.914-.917.71a1.487 1.487 0 0 1 .69-2.803m7.486 0a1.487 1.487 0 0 1 .689 2.803c-.385.204-.536-.576-.916-.71-.34-.12-.92.437-1.103.094a1.487 1.487 0 0 1 .617-2.013 1.5 1.5 0 0 1 .713-.174m-10.68 1.55a.96.96 0 1 1 0 1.921.96.96 0 0 1 0-1.92m13.838 0a.96.96 0 1 1 0 1.92.96.96 0 0 1 0-1.92M8.489 11.458c.588.01 1.965 1.157 3.572 1.164 1.607-.007 2.984-1.155 3.572-1.164.196-.003.305.12.305.454 0 .886-.424 2.328-1.563 3.202-.22-.756-1.396-1.366-1.63-1.32q-.011.001-.02.006l-.044.026-.01.008-.03.024q-.018.017-.035.036l-.032.04a1 1 0 0 0-.058.09l-.014.025q-.049.088-.11.19a1 1 0 0 1-.083.116 1.2 1.2 0 0 1-.173.18q-.035.029-.075.058a1.3 1.3 0 0 1-.251-.243 1 1 0 0 1-.076-.107c-.124-.193-.177-.363-.337-.444-.034-.016-.104-.008-.2.022q-.094.03-.216.087-.06.028-.125.063l-.13.074q-.067.04-.136.086a3 3 0 0 0-.135.096 3 3 0 0 0-.26.219 2 2 0 0 0-.12.121 2 2 0 0 0-.106.128l-.002.002a2 2 0 0 0-.09.132l-.001.001a1.2 1.2 0 0 0-.105.212q-.013.036-.024.073c-1.139-.875-1.563-2.317-1.563-3.203 0-.334.109-.457.305-.454m.836 10.354c.824-1.19.766-2.082-.365-3.194-1.13-1.112-1.789-2.738-1.789-2.738s-.246-.945-.806-.858-.97 1.499.202 2.362c1.173.864-.233 1.45-.685.64-.45-.812-1.683-2.896-2.322-3.295s-1.089-.175-.938.647 2.822 2.813 2.562 3.244-1.176-.506-1.176-.506-2.866-2.567-3.49-1.898.473 1.23 2.037 2.16c1.564.932 1.686 1.178 1.464 1.53s-3.675-2.511-4-1.297c-.323 1.214 3.524 1.567 3.287 2.405-.238.839-2.71-1.587-3.216-.642-.506.946 3.49 2.056 3.522 2.064 1.29.33 4.568 1.028 5.713-.624m5.349 0c-.824-1.19-.766-2.082.365-3.194 1.13-1.112 1.789-2.738 1.789-2.738s.246-.945.806-.858.97 1.499-.202 2.362c-1.173.864.233 1.45.685.64.451-.812 1.683-2.896 2.322-3.295s1.089-.175.938.647-2.822 2.813-2.562 3.244 1.176-.506 1.176-.506 2.866-2.567 3.49-1.898-.473 1.23-2.037 2.16c-1.564.932-1.686 1.178-1.464 1.53s3.675-2.511 4-1.297c.323 1.214-3.524 1.567-3.287 2.405.238.839 2.71-1.587 3.216-.642.506.946-3.49 2.056-3.522 2.064-1.29.33-4.568 1.028-5.713-.624"/></svg><span>Models</span></a>
+        <a class="res-btn" href="https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12.025 1.13c-5.77 0-10.449 4.647-10.449 10.378 0 1.112.178 2.181.503 3.185.064-.222.203-.444.416-.577a.96.96 0 0 1 .524-.15c.293 0 .584.124.84.284.278.173.48.408.71.694.226.282.458.611.684.951v-.014c.017-.324.106-.622.264-.874s.403-.487.762-.543c.3-.047.596.06.787.203s.31.313.4.467c.15.257.212.468.233.542.01.026.653 1.552 1.657 2.54.616.605 1.01 1.223 1.082 1.912.055.537-.096 1.059-.38 1.572.637.121 1.294.187 1.967.187.657 0 1.298-.063 1.921-.178-.287-.517-.44-1.041-.384-1.581.07-.69.465-1.307 1.081-1.913 1.004-.987 1.647-2.513 1.657-2.539.021-.074.083-.285.233-.542.09-.154.208-.323.4-.467a1.08 1.08 0 0 1 .787-.203c.359.056.604.29.762.543s.247.55.265.874v.015c.225-.34.457-.67.683-.952.23-.286.432-.52.71-.694.257-.16.547-.284.84-.285a.97.97 0 0 1 .524.151c.228.143.373.388.43.625l.006.04a10.3 10.3 0 0 0 .534-3.273c0-5.731-4.678-10.378-10.449-10.378M8.327 6.583a1.5 1.5 0 0 1 .713.174 1.487 1.487 0 0 1 .617 2.013c-.183.343-.762-.214-1.102-.094-.38.134-.532.914-.917.71a1.487 1.487 0 0 1 .69-2.803m7.486 0a1.487 1.487 0 0 1 .689 2.803c-.385.204-.536-.576-.916-.71-.34-.12-.92.437-1.103.094a1.487 1.487 0 0 1 .617-2.013 1.5 1.5 0 0 1 .713-.174m-10.68 1.55a.96.96 0 1 1 0 1.921.96.96 0 0 1 0-1.92m13.838 0a.96.96 0 1 1 0 1.92.96.96 0 0 1 0-1.92M8.489 11.458c.588.01 1.965 1.157 3.572 1.164 1.607-.007 2.984-1.155 3.572-1.164.196-.003.305.12.305.454 0 .886-.424 2.328-1.563 3.202-.22-.756-1.396-1.366-1.63-1.32q-.011.001-.02.006l-.044.026-.01.008-.03.024q-.018.017-.035.036l-.032.04a1 1 0 0 0-.058.09l-.014.025q-.049.088-.11.19a1 1 0 0 1-.083.116 1.2 1.2 0 0 1-.173.18q-.035.029-.075.058a1.3 1.3 0 0 1-.251-.243 1 1 0 0 1-.076-.107c-.124-.193-.177-.363-.337-.444-.034-.016-.104-.008-.2.022q-.094.03-.216.087-.06.028-.125.063l-.13.074q-.067.04-.136.086a3 3 0 0 0-.135.096 3 3 0 0 0-.26.219 2 2 0 0 0-.12.121 2 2 0 0 0-.106.128l-.002.002a2 2 0 0 0-.09.132l-.001.001a1.2 1.2 0 0 0-.105.212q-.013.036-.024.073c-1.139-.875-1.563-2.317-1.563-3.203 0-.334.109-.457.305-.454m.836 10.354c.824-1.19.766-2.082-.365-3.194-1.13-1.112-1.789-2.738-1.789-2.738s-.246-.945-.806-.858-.97 1.499.202 2.362c1.173.864-.233 1.45-.685.64-.45-.812-1.683-2.896-2.322-3.295s-1.089-.175-.938.647 2.822 2.813 2.562 3.244-1.176-.506-1.176-.506-2.866-2.567-3.49-1.898.473 1.23 2.037 2.16c1.564.932 1.686 1.178 1.464 1.53s-3.675-2.511-4-1.297c-.323 1.214 3.524 1.567 3.287 2.405-.238.839-2.71-1.587-3.216-.642-.506.946 3.49 2.056 3.522 2.064 1.29.33 4.568 1.028 5.713-.624m5.349 0c-.824-1.19-.766-2.082.365-3.194 1.13-1.112 1.789-2.738 1.789-2.738s.246-.945.806-.858.97 1.499-.202 2.362c-1.173.864.233 1.45.685.64.451-.812 1.683-2.896 2.322-3.295s1.089-.175.938.647-2.822 2.813-2.562 3.244 1.176-.506 1.176-.506 2.866-2.567 3.49-1.898-.473 1.23-2.037 2.16c-1.564.932-1.686 1.178-1.464 1.53s3.675-2.511 4-1.297c.323 1.214-3.524 1.567-3.287 2.405.238.839 2.71-1.587 3.216-.642.506.946-3.49 2.056-3.522 2.064-1.29.33-4.568 1.028-5.713-.624"/></svg><span>QLM-Bench</span></a>
+      </div>
+    </main>
+
+    <section class="chapter" id="sim2real" aria-labelledby="sim2real-title">
+      <div class="divider" aria-hidden="true"></div>
+      <h2 id="sim2real-title">Sim to Real</h2>
+      <p class="chapter-sub">We deploy <b>WAM-Policy</b> on a Unitree Go2 Air with the two cameras <b>without</b> real-robot data.</p>
+
+      <div class="task" data-sync>
+        <div class="task-tabs" role="tablist" aria-label="Sim-to-real tasks"><button type="button" class="res-btn task-btn" role="tab" data-task="press_button1" aria-selected="true">Press Button #1</button><button type="button" class="res-btn task-btn" role="tab" data-task="press_button2" aria-selected="false">Press Button #2</button><button type="button" class="res-btn task-btn" role="tab" data-task="press_button3" aria-selected="false">Press Button #3</button><button type="button" class="res-btn task-btn" role="tab" data-task="push_box1" aria-selected="false">Push Box #1</button><button type="button" class="res-btn task-btn" role="tab" data-task="push_box2" aria-selected="false">Push Box #2</button><button type="button" class="res-btn task-btn" role="tab" data-task="kick_ball_to_goal" aria-selected="false">Kick Ball to Goal</button></div>
+        <div class="side-heads"><span>Real World</span><span>MuJoCo Simulation</span></div>
+        <div class="row row-exo">
+          <figure class="tile"><video src="sim2real/press_button1/real/real_press_button1_exo-camera.mp4" data-dom="real" data-view="exo-camera" muted playsinline preload="auto" data-master></video><span class="tag">Exo-centric Camera</span></figure>
+          <figure class="tile"><video src="sim2real/press_button1/sim/sim_press_button1_exo-camera.mp4" data-dom="sim" data-view="exo-camera" muted playsinline preload="auto"></video><span class="tag">Exo-centric Camera</span></figure>
+        </div>
+        <div class="row row-views">
+          <figure class="tile"><video src="sim2real/press_button1/real/real_press_button1_ego-centric-observation.mp4" data-dom="real" data-view="ego-centric-observation" muted playsinline preload="auto"></video><span class="tag">Ego-centric Observation</span></figure><figure class="tile"><video src="sim2real/press_button1/real/real_press_button1_ego-centric-imagination.mp4" data-dom="real" data-view="ego-centric-imagination" muted playsinline preload="auto"></video><span class="tag">Ego-centric Imagination</span></figure><figure class="tile"><video src="sim2real/press_button1/real/real_press_button1_top-down-observation.mp4" data-dom="real" data-view="top-down-observation" muted playsinline preload="auto"></video><span class="tag">Top-down Observation</span></figure><figure class="tile"><video src="sim2real/press_button1/real/real_press_button1_top-down-imagination.mp4" data-dom="real" data-view="top-down-imagination" muted playsinline preload="auto"></video><span class="tag">Top-down Imagination</span></figure><figure class="tile"><video src="sim2real/press_button1/sim/sim_press_button1_ego-centric-observation.mp4" data-dom="sim" data-view="ego-centric-observation" muted playsinline preload="auto"></video><span class="tag">Ego-centric Observation</span></figure><figure class="tile"><video src="sim2real/press_button1/sim/sim_press_button1_ego-centric-imagination.mp4" data-dom="sim" data-view="ego-centric-imagination" muted playsinline preload="auto"></video><span class="tag">Ego-centric Imagination</span></figure><figure class="tile"><video src="sim2real/press_button1/sim/sim_press_button1_top-down-observation.mp4" data-dom="sim" data-view="top-down-observation" muted playsinline preload="auto"></video><span class="tag">Top-down Observation</span></figure><figure class="tile"><video src="sim2real/press_button1/sim/sim_press_button1_top-down-imagination.mp4" data-dom="sim" data-view="top-down-imagination" muted playsinline preload="auto"></video><span class="tag">Top-down Imagination</span></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="mujoco" aria-labelledby="mujoco-title">
+      <div class="divider" aria-hidden="true"></div>
+      <h2 id="mujoco-title">MuJoCo Simulation</h2>
+      <p class="chapter-sub">Covering 10 tasks from <b>QLM-Bench</b>.</p>
+
+      <div class="task" data-sim>
+        <div class="task-tabs task-tabs-grid" role="tablist" aria-label="MuJoCo simulation tasks"><button type="button" class="res-btn task-btn" role="tab" data-task="close_fridge_door" aria-selected="true">Close Fridge Door</button><button type="button" class="res-btn task-btn" role="tab" data-task="close_oven_door" aria-selected="false">Close Oven Door</button><button type="button" class="res-btn task-btn" role="tab" data-task="kick_ball_to_goal" aria-selected="false">Kick Ball to Goal</button><button type="button" class="res-btn task-btn" role="tab" data-task="lift_basket" aria-selected="false">Lift Basket</button><button type="button" class="res-btn task-btn" role="tab" data-task="open_room_door" aria-selected="false">Open Room Door</button><button type="button" class="res-btn task-btn" role="tab" data-task="press_button" aria-selected="false">Press Button</button><button type="button" class="res-btn task-btn" role="tab" data-task="pull_open_drawer" aria-selected="false">Pull Open Drawer</button><button type="button" class="res-btn task-btn" role="tab" data-task="push_box" aria-selected="false">Push Box</button><button type="button" class="res-btn task-btn" role="tab" data-task="sweep_block_to_zone" aria-selected="false">Sweep Block to Zone</button><button type="button" class="res-btn task-btn" role="tab" data-task="turn_valve" aria-selected="false">Turn Valve</button></div>
+        <div class="runs">
+          <div class="run" data-run-group="run1">
+            <div class="run-title">Run #1</div>
+            <div class="row row-one"><figure class="tile"><video src="sim/close_fridge_door/run1/sim_close_fridge_door_run1_exo-camera.mp4" data-run="run1" data-view="exo-camera" muted playsinline preload="auto" data-master></video><span class="tag">Exo-centric Camera</span></figure></div>
+            <div class="row row-four"><figure class="tile"><video src="sim/close_fridge_door/run1/sim_close_fridge_door_run1_ego-centric-observation.mp4" data-run="run1" data-view="ego-centric-observation" muted playsinline preload="auto"></video><span class="tag">Ego-centric Observation</span></figure><figure class="tile"><video src="sim/close_fridge_door/run1/sim_close_fridge_door_run1_ego-centric-imagination.mp4" data-run="run1" data-view="ego-centric-imagination" muted playsinline preload="auto"></video><span class="tag">Ego-centric Imagination</span></figure><figure class="tile"><video src="sim/close_fridge_door/run1/sim_close_fridge_door_run1_top-down-observation.mp4" data-run="run1" data-view="top-down-observation" muted playsinline preload="auto"></video><span class="tag">Top-down Observation</span></figure><figure class="tile"><video src="sim/close_fridge_door/run1/sim_close_fridge_door_run1_top-down-imagination.mp4" data-run="run1" data-view="top-down-imagination" muted playsinline preload="auto"></video><span class="tag">Top-down Imagination</span></figure></div>
+          </div>
+          <div class="run" data-run-group="run2">
+            <div class="run-title">Run #2</div>
+            <div class="row row-one"><figure class="tile"><video src="sim/close_fridge_door/run2/sim_close_fridge_door_run2_exo-camera.mp4" data-run="run2" data-view="exo-camera" muted playsinline preload="auto" data-master></video><span class="tag">Exo-centric Camera</span></figure></div>
+            <div class="row row-four"><figure class="tile"><video src="sim/close_fridge_door/run2/sim_close_fridge_door_run2_ego-centric-observation.mp4" data-run="run2" data-view="ego-centric-observation" muted playsinline preload="auto"></video><span class="tag">Ego-centric Observation</span></figure><figure class="tile"><video src="sim/close_fridge_door/run2/sim_close_fridge_door_run2_ego-centric-imagination.mp4" data-run="run2" data-view="ego-centric-imagination" muted playsinline preload="auto"></video><span class="tag">Ego-centric Imagination</span></figure><figure class="tile"><video src="sim/close_fridge_door/run2/sim_close_fridge_door_run2_top-down-observation.mp4" data-run="run2" data-view="top-down-observation" muted playsinline preload="auto"></video><span class="tag">Top-down Observation</span></figure><figure class="tile"><video src="sim/close_fridge_door/run2/sim_close_fridge_door_run2_top-down-imagination.mp4" data-run="run2" data-view="top-down-imagination" muted playsinline preload="auto"></video><span class="tag">Top-down Imagination</span></figure></div>
+          </div>
+          <div class="run" data-run-group="run3">
+            <div class="run-title">Run #3</div>
+            <div class="row row-one"><figure class="tile"><video src="sim/close_fridge_door/run3/sim_close_fridge_door_run3_exo-camera.mp4" data-run="run3" data-view="exo-camera" muted playsinline preload="auto" data-master></video><span class="tag">Exo-centric Camera</span></figure></div>
+            <div class="row row-four"><figure class="tile"><video src="sim/close_fridge_door/run3/sim_close_fridge_door_run3_ego-centric-observation.mp4" data-run="run3" data-view="ego-centric-observation" muted playsinline preload="auto"></video><span class="tag">Ego-centric Observation</span></figure><figure class="tile"><video src="sim/close_fridge_door/run3/sim_close_fridge_door_run3_ego-centric-imagination.mp4" data-run="run3" data-view="ego-centric-imagination" muted playsinline preload="auto"></video><span class="tag">Ego-centric Imagination</span></figure><figure class="tile"><video src="sim/close_fridge_door/run3/sim_close_fridge_door_run3_top-down-observation.mp4" data-run="run3" data-view="top-down-observation" muted playsinline preload="auto"></video><span class="tag">Top-down Observation</span></figure><figure class="tile"><video src="sim/close_fridge_door/run3/sim_close_fridge_door_run3_top-down-imagination.mp4" data-run="run3" data-view="top-down-imagination" muted playsinline preload="auto"></video><span class="tag">Top-down Imagination</span></figure></div>
+          </div>
+          <div class="run" data-run-group="run4">
+            <div class="run-title">Run #4</div>
+            <div class="row row-one"><figure class="tile"><video src="sim/close_fridge_door/run4/sim_close_fridge_door_run4_exo-camera.mp4" data-run="run4" data-view="exo-camera" muted playsinline preload="auto" data-master></video><span class="tag">Exo-centric Camera</span></figure></div>
+            <div class="row row-four"><figure class="tile"><video src="sim/close_fridge_door/run4/sim_close_fridge_door_run4_ego-centric-observation.mp4" data-run="run4" data-view="ego-centric-observation" muted playsinline preload="auto"></video><span class="tag">Ego-centric Observation</span></figure><figure class="tile"><video src="sim/close_fridge_door/run4/sim_close_fridge_door_run4_ego-centric-imagination.mp4" data-run="run4" data-view="ego-centric-imagination" muted playsinline preload="auto"></video><span class="tag">Ego-centric Imagination</span></figure><figure class="tile"><video src="sim/close_fridge_door/run4/sim_close_fridge_door_run4_top-down-observation.mp4" data-run="run4" data-view="top-down-observation" muted playsinline preload="auto"></video><span class="tag">Top-down Observation</span></figure><figure class="tile"><video src="sim/close_fridge_door/run4/sim_close_fridge_door_run4_top-down-imagination.mp4" data-run="run4" data-view="top-down-imagination" muted playsinline preload="auto"></video><span class="tag">Top-down Imagination</span></figure></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>WAM-Policy: World Action Models with On-Policy Distillation for Quadruped Loco-Manipulation</footer>
+  </div>
+<script>
+/* Sim-to-real: plays one task at a time (all 10 clips in sync with the real exo clip), then moves to the next task and loops. */
+(function () {
+  document.querySelectorAll('[data-sync]').forEach(function (block) {
+    var vids = [].slice.call(block.querySelectorAll('video'));
+    var master = block.querySelector('video[data-master]') || vids[0];
+    var others = vids.filter(function (v) { return v !== master; });
+    var tabs = [].slice.call(block.querySelectorAll('.task-btn'));
+    var tasks = tabs.map(function (b) { return b.dataset.task; });
+    var cur = 0, inView = false, ready = false, token = 0;
+
+    function src(task, v) { return 'sim2real/' + task + '/' + v.dataset.dom + '/' + v.dataset.dom + '_' + task + '_' + v.dataset.view + '.mp4'; }
+    function allMeta() { return vids.every(function (v) { return v.readyState >= 1 && v.duration > 0; }); }
+    function setRates() { var T = master.duration; others.forEach(function (v) { v.playbackRate = v.duration / T; }); }
+    function playAll() { if (!inView || !ready) return; vids.forEach(function (v) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }); }
+    function pauseAll() { vids.forEach(function (v) { v.pause(); }); }
+
+    function select(i) {
+      cur = (i + tasks.length) % tasks.length;
+      tabs.forEach(function (b, j) { b.setAttribute('aria-selected', String(j === cur)); });
+      ready = false; var my = ++token;
+      pauseAll();
+      vids.forEach(function (v) { v.src = src(tasks[cur], v); v.load(); });
+      var wait = function () {
+        if (my !== token) return;
+        if (allMeta()) { ready = true; vids.forEach(function (v) { v.currentTime = 0; }); setRates(); playAll(); }
+        else setTimeout(wait, 60);
+      };
+      wait();
+    }
+
+    vids.forEach(function (v) { v.loop = false; });
+    master.addEventListener('ended', function () { if (ready) select(cur + 1); });
+    tabs.forEach(function (b, j) { b.addEventListener('click', function () { select(j); }); });
+
+    (function tick() {
+      if (ready && !master.paused && master.duration) {
+        var f = master.currentTime / master.duration;
+        others.forEach(function (v) {
+          var target = Math.min(f * v.duration, v.duration - 0.05);
+          if (Math.abs(v.currentTime - target) > 0.25) v.currentTime = target;
+          if (v.paused && inView) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+        });
+      }
+      requestAnimationFrame(tick);
+    })();
+
+    new IntersectionObserver(function (es) {
+      inView = es.some(function (e) { return e.isIntersecting; });
+      if (inView) playAll(); else pauseAll();
+    }, { threshold: 0.2 }).observe(block);
+
+    select(0);
+  });
+})();
+</script>
+<script>
+/* MuJoCo simulation: 4 runs per task; each run's clips follow that run's exo clip.
+   Runs that finish early hold their last frame; when every run is done, the next task starts. */
+(function () {
+  document.querySelectorAll('[data-sim]').forEach(function (block) {
+    var tabs = [].slice.call(block.querySelectorAll('.task-btn'));
+    var tasks = tabs.map(function (b) { return b.dataset.task; });
+    var groups = [].slice.call(block.querySelectorAll('[data-run-group]')).map(function (g) {
+      var vids = [].slice.call(g.querySelectorAll('video'));
+      var master = g.querySelector('video[data-master]');
+      return { vids: vids, master: master, others: vids.filter(function (v) { return v !== master; }), done: false };
+    });
+    var all = [].concat.apply([], groups.map(function (g) { return g.vids; }));
+    var cur = 0, inView = false, ready = false, token = 0;
+
+    function src(task, v) { return 'sim/' + task + '/' + v.dataset.run + '/sim_' + task + '_' + v.dataset.run + '_' + v.dataset.view + '.mp4'; }
+    function play(v) { var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+    function playAll() { if (!inView || !ready) return; groups.forEach(function (g) { if (!g.done) g.vids.forEach(play); }); }
+    function pauseAll() { all.forEach(function (v) { v.pause(); }); }
+
+    function select(i) {
+      cur = (i + tasks.length) % tasks.length;
+      tabs.forEach(function (b, j) { b.setAttribute('aria-selected', String(j === cur)); });
+      ready = false; var my = ++token;
+      pauseAll();
+      all.forEach(function (v) { v.src = src(tasks[cur], v); v.load(); });
+      (function wait() {
+        if (my !== token) return;
+        if (all.every(function (v) { return v.readyState >= 1 && v.duration > 0; })) {
+          groups.forEach(function (g) {
+            g.done = false;
+            g.vids.forEach(function (v) { v.currentTime = 0; });
+            g.others.forEach(function (v) { v.playbackRate = v.duration / g.master.duration; });
+          });
+          ready = true; playAll();
+        } else setTimeout(wait, 60);
+      })();
+    }
+
+    all.forEach(function (v) { v.loop = false; });
+    groups.forEach(function (g) {
+      g.master.addEventListener('ended', function () {
+        if (!ready) return;
+        g.done = true;
+        g.others.forEach(function (v) { v.pause(); v.currentTime = Math.max(0, v.duration - 0.05); });
+        if (groups.every(function (x) { return x.done; })) select(cur + 1);
+      });
+    });
+    tabs.forEach(function (b, j) { b.addEventListener('click', function () { select(j); }); });
+
+    (function tick() {
+      if (ready && inView) {
+        groups.forEach(function (g) {
+          if (g.done || g.master.paused || !g.master.duration) return;
+          var f = g.master.currentTime / g.master.duration;
+          g.others.forEach(function (v) {
+            var target = Math.min(f * v.duration, v.duration - 0.05);
+            if (Math.abs(v.currentTime - target) > 0.25) v.currentTime = target;
+            if (v.paused) play(v);
+          });
+        });
+      }
+      requestAnimationFrame(tick);
+    })();
+
+    new IntersectionObserver(function (es) {
+      inView = es.some(function (e) { return e.isIntersecting; });
+      if (inView) playAll(); else pauseAll();
+    }, { threshold: 0.15 }).observe(block);
+
+    select(0);
+  });
+})();
+</script>
+</body>
+</html>
