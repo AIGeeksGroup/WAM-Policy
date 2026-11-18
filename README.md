@@ -22,7 +22,7 @@ QLM-Bench (Quadrupedal Loco-Manipulation Benchmark) is a MuJoCo benchmark for la
 
 ![The WAM-Policy OPSD student on the real Unitree Go2 Air (top) and in QLM-Bench simulation (bottom)](./assets/teaser.png)
 
-This branch provides the tasks, simulator, RAMBO controller port, Standard100 runner, training environments and demonstration-synthesis code. The companion Hugging Face dataset hosts the demonstrations, Standard100 suite, MuJoCo scene packs, RAMBO checkpoints and train800 reset pool. [QLM-Bench Dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
+This branch provides the tasks, simulator, RAMBO controller port, Standard100 runner, training environments and demonstration-synthesis code. The companion [QLM-Bench dataset on Hugging Face](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench) hosts the demonstrations, Standard100 suite, MuJoCo scene packs, RAMBO checkpoints and train800 reset pool.
 
 ### Tasks
 
@@ -84,18 +84,6 @@ workers render with **OSMesa / llvmpipe** on CPU (`libosmesa6`). `ffmpeg` is nee
 `requirements/mujoco-cuda.constraints.txt` lists the optional MJWarp stack used for part of the demonstration
 synthesis. See the [site configuration example](configs/site.example.env) for environment variables.
 
-### Smoke Tests
-
-Fetch the [Standard100 resources](#download-data) and the [training reset pool](#training-reset-pool) for these checks.
-
-```bash
-python examples/dummy_policy_server.py --port 8765 &
-python -m qlm_bench.benchmark run --resource-root data/standard100 --policy-port 8765 \
-    --cases push100-20261014-091 --output /tmp/s100-smoke
-python scripts/smoke/training_env_worker.py \
-    --pool data/qlm-bench/reset_pools/train800-reset-pool/manifest.json --output /tmp/train-smoke --compare
-```
-
 ## 📦 Data Preparation
 
 ### Demonstration Synthesis
@@ -104,13 +92,13 @@ For each task, a large multimodal model drafts a reference trajectory of command
 
 ![QLM-Bench Data Synthesis: from a task instruction to reference commands, randomized scenes and successful demonstrations](./assets/qlm_bench_data_synthesis.png)
 
-This gives 1,000 demonstrations, 100 per task, each recording the two camera streams, the executed commands, and a language instruction. The paper uses 800 training, 100 validation, and 100 test episodes. Each task contributes 20 Clean and 80 Randomized scenes. The canonical demonstrations are stored in LeRobot v2.1 under `canonical/lerobot_v2_1/mujoco-<task>-100-*`. See the dataset card for the file layout, formats, and supplementary releases. [QLM-Bench Dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
+This gives 1,000 demonstrations, 100 per task, each recording the two camera streams, the executed commands, and a language instruction. The paper uses 800 training, 100 validation, and 100 test episodes. Each task contributes 20 Clean and 80 Randomized scenes. The canonical demonstrations are stored in LeRobot v2.1 under `canonical/lerobot_v2_1/mujoco-<task>-100-*`. See the [QLM-Bench dataset card](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench) for the file layout, formats, and supplementary releases.
 
 The code includes the reviewed executors and recipes of the six articulated tasks, the reference traces
 and template for push, press, lift and kick, and the executor libraries (`src/qlm_bench/synthesis/`).
 `scripts/synthesis/example_one_demonstration.py` re-generates and checks one demonstration physics trace on a
 Standard100 scene.
-The Hugging Face dataset contains the resulting demonstrations. [Demonstration synthesis code and inputs](scripts/synthesis/README.md)
+The Hugging Face dataset contains the resulting demonstrations. See the [synthesis documentation](scripts/synthesis/README.md) for the code and inputs.
 
 ### Download Data
 
@@ -150,9 +138,21 @@ tar -xf data/qlm-bench/reset_pools/train800-reset-pool.tar -C data/qlm-bench/res
 
 Pass `data/qlm-bench/reset_pools/train800-reset-pool/manifest.json` to the streaming worker as `--pool`, or set `QLM_TRAIN_POOL` to the absolute manifest path in the WAM-Policy site configuration.
 
+### Smoke Tests
+
+With the [Standard100 resources](#download-data) and the [training reset pool](#training-reset-pool) in place, run these checks.
+
+```bash
+python examples/dummy_policy_server.py --port 8765 &
+python -m qlm_bench.benchmark run --resource-root data/standard100 --policy-port 8765 \
+    --cases push100-20261014-091 --output /tmp/s100-smoke
+python scripts/smoke/training_env_worker.py \
+    --pool data/qlm-bench/reset_pools/train800-reset-pool/manifest.json --output /tmp/train-smoke --compare
+```
+
 ### Task RL Runtime Inputs
 
-This code checkout includes the task inputs for `push_box` and `open_room_door`. In the WAM-Policy model environment, run the preparation command from the QLM-Bench checkout to unpack the case files and download the corresponding scene packs and controller. The example uses `push_box`. [Task RL inputs](inputs/task_rl)
+This code checkout includes the [task inputs](inputs/task_rl) for `push_box` and `open_room_door`. In the WAM-Policy model environment, run the preparation command from the QLM-Bench checkout to unpack the case files and download the corresponding scene packs and controller. The example uses `push_box`.
 
 ```bash
 python -m wam_policy.task_rl prepare --task push_box --inputs inputs/task_rl/push_box \
@@ -161,7 +161,7 @@ python -m wam_policy.task_rl prepare --task push_box --inputs inputs/task_rl/pus
 
 ## 🚀 Training
 
-The same repository’s `main` branch provides the WAM-Policy learner, model and training recipes. To run those stages, clone `main` into a separate directory with `git clone -b main https://github.com/AIGeeksGroup/WAM-Policy.git WAM-Policy`. [WAM-Policy Code](https://github.com/AIGeeksGroup/WAM-Policy/tree/main)
+The [`main` branch](https://github.com/AIGeeksGroup/WAM-Policy/tree/main) of this repository provides the WAM-Policy learner, model and training recipes. To run those stages, clone `main` into a separate directory with `git clone -b main https://github.com/AIGeeksGroup/WAM-Policy.git WAM-Policy`.
 
 ### Training Environments (used by WAM-Policy)
 
@@ -214,8 +214,7 @@ is a complete minimal server; WAM-Policy's `wam_policy.inference.serve` is the s
 
 ### Baselines
 
-`baselines/leg_manip/` is a general re-implementation of the Leg-Manip baseline (controller + DP3 planner);
-[Leg-Manip README](baselines/leg_manip/README.md)
+The [Leg-Manip baseline](baselines/leg_manip/README.md) in `baselines/leg_manip/` is a general re-implementation of its controller and DP3 planner.
 
 ## Interfaces for Policy and Training Code
 
@@ -226,5 +225,6 @@ The [interface reference](docs/interfaces.md) covers Standard100, streaming trai
 QLM-Bench is released under CC BY-NC 4.0 (see [LICENSE](LICENSE)). The RAMBO controller port is adapted from the
 CC BY-NC 4.0 RAMBO code of Cheng et al. (RA-L 2025, https://github.com/catachiii/rambo); the controller
 checkpoint distributed with the dataset was trained by the QLM-Bench authors with that code and is released under
-CC BY-NC 4.0. The command/live interface files are shared with WAM-Policy, where they are provided under
-Apache-2.0. Third-party components and assets, with their licenses, are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+CC BY-NC 4.0. The command/live interface files are shared with the `main` branch of this repository, where
+they are provided under Apache-2.0. Third-party components and assets, with their licenses, are listed in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

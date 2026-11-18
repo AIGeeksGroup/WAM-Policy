@@ -12,9 +12,10 @@ assets distributed with the QLM-Bench dataset are listed below with their licens
   `6f6c87c614255a5ada063da40206a2fa67054cb6`), licensed under CC BY-NC 4.0. Changes: the controller, QP torque
   optimizer, contact scheduling, joint-position controller and actuator model were ported to standalone PyTorch
   running on CPU against MuJoCo state, with per-case random streams; the policy network architecture is unchanged.
-- **Interface files shared with WAM-Policy.** `src/qlm_bench/contracts/command/` (spec and validation) and
-  `src/qlm_bench/live/history.py` are shared with WAM-Policy (https://github.com/AIGeeksGroup/WAM-Policy) and come
-  from the same authors; in WAM-Policy they are provided under Apache-2.0.
+- **Shared interface files.** `src/qlm_bench/contracts/command/` (spec and validation) and
+  `src/qlm_bench/live/history.py` come from the same authors and are shared with the
+  [`main` branch of this repository](https://github.com/AIGeeksGroup/WAM-Policy/tree/main), where they are
+  provided under Apache-2.0.
 - **MuJoCo** (Apache-2.0), **PyTorch** (BSD-3-Clause), **qpth** (Apache-2.0) and the other Python dependencies are
   installed separately and keep their own licenses.
 - `baselines/leg_manip/` contains vendored third-party code with its own license files (see that directory).

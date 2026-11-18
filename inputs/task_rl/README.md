@@ -22,4 +22,4 @@ standard100/benchmarks/mujoco-standard-test100-v1/    Standard100 suite (optiona
 | `*/scene-files.json` | sha256 of every file a run reads by data-root-relative path: the archive's files, the large meshes (fetched by sha256) and the controller runtime files |
 | `*/scene-check-picks.json`, `*/commands/` | three stored episode starts per task and their executed chunks; example inputs for `scripts/smoke/task_rl_scene_worker.py` |
 
-The released inputs contain training cases. Each case identifies its scene by resource identity. [Task RL input contract](../../docs/interfaces.md)
+The released inputs contain training cases. See the [Task RL input contract](../../docs/interfaces.md) for the expected layout.

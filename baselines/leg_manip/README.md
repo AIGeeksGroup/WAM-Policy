@@ -16,9 +16,8 @@ A re-implementation of *Learning Visual Quadrupedal Loco-Manipulation from Demon
 
 This directory ships the method with two example tasks of the original paper's task family,
 `press_button` and `close_dishwasher`. **The adaptation to the ten QLM-Bench tasks (task definitions,
-conversion of the QLM-Bench demonstrations, Standard100 evaluation entry point) is not included yet**; it
-will be added when the collaborators merge it. Until then this code cannot reproduce the Leg-Manip row of
-Table 1 of the WAM-Policy paper.
+conversion of the QLM-Bench demonstrations, Standard100 evaluation entry point) is not included.** This
+code therefore cannot reproduce the Leg-Manip row of Table 1 of the WAM-Policy paper.
 
 Differences from the original paper: Unitree Go2 instead of Aliengo; mjlab / MuJoCo Warp instead of Isaac
 Gym; the depth camera sits on a CAD-modelled mount on the robot (below); reward terms added for the Go2
@@ -53,7 +52,7 @@ uv run lm-eval --task press_button --controller <ctrl.pt> --planner outputs/plan
 
 `lm-hub upload|download|download-dir` moves demonstrations and planner checkpoints through the Hugging Face
 Hub (`--repo <your namespace>/<repo>`). W&B logging is off by default (enable with `--agent.logger wandb`, `--wandb-mode online`,
-`WANDB_ENTITY`); nothing names an account by default. `scripts/slurm/train_planner.sbatch` is a generic Slurm
+`WANDB_ENTITY`). `scripts/slurm/train_planner.sbatch` is a generic Slurm
 example for the planner (three seeds, one GPU each).
 
 Controller warm-start chain (`scripts/train_controller.sh`): Lift curriculum 2000 iterations from scratch;

@@ -21,9 +21,7 @@ python scripts/synthesis/example_one_demonstration.py <resource_root> turn_valve
 ```
 
 Not released: the 100-episode campaign and pilot drivers. They need the scene-source assets and the pilot
-records of the original campaigns, which are not public; the HF dataset is their product. Push and press (and
-10 lift_basket episodes) ran MuJoCo physics on MJWarp (GPU); the other lift_basket episodes, kick and the six
-articulated tasks ran on native MuJoCo CPU. Standard100 always uses native CPU.
+records of the original campaigns, which are not public; the HF dataset is their product.
 
 Settings: the bundled references are found automatically (`QLM_SYNTHESIS_REFERENCES` overrides);
 `QLM_SYNTHESIS_WORKSPACE` points at external inputs that are not bundled (reference runs, scene sources),
