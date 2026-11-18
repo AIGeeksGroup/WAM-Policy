@@ -147,7 +147,7 @@ POLICY=student_1_2 STUDENT=$EVAL_ROOT/students/ablations/arm_libero/teacher_cach
   OUT=$EVAL_ROOT/results/teacher_cache_only bash scripts/eval/libero_pro2.sh
 ```
 
-`libero_pro2.sh` ends with `official-summary.txt` (BASE / static / runtime, the official group rates at the
+`libero_pro2.sh` writes `official-summary.txt` at the end (BASE / static / runtime, the official group rates at the
 800-step limit of LingBot-VA's client; the 520-step package default is reported as well). Paired statistics:
 
 ```bash
@@ -171,10 +171,10 @@ within each task) and the exact two-sided McNemar p. Single comparisons: `report
 | Success rate (%) on LIBERO after longer training | Teacher cache only 2,000, OPSD 900 | `ablations/longer_training/*.json`, S2000 / S900 EMA | Pro2.0 + Long |
 | Paired comparisons on LIBERO | all comparisons | `configs/evaluation/paired_libero.json` | `paired-table` |
 
-The Hugging Face model repository publishes the OPSD S300 EMA student in `supplementary/arm_libero_opsd_student/`
+The [Hugging Face model repository](https://huggingface.co/AIGeeksGroup/WAM-Policy) publishes the OPSD S300 EMA student in `supplementary/arm_libero_opsd_student/`
 and the six ablation checkpoints under `ablations/arm_libero/` on `main`. The table above lists the training
 configs for reproducing their exports. Teacher (high-NFE) values in the main arm table are taken from
-the LingBot-VA and LIBERO-Pro2.0 papers. [WAM-Policy model repository](https://huggingface.co/AIGeeksGroup/WAM-Policy)
+the LingBot-VA and LIBERO-Pro2.0 papers.
 
 ## License
 
