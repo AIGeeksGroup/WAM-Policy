@@ -141,7 +141,6 @@ The paper's 0.159 s per chunk was measured on an RTX 5070 Ti with merged OPSD Lo
 | Tab. 3: Longer training | [Longer training config](./configs/stage1_2_opsd/ablations/longer_training.json) and [teacher cache only config](./configs/stage1_2_opsd/ablations/teacher_cache_only.json) |
 | Tab. 5: Sampling steps without distillation | [Standard100 runner](./scripts/evaluation/standard100.sh) with `teacher`, `--video-steps` and `--action-steps` |
 | Tab. 6: Proprioception in Stage 1.1 | [SFT config](./configs/ablations/proprioception/sft5000.json) and [training script](./scripts/ablations/proprioception/train.sh). Evaluate with `proprioception_teacher` and set `--teacher` to the [SFT5000 checkpoint](https://huggingface.co/AIGeeksGroup/WAM-Policy/tree/main/ablations/quadruped/rgb_proprioception/s5000). |
-| Tab. 7: Real-robot results on the Unitree Go2 Air | The deployment stack is planned for a separate release. |
 | Tab. S2: Success rate (%) of an arm WAM on LIBERO | [Arm evaluation](./supplementary/arm_libero/README.md#evaluation) |
 | Tab. S3: Ablation studies on LIBERO-Pro2.0: success rate (%) | [Arm configs and tables](./supplementary/arm_libero/README.md#tables) |
 | Tab. S4: Success rate (%) on LIBERO after longer training | [Longer training configs](./supplementary/arm_libero/configs/ablations/longer_training/) |
