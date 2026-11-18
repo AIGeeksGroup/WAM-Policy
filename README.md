@@ -1,6 +1,6 @@
 # QLM-Bench: Quadrupedal Loco-Manipulation Benchmark
 
-Code repository for the QLM-Bench MuJoCo simulator and benchmark.
+The `qlm-bench` branch of WAM-Policy contains the QLM-Bench MuJoCo simulator and benchmark.
 
 > **WAM-Policy: World Action Models with On-Policy Distillation for Quadrupedal Loco-Manipulation**
 >
@@ -8,7 +8,7 @@ Code repository for the QLM-Bench MuJoCo simulator and benchmark.
 >
 > \*Equal contribution. †Corresponding authors. ‡Project lead.
 >
-> #### [Website](https://aigeeksgroup.github.io/WAM-Policy/) | [WAM-Policy code](https://github.com/AIGeeksGroup/WAM-Policy) | [WAM-Policy weights](https://huggingface.co/AIGeeksGroup/WAM-Policy) | [QLM-Bench code](https://github.com/AIGeeksGroup/QLM-Bench) | [QLM-Bench dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
+> #### [Website](https://aigeeksgroup.github.io/WAM-Policy/) | [WAM-Policy code](https://github.com/AIGeeksGroup/WAM-Policy/tree/main) | [WAM-Policy weights](https://huggingface.co/AIGeeksGroup/WAM-Policy) | [QLM-Bench code](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench) | [QLM-Bench dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
 
 ## ✏️ Citation
 
@@ -22,7 +22,7 @@ QLM-Bench (Quadrupedal Loco-Manipulation Benchmark) is a MuJoCo benchmark for la
 
 ![The WAM-Policy OPSD student on the real Unitree Go2 Air (top) and in QLM-Bench simulation (bottom)](./assets/teaser.png)
 
-This repository provides the tasks, simulator, RAMBO controller port, Standard100 runner, training environments and demonstration-synthesis code. The companion Hugging Face dataset hosts the demonstrations, Standard100 suite, MuJoCo scene packs, RAMBO checkpoints and train800 reset pool. [QLM-Bench Dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
+This branch provides the tasks, simulator, RAMBO controller port, Standard100 runner, training environments and demonstration-synthesis code. The companion Hugging Face dataset hosts the demonstrations, Standard100 suite, MuJoCo scene packs, RAMBO checkpoints and train800 reset pool. [QLM-Bench Dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
 
 ### Tasks
 
@@ -57,10 +57,10 @@ not fallen; it fails on a fall and times out at the horizon.
 
 ### Installation
 
-Clone this GitHub repository for the simulator, benchmark runner and training workers.
+Clone the `qlm-bench` branch for the simulator, benchmark runner and training workers.
 
 ```bash
-git clone https://github.com/AIGeeksGroup/QLM-Bench.git
+git clone -b qlm-bench https://github.com/AIGeeksGroup/WAM-Policy.git QLM-Bench
 cd QLM-Bench
 ```
 
@@ -161,7 +161,7 @@ python -m wam_policy.task_rl prepare --task push_box --inputs inputs/task_rl/pus
 
 ## 🚀 Training
 
-WAM-Policy provides the learner, model and training recipes. Clone it with `git clone https://github.com/AIGeeksGroup/WAM-Policy.git` to run those stages. [WAM-Policy Code](https://github.com/AIGeeksGroup/WAM-Policy)
+The same repository’s `main` branch provides the WAM-Policy learner, model and training recipes. To run those stages, clone `main` into a separate directory with `git clone -b main https://github.com/AIGeeksGroup/WAM-Policy.git WAM-Policy`. [WAM-Policy Code](https://github.com/AIGeeksGroup/WAM-Policy/tree/main)
 
 ### Training Environments (used by WAM-Policy)
 
@@ -209,7 +209,7 @@ is a complete minimal server; WAM-Policy's `wam_policy.inference.serve` is the s
 |---|---|
 | Standard100 tasks, metrics and protocol | [Runner and three-seed command](#run-standard100) |
 | Demonstrations, held-out scenes and train800 | [QLM-Bench Dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench) |
-| WAM-Policy training and evaluation, including default and accelerated runners | [WAM-Policy Code](https://github.com/AIGeeksGroup/WAM-Policy) |
+| WAM-Policy training and evaluation, including default and accelerated runners | [WAM-Policy Code](https://github.com/AIGeeksGroup/WAM-Policy/tree/main) |
 | Released teacher, students, specialists and ablation checkpoints | [WAM-Policy Models](https://huggingface.co/AIGeeksGroup/WAM-Policy) |
 
 ### Baselines

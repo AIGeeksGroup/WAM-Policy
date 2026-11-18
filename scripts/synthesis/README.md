@@ -5,7 +5,7 @@ reference trajectory of commands (push, press, lift, kick) or a high-level execu
 tasks), a human reviewed it, it was retargeted to randomized scenes and executed by the RAMBO controller in
 MuJoCo (physics only), and only successful traces were kept and rendered into LeRobot v2.1 episodes.
 
-What this repository releases:
+The `qlm-bench` branch includes these synthesis resources.
 
 - `src/qlm_bench/synthesis/references/`: the approved executors and recipes of the six articulated tasks
   (`approved-six-task-bindings.json` with executor, recipe, scope, horizon and the reference start state), and
