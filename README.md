@@ -1,19 +1,32 @@
-# QLM-Bench
+# QLM-Bench: Quadrupedal Loco-Manipulation Benchmark
 
-QLM-Bench (**Quadrupedal Loco-Manipulation Benchmark**) evaluates manipulation with a leg: a Unitree Go2
-manipulates objects with its front-left (FL) leg while standing on the other three, in MuJoCo. A policy sees
-two RGB views and a language instruction and outputs 9-D commands for the RAMBO whole-body controller, which
-keeps the robot balanced and tracks the commanded base velocity and FL foot target.
+Code repository for the QLM-Bench MuJoCo simulator and benchmark.
 
-Clone the policy code used in the paper with `git clone https://github.com/AIGeeksGroup/WAM-Policy.git`.
+> **WAM-Policy: World Action Models with On-Policy Distillation for Quadrupedal Loco-Manipulation**
+>
+> [Junlin Long](https://github.com/JalenLoong)\*, [Xu Deng](https://github.com/Ethan-Xu-Deng)\*, [Yiran Wang](https://scholar.google.com/citations?user=eg_nBF0AAAAJ&hl=en), [Yue Yang](https://au.linkedin.com/in/yue-yang-982714286)†, [Yang Zhao](https://yangyangkiki.github.io/)†, and [Zeyu Zhang](https://steve-zeyu-zhang.github.io/)‡
+>
+> \*Equal contribution. †Corresponding authors. ‡Project lead.
+>
+> #### [Website](https://aigeeksgroup.github.io/WAM-Policy/) | [WAM-Policy code](https://github.com/AIGeeksGroup/WAM-Policy) | [WAM-Policy weights](https://huggingface.co/AIGeeksGroup/WAM-Policy) | [QLM-Bench code](https://github.com/AIGeeksGroup/QLM-Bench) | [QLM-Bench dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
 
-This repository contains the benchmark (tasks, simulator, controller, Standard100 evaluation), the training
-environments used by WAM-Policy (streaming on-policy environment for OPSD / M-OPD and the Task RL scene
-worker), and the approved executors of the demonstration synthesis with a script that re-generates a single
-demonstration. Data (demonstrations, Standard100 suite, scene packs, train reset pool) is on the Hugging Face
-dataset `AIGeeksGroup/QLM-Bench` (revision `main`).
+## ✏️ Citation
 
-## Tasks
+Citation will be added after publication.
+
+---
+
+## 🏃 Introduction
+
+QLM-Bench (Quadrupedal Loco-Manipulation Benchmark) is a MuJoCo benchmark for language-conditioned loco-manipulation in which a Unitree Go2 manipulates with its front-left leg. A policy sees two RGB views and a language instruction and outputs 9-D commands for the RAMBO whole-body controller, which keeps the robot balanced and tracks the commanded base velocity and front-left foot target.
+
+![The WAM-Policy OPSD student on the real Unitree Go2 Air (top) and in QLM-Bench simulation (bottom)](./assets/teaser.png)
+
+This repository provides the tasks, simulator, RAMBO controller port, Standard100 runner, training environments and demonstration-synthesis code. The companion Hugging Face dataset hosts the demonstrations, Standard100 suite, MuJoCo scene packs, RAMBO checkpoints and train800 reset pool. [QLM-Bench Dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
+
+### Tasks
+
+![The ten tasks of QLM-Bench. One successful rollout per task, with earlier poses translucent and arrows marking the intended motion.](./assets/qlm_bench_tasks.png)
 
 | task | instruction | horizon |
 |---|---|---|
@@ -31,17 +44,8 @@ dataset `AIGeeksGroup/QLM-Bench` (revision `main`).
 An episode succeeds when the task condition holds for three consecutive 50 Hz control ticks with the robot
 not fallen; it fails on a fall and times out at the horizon.
 
-**Demonstrations.** 100 successful demonstrations per task (1,000 in total), synthesized without
-teleoperation: a large multimodal model drafts a reference trajectory of commands (or a high-level executor),
-a human reviews it, it is retargeted to randomized scenes and executed by the controller in simulation, and
-only successful episodes are kept. Each task has 20 Clean and 80 Randomized scenes, split 80 / 10 / 10 into
-train / validation / test. Format: LeRobot v2.1 (`canonical/lerobot_v2_1/mujoco-<task>-100-*`).
+### Observation and Action
 
-**Standard100.** The held-out evaluation suite `mujoco-standard-test100-v1`: the 10 test scenes of every task
-(2 Clean + 8 Randomized), reconstructed exactly from their published initial states. The paper reports 300
-episodes per policy: Standard100 at policy seeds 42, 43 and 44.
-
-**Observation and action.**
 - Observation: two 640×360 RGB views, `go2_ego` (head camera) and `d435i_rgb_task` (top-down camera),
   sampled every 80 ms, plus the instruction.
 - Action: chunks of 16 commands at 50 Hz (0.32 s). A command is `rambo-native9-v2`:
@@ -49,7 +53,81 @@ episodes per policy: Standard100 at policy seeds 42, 43 and 44.
   3-D foot force that is recorded but executed as zero.
 - Simulation: native MuJoCo 3.8 on CPU (float64) at 500 Hz, RAMBO controller at 100 Hz on CPU, commands at 50 Hz.
 
-## Installation
+## 📦 Data Preparation
+
+### Demonstration Synthesis
+
+For each task, a large multimodal model drafts a reference trajectory of commands from a short description of the task. After human review, the reference is retargeted to randomized scenes and executed by the whole-body controller, and the successful episodes are kept as demonstrations, with neither teleoperation nor hand-designed trajectories.
+
+![QLM-Bench Data Synthesis: from a task instruction to reference commands, randomized scenes and successful demonstrations](./assets/qlm_bench_data_synthesis.png)
+
+[Download the QLM-Bench Data Synthesis panel from Figure 2 (PDF)](./assets/qlm_bench_data_synthesis.pdf)
+
+This gives 1,000 demonstrations, 100 per task, each recording the two camera streams, the executed commands, and a language instruction. The paper uses 800 training, 100 validation, and 100 test episodes. Each task contributes 20 Clean and 80 Randomized scenes. The canonical demonstrations are stored in LeRobot v2.1 under `canonical/lerobot_v2_1/mujoco-<task>-100-*`. See the dataset card for the file layout, formats, and supplementary releases. [QLM-Bench Dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
+
+The code includes the reviewed executors and recipes of the six articulated tasks, the reference traces
+and template for push, press, lift and kick, and the executor libraries (`src/qlm_bench/synthesis/`).
+`scripts/synthesis/example_one_demonstration.py` re-generates and checks one demonstration physics trace on a
+Standard100 scene. The full 100-episode campaigns require the original scene-source assets and pilot records.
+The Hugging Face dataset contains the resulting demonstrations. [Demonstration synthesis code and inputs](scripts/synthesis/README.md)
+
+### Download Data
+
+After [installation](#installation), download the Standard100 resources and demonstration releases from the [QLM-Bench dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench) on `main`.
+
+```bash
+# Standard100 suite + 92 scene packs + RAMBO controller: ~19 GB on disk
+# (many packs share meshes; ~1 GB of distinct content)
+python -m qlm_bench.benchmark fetch --output data/standard100
+# the 1,000 demonstrations (LeRobot v2.1); add --physical for the initial-state bundles
+qlm data download --output data/qlm-bench
+```
+
+`fetch --case-id <id>` downloads only the scene packs of the given cases. The RAMBO controller checkpoint
+(`assets/rambo-go2-controller/iteration-2000/runtime/model_2000.pt`, trained by the QLM-Bench authors with the RAMBO
+code https://github.com/catachiii/rambo, commit 6f6c87c) comes with every Standard100 download.
+
+### Training Reset Pool
+
+The dataset publishes `reset_pools/train800-reset-pool.tar` for OPSD and M-OPD. It contains the 800 training initial states, their scene packs, and the RAMBO controller. Download it from the simulation environment and extract with GNU tar to preserve the hard links.
+
+```bash
+python - <<'PY'
+from huggingface_hub import hf_hub_download
+from qlm_bench.config import dataset_repo_id, dataset_revision
+
+hf_hub_download(
+    dataset_repo_id(),
+    "reset_pools/train800-reset-pool.tar",
+    repo_type="dataset",
+    revision=dataset_revision(),
+    local_dir="data/qlm-bench",
+)
+PY
+tar -xf data/qlm-bench/reset_pools/train800-reset-pool.tar -C data/qlm-bench/reset_pools
+```
+
+Pass `data/qlm-bench/reset_pools/train800-reset-pool/manifest.json` to the streaming worker as `--pool`, or set `QLM_TRAIN_POOL` to the absolute manifest path in the WAM-Policy site configuration.
+
+### Task RL Runtime Inputs
+
+This code checkout includes the task inputs for `push_box` and `open_room_door`. In the WAM-Policy model environment, run the preparation command from the QLM-Bench checkout to unpack the case files and download the corresponding scene packs and controller. The example uses `push_box`. [Task RL inputs](inputs/task_rl)
+
+```bash
+python -m wam_policy.task_rl prepare --task push_box --inputs inputs/task_rl/push_box \
+    --data-root data/task-rl --out data/task-rl/cases --download
+```
+
+## ⚙️ Environment Setup
+
+### Installation
+
+Clone this GitHub repository for the simulator, benchmark runner and training workers.
+
+```bash
+git clone https://github.com/AIGeeksGroup/QLM-Bench.git
+cd QLM-Bench
+```
 
 Linux x86_64. Two environments are used:
 
@@ -69,23 +147,64 @@ Linux x86_64. Two environments are used:
 Rendering backends: Standard100 renders with **hardware EGL** (`MUJOCO_GL=egl`, NVIDIA driver); the training
 workers render with **OSMesa / llvmpipe** on CPU (`libosmesa6`). `ffmpeg` is needed only to record videos.
 `requirements/mujoco-cuda.constraints.txt` lists the optional MJWarp stack used for part of the demonstration
-synthesis. Site settings are read from environment variables; see `configs/site.example.env`.
+synthesis. See the [site configuration example](configs/site.example.env) for environment variables.
 
-## Download data
+### Smoke Tests
+
+One small run per main path (also a check of the local environment):
 
 ```bash
-# Standard100 suite + 92 scene packs + RAMBO controller: ~19 GB on disk
-# (many packs share meshes; ~1 GB of distinct content)
-python -m qlm_bench.benchmark fetch --output data/standard100
-# the 1,000 demonstrations (LeRobot v2.1); add --physical for the initial-state bundles
-qlm data download --output data/qlm-bench
+# Standard100: one episode against the dummy policy
+python examples/dummy_policy_server.py --port 8765 &
+python -m qlm_bench.benchmark run --resource-root data/standard100 --policy-port 8765 \
+    --cases push100-20261014-091 --output /tmp/s100-smoke
+# streaming training worker, both render modes, policy frames compared
+python scripts/smoke/training_env_worker.py --pool <reset pool>/manifest.json --output /tmp/train-smoke --compare
+# Task RL scene worker: one window, rollout-state capture and restore (OSMesa). Needs a data root with the scene
+# packs and controller, prepared by WAM-Policy (unpacks inputs/task_rl and fetches the large files by sha256):
+#   python -m wam_policy.task_rl prepare --task push_box --inputs inputs/task_rl/push_box --data-root <dir> --out <dir>/cases --download
+# then take case/model from inputs/task_rl/push_box/scene-check-picks.json with @WORKSPACE@ = <dir>:
+MUJOCO_GL=osmesa python scripts/smoke/task_rl_scene_worker.py \
+    --case <dir>/task_rl/push_box/cases/push-approved-20261014-03.json \
+    --model <dir>/task_rl/push_box/scenes/push-approved-20261014-03/scene.xml \
+    --controller <dir>/assets/rambo-go2-controller/iteration-2000/runtime/model_2000.pt \
+    --commands inputs/task_rl/push_box/commands/push-approved-20261014-03.npz --output /tmp/rl-smoke
+# demonstration synthesis: one turn_valve trace with the approved executor
+python scripts/synthesis/example_one_demonstration.py data/standard100 turn_valve-20261016-091 /tmp/valve-demo
 ```
 
-`fetch --case-id <id>` downloads only the scene packs of the given cases. The RAMBO controller checkpoint
-(`assets/rambo-go2-controller/iteration-2000/runtime/model_2000.pt`, trained by the QLM-Bench authors with the RAMBO
-code https://github.com/catachiii/rambo, commit 6f6c87c) comes with every Standard100 download.
+## 🚀 Training
 
-## Run Standard100
+WAM-Policy provides the learner, model and training recipes. Clone it with `git clone https://github.com/AIGeeksGroup/WAM-Policy.git` to run those stages. [WAM-Policy Code](https://github.com/AIGeeksGroup/WAM-Policy)
+
+### Training Environments (used by WAM-Policy)
+
+| | entry point | paper stage |
+|---|---|---|
+| Streaming on-policy environment | `python -m qlm_bench.training_env worker ...` | 1.2 OPSD, 2.2 M-OPD |
+| Task RL scene worker | `python -m qlm_bench.task_rl.scene_worker --controller ... --state-root ...` | 2.1 Task-Specific RL |
+
+Both run native MuJoCo CPU physics with RAMBO on CPU. The streaming worker resets from the train-split reset
+pool (80 train initial states per task, no held-out scene) and is scheduled across learner ranks by a shared
+episode schedule. Use the [published reset pool](#training-reset-pool). The maintainer command `prepare-pool`
+requires the original train-scene packs. The Task RL worker resets any train case, executes 16-command chunks,
+and captures/restores full simulator snapshots at chunk boundaries. Its inputs are in `inputs/task_rl/`.
+
+**Render-speed switch.** `--render-mode full|sampled` (or `QLM_RENDER_MODE`). `full` (default) renders the
+policy views after every command plus the observer camera; `sampled` renders only at the 80 ms sample points
+and skips the observer. The frames a policy receives are bit-identical; `sampled` is about 3–4× faster per
+chunk. The paper used `full` for OPSD and `sampled` for M-OPD and Task RL. Standard100 always renders in full.
+
+**Scene binding.** A scene pack's `resource-manifest.json` lists every file with its sha256; building a
+runtime re-checks them and derives the scene's resource identity from them. Cases, reset pools and rollout
+states name their scene by this identity, so a reset can never run on a different scene than recorded. The
+identity is also the directory key of the scene packs on the dataset (`assets/<asset>/<identity>/`).
+
+## 📊 Evaluation
+
+### Run Standard100
+
+Standard100 (`mujoco-standard-test100-v1`) contains ten held-out scene configurations (cases) per task, with a time limit of 24 to 60 s per task. Each task contributes two Clean and eight Randomized scenes reconstructed from their published initial states. The paper uses policy seeds 42, 43, and 44 on each case, for 300 episodes per policy. A policy seed only sets the initial noise of the policy, while the case fixes the scene, its reset, and the physics. Simulation waits for the policy at every chunk, so success rates do not depend on inference speed.
 
 QLM-Bench is the client: start your policy server first, then run one process per policy seed.
 
@@ -105,7 +224,7 @@ session. `--cases a,b,...` restricts a run to some cases (useful to run several 
 policy server; not a Standard100 score). `--record-video` writes the policy views and the 720p observer camera.
 `python -m qlm_bench.benchmark verify` reconstructs all 100 cases without a policy.
 
-### Policy interface
+### Policy Interface
 
 A policy is a localhost JSON-RPC server speaking `qlm-live-v1` (`qlm_bench.live`). It answers four calls:
 `reset` (first observation of an episode), `predict` (return a 16-step native9 `ActionChunk` for the current
@@ -113,32 +232,21 @@ observation), `feedback` (the executed commands and the next observation) and `e
 of every episode; reply e.g. `{status: "ended"}`). `examples/dummy_policy_server.py`
 is a complete minimal server; WAM-Policy's `wam_policy.inference.serve` is the server used in the paper.
 
-## Training environments (used by WAM-Policy)
+### Reproducing the Paper
 
-| | entry point | paper stage |
-|---|---|---|
-| Streaming on-policy environment | `python -m qlm_bench.training_env worker ...` | 1.2 OPSD, 2.2 M-OPD |
-| Task RL scene worker | `python -m qlm_bench.task_rl.scene_worker --controller ... --state-root ...` | 2.1 Task-Specific RL |
+| Resource | Where to start |
+|---|---|
+| Standard100 tasks, metrics and protocol | [Runner and three-seed command](#run-standard100) |
+| Demonstrations, held-out scenes and train800 | [QLM-Bench Dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench) |
+| WAM-Policy training and evaluation, including default and accelerated runners | [WAM-Policy Code](https://github.com/AIGeeksGroup/WAM-Policy) |
+| Released teacher, students, specialists and ablation checkpoints | [WAM-Policy Models](https://huggingface.co/AIGeeksGroup/WAM-Policy) |
 
-Both run native MuJoCo CPU physics with RAMBO on CPU. The streaming worker resets from the train-split reset
-pool (80 train initial states per task, no held-out scene) and is scheduled across learner ranks by a shared
-episode schedule. Use the published pool: download `reset_pools/train800-reset-pool.tar` from the dataset,
-unpack it and pass `reset_pools/train800-reset-pool/manifest.json` as `--pool`. (`prepare-pool` is a maintainer
-tool that needs the original train-scene packs; it cannot rebuild the pool from the dataset snapshot.) The Task
-RL worker resets any train case, executes 16-command chunks, and captures/restores full simulator snapshots at
-chunk boundaries. Its inputs are in `inputs/task_rl/`.
+### Baselines
 
-**Render-speed switch.** `--render-mode full|sampled` (or `QLM_RENDER_MODE`). `full` (default) renders the
-policy views after every command plus the observer camera; `sampled` renders only at the 80 ms sample points
-and skips the observer. The frames a policy receives are bit-identical; `sampled` is about 3–4× faster per
-chunk. The paper used `full` for OPSD and `sampled` for M-OPD and Task RL. Standard100 always renders in full.
+`baselines/leg_manip/` is a general re-implementation of the Leg-Manip baseline (controller + DP3 planner);
+[Leg-Manip README](baselines/leg_manip/README.md)
 
-**Scene binding.** A scene pack's `resource-manifest.json` lists every file with its sha256; building a
-runtime re-checks them and derives the scene's resource identity from them. Cases, reset pools and rollout
-states name their scene by this identity, so a reset can never run on a different scene than recorded. The
-identity is also the directory key of the scene packs on the dataset (`assets/<asset>/<identity>/`).
-
-## Interfaces for policy and training code
+## Interfaces for Policy and Training Code
 
 **Standard100** (`python -m qlm_bench.benchmark`):
 
@@ -190,48 +298,10 @@ Operations: `reset {case, model}`, `restore_state {case, model, path}`, `execute
 the local data root; `scene-files.json` lists every scene file (and the controller under
 `assets/rambo-go2-controller/iteration-2000/runtime/`) by sha256 so missing files can be fetched from the dataset.
 
-## Demonstration synthesis
-
-What is released: the human-approved, LLM-drafted executors and recipes of the six articulated tasks, the
-approved reference traces / template of push, press, lift and kick, the executor libraries
-(`src/qlm_bench/synthesis/`), and `scripts/synthesis/example_one_demonstration.py`, which re-generates one
-demonstration physics trace with an approved executor on a Standard100 scene and audits it. The full
-100-episode campaigns additionally need the unreleased scene-source assets and pilot records; the HF dataset is
-their product. See `scripts/synthesis/README.md`.
-
-## Smoke tests
-
-One small run per main path (also a check of the local environment):
-
-```bash
-# Standard100: one episode against the dummy policy
-python examples/dummy_policy_server.py --port 8765 &
-python -m qlm_bench.benchmark run --resource-root data/standard100 --policy-port 8765 \
-    --cases push100-20261014-091 --output /tmp/s100-smoke
-# streaming training worker, both render modes, policy frames compared
-python scripts/smoke/training_env_worker.py --pool <reset pool>/manifest.json --output /tmp/train-smoke --compare
-# Task RL scene worker: one window, rollout-state capture and restore (OSMesa). Needs a data root with the scene
-# packs and controller, prepared by WAM-Policy (unpacks inputs/task_rl and fetches the large files by sha256):
-#   python -m wam_policy.task_rl prepare --task push_box --inputs inputs/task_rl/push_box --data-root <dir> --out <dir>/cases --download
-# then take case/model from inputs/task_rl/push_box/scene-check-picks.json with @WORKSPACE@ = <dir>:
-MUJOCO_GL=osmesa python scripts/smoke/task_rl_scene_worker.py \
-    --case <dir>/task_rl/push_box/cases/push-approved-20261014-03.json \
-    --model <dir>/task_rl/push_box/scenes/push-approved-20261014-03/scene.xml \
-    --controller <dir>/assets/rambo-go2-controller/iteration-2000/runtime/model_2000.pt \
-    --commands inputs/task_rl/push_box/commands/push-approved-20261014-03.npz --output /tmp/rl-smoke
-# demonstration synthesis: one turn_valve trace with the approved executor
-python scripts/synthesis/example_one_demonstration.py data/standard100 turn_valve-20261016-091 /tmp/valve-demo
-```
-
-## Baselines
-
-`baselines/leg_manip/` is a general re-implementation of the Leg-Manip baseline (controller + DP3 planner);
-see its README.
-
 ## License
 
-QLM-Bench is released under CC BY-NC 4.0 (see `LICENSE`). The RAMBO controller port is adapted from the
+QLM-Bench is released under CC BY-NC 4.0 (see [LICENSE](LICENSE)). The RAMBO controller port is adapted from the
 CC BY-NC 4.0 RAMBO code of Cheng et al. (RA-L 2025, https://github.com/catachiii/rambo); the controller
 checkpoint distributed with the dataset was trained by the QLM-Bench authors with that code and is released under
 CC BY-NC 4.0. The command/live interface files are shared with WAM-Policy, where they are provided under
-Apache-2.0. Third-party components and assets, with their licenses, are listed in `THIRD_PARTY_NOTICES.md`.
+Apache-2.0. Third-party components and assets, with their licenses, are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
