@@ -8,7 +8,7 @@ Code repository for WAM-Policy training and evaluation.
 >
 > \*Equal contribution. †Corresponding authors. ‡Project lead.
 >
-> #### [Website](https://aigeeksgroup.github.io/WAM-Policy/) | [WAM-Policy code](https://github.com/AIGeeksGroup/WAM-Policy) | [WAM-Policy weights](https://huggingface.co/AIGeeksGroup/WAM-Policy) | [QLM-Bench code](https://github.com/AIGeeksGroup/QLM-Bench) | [QLM-Bench dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
+> #### [Website](https://aigeeksgroup.github.io/WAM-Policy/) | [WAM-Policy code](https://github.com/AIGeeksGroup/WAM-Policy) | [WAM-Policy weights](https://huggingface.co/AIGeeksGroup/WAM-Policy) | [QLM-Bench code](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench) | [QLM-Bench dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
 
 ## ✏️ Citation
 
@@ -34,7 +34,7 @@ Arm-free quadrupeds can perform loco-manipulation, walking on three legs while m
 
 ### QLM-Bench
 
-See the [QLM-Bench code README](https://github.com/AIGeeksGroup/QLM-Bench) for data preparation and evaluation setup,
+See the [QLM-Bench code README](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench) for data preparation and evaluation setup,
 and the [QLM-Bench dataset card](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench) for downloads, formats and splits.
 
 ![The ten tasks of QLM-Bench](./assets/qlm_bench_tasks.png)
@@ -53,7 +53,13 @@ Use separate Python environments for the policy and the simulator.
    ```
 
    The paper uses ROCm for training and the [CUDA 12.8 lockfile](./requirements/policy-cuda128.lock) for evaluation.
-2. **QLM-Bench** (Python ≥ 3.11). Install the simulator in its own environment with the [QLM-Bench setup guide](https://github.com/AIGeeksGroup/QLM-Bench#installation). Install the live protocol in the WAM environment with `pip install -e "/path/to/QLM-Bench[live]"`.
+2. **QLM-Bench** (Python ≥ 3.11). From the parent directory of the WAM-Policy checkout, clone the simulator into a separate `QLM-Bench` directory.
+
+   ```bash
+   git clone -b qlm-bench https://github.com/AIGeeksGroup/WAM-Policy.git QLM-Bench
+   ```
+
+   Install the simulator in its own environment with the [QLM-Bench setup guide](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench#installation). Install the live protocol in the WAM environment with `pip install -e "/path/to/QLM-Bench[live]"`.
 
 Copy the [site configuration](./configs/site.example.env), set `QLM_BENCH_SRC` to the QLM-Bench checkout's `src/` directory and `QLM_PYTHON` to its interpreter, then source the file.
 
@@ -135,7 +141,7 @@ Use `--seeds 42,43,44` for the paper's 300-episode protocol and see `--help` in 
 | Paper table | Entry point or specification |
 |---|---|
 | Tab. 1: Success rate (%) on QLM-Bench Standard100 | [Default runner](./scripts/evaluation/standard100.sh) and [accelerated runner](./scripts/evaluation/standard100_accelerated.sh) |
-| Tab. 1: Leg-Manip baseline | [Leg-Manip implementation and Standard100 adaptation status](https://github.com/AIGeeksGroup/QLM-Bench/tree/main/baselines/leg_manip) |
+| Tab. 1: Leg-Manip baseline | [Leg-Manip implementation and Standard100 adaptation status](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench/baselines/leg_manip) |
 | Tab. 2: Training contexts | [OPSD config](./configs/stage1_2_opsd/opsd.json) and [OPSD ablation configs](./configs/stage1_2_opsd/ablations/) |
 | Tab. 3: Longer training | [Longer training config](./configs/stage1_2_opsd/ablations/longer_training.json) and [teacher cache only config](./configs/stage1_2_opsd/ablations/teacher_cache_only.json) |
 | Tab. 4: Distillation objective | [Standard100 runner](./scripts/evaluation/standard100.sh) for the 1/2-NFE teacher at seed 42 and the [900-update OPSD config](./configs/stage1_2_opsd/ablations/longer_training.json). |
@@ -150,12 +156,13 @@ Use `--seeds 42,43,44` for the paper's 300-episode protocol and see `--help` in 
 
 ## License
 
-- Code: Apache License 2.0 (`LICENSE`); third-party attributions (LingBot-VA, Wan, torchtitan) in
+- WAM-Policy code on `main` is licensed under [Apache-2.0](./LICENSE). Third-party attributions (LingBot-VA, Wan, torchtitan) are in
   `NOTICE`. `supplementary/arm_libero/` carries its own LICENSE and NOTICE.
+- QLM-Bench code on [`qlm-bench`](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench) is licensed under [CC BY-NC 4.0](https://github.com/AIGeeksGroup/WAM-Policy/blob/qlm-bench/LICENSE).
 - Released weights (`AIGeeksGroup/WAM-Policy`): Apache License 2.0. They are derived from the
   Apache-2.0 models `robbyant/lingbot-va-base` (quadruped) and `robbyant/lingbot-va-posttrain-libero-long` (arm).
-- The QLM-Bench dataset and the RAMBO controller weights are licensed CC BY-NC 4.0; see the QLM-Bench
-  repository and the dataset card.
+- The QLM-Bench dataset and the RAMBO controller weights are licensed CC BY-NC 4.0. See the
+  [`qlm-bench` branch](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench) and the dataset card.
 
 ## 😘 Acknowledgement
 
