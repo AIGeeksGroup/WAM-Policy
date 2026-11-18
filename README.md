@@ -1,42 +1,63 @@
-# WAM-Policy
+# WAM-Policy: World Action Models with On-Policy Distillation for Quadrupedal Loco-Manipulation
 
-Code for **WAM-Policy**, a world-action model (WAM) policy for quadruped loco-manipulation, and its
-training pipeline on the **QLM-Bench** simulation benchmark.
+Code implementation for the paper below.
 
-The repository follows the paper:
+> **WAM-Policy: World Action Models with On-Policy Distillation for Quadrupedal Loco-Manipulation**
+>
+> [Junlin Long](https://github.com/JalenLoong)\*, [Xu Deng](https://github.com/Ethan-Xu-Deng)\*, [Yiran Wang](https://scholar.google.com/citations?user=eg_nBF0AAAAJ&hl=en), [Yue Yang](https://au.linkedin.com/in/yue-yang-982714286)†, [Yang Zhao](https://yangyangkiki.github.io/)†, and [Zeyu Zhang](https://steve-zeyu-zhang.github.io/)‡
+>
+> \*Equal contribution. †Corresponding authors. ‡Project lead.
+>
+> #### [Website](https://aigeeksgroup.github.io/WAM-Policy/) | [Models](https://huggingface.co/AIGeeksGroup/WAM-Policy) | [QLM-Bench](https://github.com/AIGeeksGroup/QLM-Bench) | [Dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
 
-| Stage | What it does | Code | Configs / scripts |
-|---|---|---|---|
-| 1.1 Cross-Morphology Policy Transfer | adapt LingBot-VA to the Go2 (dual-view 360p RGB, native 9D command), SFT on the 800 training demonstrations of QLM-Bench → **teacher** | `wam_policy.transfer`, `wam_policy.data`, `wam_policy.models` | `configs/stage1_1_transfer/`, `scripts/stage1_1_transfer/` |
-| 1.2 OPSD | on-policy self-distillation of the 25/50-NFE teacher into a 1/2-NFE **student** | `wam_policy.opsd` | `configs/stage1_2_opsd/`, `scripts/stage1_2_opsd/` |
-| 2.1 Task-Specific RL | window-level DiffusionNFT on the teacher → per-task **specialist** LoRA adapters | `wam_policy.task_rl` | `configs/stage2_1_task_rl/`, `scripts/stage2_1_task_rl/` |
-| 2.2 M-OPD | multi-teacher OPD: task-routed specialist teachers distilled into the OPSD student → **M-OPD student** | `wam_policy.mopd` (+ `wam_policy.opsd` engine) | `configs/stage2_2_mopd/`, `scripts/stage2_2_mopd/` |
-| Evaluation | QLM-Bench Standard100 (100 cases; seeds 42/43/44 = 300 episodes) | `wam_policy.inference`, `wam_policy.evaluation` | `configs/evaluation/`, `scripts/evaluation/` |
-| Ablation | RGB + proprioception input (Stage 1.1 variant) | `wam_policy.ablations.proprioception` | `configs/ablations/proprioception/`, `scripts/ablations/proprioception/` |
+## ✏️ Citation
+
+Citation will be added after publication.
+
+---
+
+## 🏃 Introduction
+
+WAM-Policy turns one WAM into a quadrupedal loco-manipulation policy via two stages, one for each challenge: Cross-Morphology Policy Adaptation and Acceleration (Stage 1) and Task-Specific Improvement and Merging (Stage 2). Both stages end by distilling a high-NFE teacher, the policy itself in Stage 1 and the task-routed teachers in Stage 2, on-policy into a 1/2-NFE student (one video and two action steps), so the final policy is stronger than the transferred one at a fraction of its inference cost.
+
+![The OPSD student on the real robot (top) and in simulation (bottom)](./assets/teaser.png)
+
+- **Cross-morphology adaptation and acceleration.** Stage 1 replaces only the visual and action interfaces of a WAM, fine-tunes it on quadruped demonstrations, and accelerates it by a few-step form of on-policy self-distillation (OPSD) ([Zhao et al.](https://arxiv.org/abs/2601.18734)), in which the same network with more sampling steps labels the student's own samples. The transferred policy reaches 77.0%, and the OPSD student keeps 76.7% (69.3% without distillation) while sampling 14 times faster.
+- **Task-specific improvement and merging.** Stage 2 tunes specialist teachers by per-task reinforcement learning and merges them by multi-teacher on-policy distillation (M-OPD) ([Ni et al.](https://arxiv.org/abs/2610.21522)), which routes each context to the teacher of its task. On pushing a box and opening a door, the specialists succeed in every episode, against 47% and 53% for the OPSD teacher, and the M-OPD student reaches 90% and 87%, raising the ten-task success from 76.7% to 85.0%, above the OPSD teacher (77.0%).
+- **QLM-Bench**, ten simulated loco-manipulation tasks with 1,000 language-annotated demonstrations synthesized without teleoperation, and evaluation in simulation and on a real Unitree Go2 Air, where the OPSD student runs without real-robot data.
+
+## 📦 Data Preparation
 
 The simulator, tasks, RAMBO controller, demonstrations and the Standard100 benchmark live in the
-companion repository **QLM-Bench** (https://github.com/AIGeeksGroup/QLM-Bench); this repository talks to it through the `qlm_bench` Python package
+companion repository [QLM-Bench](https://github.com/AIGeeksGroup/QLM-Bench). This repository talks to it through the `qlm_bench` Python package
 (qlm-live-v1 policy protocol, training-environment workers, Task RL scene workers, benchmark runner).
 
-## Contents
+![The ten tasks of QLM-Bench](./assets/qlm_bench_tasks.png)
 
-- [Installation](#installation)
-- [Released weights](#released-weights)
-- [Quick start: evaluate a released policy](#quick-start-evaluate-a-released-policy)
-- [Stage 1.1 Cross-Morphology Policy Transfer](#stage-11-cross-morphology-policy-transfer)
-- [Stage 1.2 OPSD](#stage-12-opsd)
-- [Stage 2.1 Task-Specific RL](#stage-21-task-specific-rl)
-- [Stage 2.2 M-OPD](#stage-22-m-opd)
-- [QLM-Bench Standard100 evaluation](#qlm-bench-standard100-evaluation)
-- [Default vs. accelerated settings](#default-vs-accelerated-settings)
-- [Smoke tests](#smoke-tests)
-- [Ablation: RGB + proprioception](#ablation-rgb--proprioception)
-- [Real-robot deployment (Unitree Go2)](#real-robot-deployment-unitree-go2)
-- [Supplementary: arm manipulation on LIBERO](#supplementary-arm-manipulation-on-libero)
-- [License](#license)
-- [Citation](#citation)
+### QLM-Bench Demonstrations
 
-## Installation
+After [installation](#installation), prepare the ten QLM-Bench demonstration releases (1,000 episodes split into 800 train, 100 validation and 100 test).
+
+```bash
+source configs/site.env
+scripts/download.sh base
+scripts/stage1_1_transfer/prepare_data.sh   # download releases -> fit train-split normalizer -> frozen VAE/T5 cache (1 GPU)
+```
+
+### Reset Pool and Standard100
+
+Get the reset pool once (also used by M-OPD): `scripts/download.sh reset_pool` downloads
+`reset_pools/train800-reset-pool.tar` from the dataset and extracts it (keep tar's hard links) to
+`$QLM_BENCH_SNAPSHOT/reset_pools/train800-reset-pool/`; `QLM_TRAIN_POOL` points at its `manifest.json`.
+
+```bash
+scripts/download.sh reset_pool    # train800 for Stages 1.2 and 2.2
+scripts/download.sh standard100   # Standard100 cases and assets
+```
+
+## ⚙️ Environment Setup
+
+### Installation
 
 Two Python environments are used, because the simulator and the model have different dependencies:
 
@@ -65,7 +86,7 @@ cp configs/site.example.env configs/site.env && $EDITOR configs/site.env && sour
 ```
 W&B logging and uploads are off unless enabled there (`WANDB_MODE`, `WAM_UPLOAD_REPO`).
 
-## Released weights
+### Pretrained Checkpoints
 
 Hugging Face model repository [`AIGeeksGroup/WAM-Policy`](https://huggingface.co/AIGeeksGroup/WAM-Policy), branch `main`
 (set by `WAM_HF_MODEL_REPO` / `WAM_HF_MODEL_REVISION`):
@@ -105,18 +126,38 @@ huggingface-cli download "$WAM_HF_MODEL_REPO" --revision "$WAM_HF_MODEL_REVISION
 Use the resulting directory as the adapter argument to `scripts/evaluation/standard100.sh opsd_student`.
 For an arm checkpoint, use `fetch-student --name` as described in the [arm README](supplementary/arm_libero/README.md#evaluation).
 
-## Quick start: evaluate a released policy
+### Smoke Tests
 
-```bash
-source configs/site.env
-# Stage 1.2 OPSD student on Standard100 (seed 42 = 100 episodes), one policy service + one client
-scripts/evaluation/standard100.sh opsd_student runs/eval/opsd "$WAM_WEIGHTS/stage1_2_opsd_student" --seeds 42
-```
-This runs `python -m wam_policy.inference.serve` (model environment) and
-`python -m qlm_bench.benchmark run` (QLM-Bench environment) and writes `trials.csv` and
-`summary.json`. A 16 GB GPU is enough (30 transformer blocks on the GPU, VAE on the CPU).
+Each main chain has one minimal-scale entry in `scripts/smoke/` that also checks the environment:
 
-## Stage 1.1 Cross-Morphology Policy Transfer
+| Chain | Command | What it runs |
+|---|---|---|
+| Stage 1.1 | `scripts/smoke/stage1_1_sft.sh` | tiny 30D→9D conversion, 2-rank CPU SFT, resume, export, `load_teacher` (CPU, ~1 min) |
+| Stage 1.2 OPSD | `scripts/smoke/opsd.sh` | tiny model: teacher cache → updates (history reuse on/off compared) → resume → export → deployment sampler (CPU, seconds) |
+| Stage 2.1 Task RL | `scripts/smoke/task_rl_push_box.sh` | push_box at tiny scale with real QLM-Bench scene workers: pool → one round → export → attach (GPU ~2 GB, ~6 min) |
+| Stage 2.2 M-OPD | `scripts/smoke/mopd.sh` | tiny model: specialist routing → specialist cache merge → updates from an exported student → export (CPU, seconds) |
+| Standard100 | `scripts/smoke/standard100.sh` | random tiny teacher served over qlm-live-v1 for one Standard100 episode with the QLM-Bench runner |
+
+They need `configs/site.env`; Task RL and Standard100 also need the QLM-Bench environment, the VAE
+(`scripts/download.sh base`) and the prompt embeddings (`scripts/download.sh prompts`, a few MB).
+None needs the model weights.
+
+## 🚀 Training
+
+The repository follows the paper:
+
+| Stage | What it does | Code | Configs / scripts |
+|---|---|---|---|
+| 1.1 Cross-Morphology Policy Transfer | adapt LingBot-VA to the Go2 (dual-view 360p RGB, native 9D command), SFT on the 800 training demonstrations of QLM-Bench → **teacher** | `wam_policy.transfer`, `wam_policy.data`, `wam_policy.models` | `configs/stage1_1_transfer/`, `scripts/stage1_1_transfer/` |
+| 1.2 OPSD | on-policy self-distillation of the 25/50-NFE teacher into a 1/2-NFE **student** | `wam_policy.opsd` | `configs/stage1_2_opsd/`, `scripts/stage1_2_opsd/` |
+| 2.1 Task-Specific RL | window-level DiffusionNFT on the teacher → per-task **specialist** LoRA adapters | `wam_policy.task_rl` | `configs/stage2_1_task_rl/`, `scripts/stage2_1_task_rl/` |
+| 2.2 M-OPD | multi-teacher OPD: task-routed specialist teachers distilled into the OPSD student → **M-OPD student** | `wam_policy.mopd` (+ `wam_policy.opsd` engine) | `configs/stage2_2_mopd/`, `scripts/stage2_2_mopd/` |
+| Evaluation | QLM-Bench Standard100 (100 cases; seeds 42/43/44 = 300 episodes) | `wam_policy.inference`, `wam_policy.evaluation` | `configs/evaluation/`, `scripts/evaluation/` |
+| Ablation | RGB + proprioception input (Stage 1.1 variant) | `wam_policy.ablations.proprioception` | `configs/ablations/proprioception/`, `scripts/ablations/proprioception/` |
+
+### Stage 1.1 Cross-Morphology Policy Transfer
+
+![Stage 1: Cross-Morphology Policy Adaptation and Acceleration](./assets/transfer.png)
 
 **Input:** LingBot-VA base (`robbyant/lingbot-va-base@68b7bc1`), the ten QLM-Bench demonstration
 releases (1,000 episodes; 800/100/100 train/validation/test). **Output:** the teacher.
@@ -141,13 +182,12 @@ steps (lr 1e-5, 10 warm-up steps): about 14 h. Data caching needs one GPU.
 **Paper:** Table "Success rate (%) on QLM-Bench Standard100" (teacher, 25/50 NFE) and Table
 "Sampling steps without distillation" (2/4 and 1/2 NFE; evaluate with `--video-steps/--action-steps`).
 
-## Stage 1.2 OPSD
+### Stage 1.2 OPSD
+
+![On-Policy Self-Distillation (Stage 1.2, top) and Stage 2 (bottom)](./assets/opd.png)
 
 **Input:** the Stage 1.1 teacher, the QLM-Bench train800 reset pool, prompt embeddings.
 **Output:** the OPSD student (and a teacher target cache, reused by M-OPD).
-Get the reset pool once (also used by M-OPD): `scripts/download.sh reset_pool` downloads
-`reset_pools/train800-reset-pool.tar` from the dataset and extracts it (keep tar's hard links) to
-`$QLM_BENCH_SNAPSHOT/reset_pools/train800-reset-pool/`; `QLM_TRAIN_POOL` points at its `manifest.json`.
 
 ```bash
 source configs/site.env
@@ -181,7 +221,7 @@ plus the teacher cache (5,000 contexts).
 **Paper:** Table "Success rate (%) on QLM-Bench Standard100" (OPSD student), Table "Training contexts"
 (`teacher_cache_only`, `streaming_only`) and Table "Longer training" (`longer_training`).
 
-## Stage 2.1 Task-Specific RL
+### Stage 2.1 Task-Specific RL
 
 **Input:** the Stage 1.1 teacher, QLM-Bench Task RL inputs (`<QLM-Bench>/inputs/task_rl/<task>/`), the
 RAMBO controller. **Output:** one specialist adapter per task (`push_box`, `open_room_door`).
@@ -210,7 +250,7 @@ bit-reproducible across runs).
 **Paper:** the specialist rows of Table "Success rate (%) on QLM-Bench Standard100" (each specialist
 is evaluated on all ten tasks).
 
-## Stage 2.2 M-OPD
+### Stage 2.2 M-OPD
 
 **Input:** the OPSD student (S300 EMA) as the initial student, the two specialists as task-routed
 teachers, and the **teacher target cache built by the Stage 1.2 cache stage** (`previous_cache`):
@@ -235,7 +275,32 @@ an unset specialist variable is an error. Like OPSD, the recipe assumes 8 ranks.
 **Paper:** the M-OPD row of Table "Success rate (%) on QLM-Bench Standard100"; paired tests in the
 supplementary Table "Paired comparisons on QLM-Bench".
 
-## QLM-Bench Standard100 evaluation
+### Default vs. Accelerated Settings
+
+Every switch defaults to the plain (not accelerated) behaviour; the paper configs turn on what the
+paper used. Differences between the two paths are noted in the table.
+
+| Where | Default | Accelerated | Paper |
+|---|---|---|---|
+| OPSD / M-OPD learner history (`history_reuse`) | full prefix replay | exact reuse of history K/V (value-identical) | on |
+| QLM training-environment rendering (`render_mode`) | `full`: every tick + observer camera | `sampled`: render only at the 40-tick sample points, no observer (policy frames bit-identical) | OPSD `full`; M-OPD and Task RL `sampled` |
+| Task RL candidate collection / start pool / in-training evaluation (`rows`) | 1 (row by row) | 8 rows batched (same starts, candidates, seeds and gradient batches; samples agree to bf16 rounding, not bit for bit) | 8 |
+| Standard100 | single service, single client, VAE on CPU | multi-session resident service, VAE on GPU (bf16 rounding differences only) | both (results merged) |
+
+## 📊 Evaluation
+
+### Quick start: evaluate a released policy
+
+```bash
+source configs/site.env
+# Stage 1.2 OPSD student on Standard100 (seed 42 = 100 episodes), one policy service + one client
+scripts/evaluation/standard100.sh opsd_student runs/eval/opsd "$WAM_WEIGHTS/stage1_2_opsd_student" --seeds 42
+```
+This runs `python -m wam_policy.inference.serve` (model environment) and
+`python -m qlm_bench.benchmark run` (QLM-Bench environment) and writes `trials.csv` and
+`summary.json`. A 16 GB GPU is enough (30 transformer blocks on the GPU, VAE on the CPU).
+
+### QLM-Bench Standard100 evaluation
 
 One unified policy server serves every model over qlm-live-v1 (two 640×360 RGB views + instruction →
 a 16×9 native9 command chunk, 0.32 s):
@@ -295,35 +360,19 @@ cover the same pairs unless `--allow-partial` is given (supplementary Table "Pai
 
 Hardware: an RTX 5070 Ti (16 GB) for the default path; the accelerated path was run on an RTX 5090.
 
-## Default vs. accelerated settings
+### Reproducing the Paper
 
-Every switch defaults to the plain (not accelerated) behaviour; the paper configs turn on what the
-paper used. Differences between the two paths are noted in the table.
+| Paper | Release entry point |
+|---|---|
+| Success rate (%) on QLM-Bench Standard100 | [QLM-Bench Standard100 evaluation](#qlm-bench-standard100-evaluation) |
+| Training contexts and longer training | [Stage 1.2 OPSD](#stage-12-opsd) and [ablation configs](./configs/stage1_2_opsd/ablations/) |
+| Sampling steps without distillation | [QLM-Bench Standard100 evaluation](#qlm-bench-standard100-evaluation), `--video-steps` and `--action-steps` |
+| Proprioception in Stage 1.1 | [Ablation: RGB + proprioception](#ablation-rgb--proprioception) |
+| Paired comparisons on QLM-Bench | [QLM-Bench Standard100 evaluation](#qlm-bench-standard100-evaluation), `wam_policy.evaluation.compare` |
+| Real-robot results on the Unitree Go2 Air | [Real-robot deployment](#real-robot-deployment-unitree-go2) |
+| Arm manipulation on LIBERO | [Arm README](./supplementary/arm_libero/README.md) |
 
-| Where | Default | Accelerated | Paper |
-|---|---|---|---|
-| OPSD / M-OPD learner history (`history_reuse`) | full prefix replay | exact reuse of history K/V (value-identical) | on |
-| QLM training-environment rendering (`render_mode`) | `full`: every tick + observer camera | `sampled`: render only at the 40-tick sample points, no observer (policy frames bit-identical) | OPSD `full`; M-OPD and Task RL `sampled` |
-| Task RL candidate collection / start pool / in-training evaluation (`rows`) | 1 (row by row) | 8 rows batched (same starts, candidates, seeds and gradient batches; samples agree to bf16 rounding, not bit for bit) | 8 |
-| Standard100 | single service, single client, VAE on CPU | multi-session resident service, VAE on GPU (bf16 rounding differences only) | both (results merged) |
-
-## Smoke tests
-
-Each main chain has one minimal-scale entry in `scripts/smoke/` that also checks the environment:
-
-| Chain | Command | What it runs |
-|---|---|---|
-| Stage 1.1 | `scripts/smoke/stage1_1_sft.sh` | tiny 30D→9D conversion, 2-rank CPU SFT, resume, export, `load_teacher` (CPU, ~1 min) |
-| Stage 1.2 OPSD | `scripts/smoke/opsd.sh` | tiny model: teacher cache → updates (history reuse on/off compared) → resume → export → deployment sampler (CPU, seconds) |
-| Stage 2.1 Task RL | `scripts/smoke/task_rl_push_box.sh` | push_box at tiny scale with real QLM-Bench scene workers: pool → one round → export → attach (GPU ~2 GB, ~6 min) |
-| Stage 2.2 M-OPD | `scripts/smoke/mopd.sh` | tiny model: specialist routing → specialist cache merge → updates from an exported student → export (CPU, seconds) |
-| Standard100 | `scripts/smoke/standard100.sh` | random tiny teacher served over qlm-live-v1 for one Standard100 episode with the QLM-Bench runner |
-
-They need `configs/site.env`; Task RL and Standard100 also need the QLM-Bench environment, the VAE
-(`scripts/download.sh base`) and the prompt embeddings (`scripts/download.sh prompts`, a few MB).
-None needs the model weights.
-
-## Ablation: RGB + proprioception
+### Ablation: RGB + proprioception
 
 A Stage 1.1 variant whose transformer also reads and predicts a 10D proprioceptive state (base
 height, gravity direction, linear and angular velocity). It reuses the Stage 1.1 frozen cache.
@@ -349,13 +398,13 @@ The header of `scripts/ablations/proprioception/train.sh` lists the exact conver
 **Hardware and time (paper):** 8×AMD MI355X, 5,000 steps, about 14 h.
 **Paper:** Table "Proprioception in Stage 1.1".
 
-## Real-robot deployment (Unitree Go2)
+### Real-robot deployment (Unitree Go2)
 
 The real-robot stack (ROS 2 bridge, cameras, time synchronisation) will be released separately.
 It talks to the same policy server, `python -m wam_policy.inference.serve`, over qlm-live-v1, so any
 released policy (the paper uses the OPSD student at 1/2 NFE) can be deployed unchanged.
 
-## Supplementary: arm manipulation on LIBERO
+### Supplementary: arm manipulation on LIBERO
 
 The arm (LIBERO) experiments of the supplementary material are a self-contained sub-project in
 [`supplementary/arm_libero/`](supplementary/arm_libero/README.md) with its own environment, README,
@@ -371,6 +420,11 @@ but is not compatible: use a separate environment and never put both on `PYTHONP
 - The QLM-Bench dataset and the RAMBO controller weights are licensed CC BY-NC 4.0; see the QLM-Bench
   repository and the dataset card.
 
-## Citation
+## 😘 Acknowledgement
 
-Citation will be added after publication.
+This repository contains code derived from the following third-party works.
+
+- [LingBot-VA](https://github.com/Robbyant/lingbot-va)
+- [Wan](https://github.com/Wan-Video/Wan2.1) (via LingBot-VA)
+
+See [NOTICE](./NOTICE) for third-party attribution.
