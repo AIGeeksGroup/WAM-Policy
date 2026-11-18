@@ -176,7 +176,7 @@ episode schedule. Use the [published reset pool](#training-reset-pool). The Task
 case, executes 16-command chunks, and captures/restores full simulator snapshots at chunk boundaries. Its
 inputs are in `inputs/task_rl/`.
 
-The paper used `full` for OPSD and `sampled` for M-OPD and Task RL.
+The paper used `--render-mode full` for OPSD and `--render-mode sampled` for M-OPD and Task RL.
 
 ## 📊 Evaluation
 
