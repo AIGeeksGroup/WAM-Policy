@@ -35,7 +35,6 @@ scripts/train/            prepare, teacher cache, one student (single node, torc
 scripts/slurm/            optional Slurm wrapper
 scripts/eval/             evaluation host setup, LIBERO-Pro2.0 and LIBERO-Long runners
 scripts/smoke/            minimal smokes (also an environment self-check)
-scripts/convert_student_export.py   arm_libero.json from a previously published export.json
 ```
 
 ## Paper terms and implementation
@@ -52,14 +51,7 @@ scripts/convert_student_export.py   arm_libero.json from a previously published 
 | Teacher cache | `scripts/train/teacher_cache.sh` | the teacher acts in 8 CPU LIBERO streams; about 5,000 (noise, ODE endpoint) targets of whole episodes |
 | Student (1/2 NFE) | — | `--policy student_1_2 --student <export>` |
 
-Every student is a rank-256 LoRA on θ₀ trained with the pseudo-Huber regression of the teacher's
-same-noise ODE endpoints, AdamW lr 3·10⁻⁵ after a 20-update warm-up, EMA 0.99 from update 50; the paper
-evaluates the EMA after 300 updates. SFT only uses flow matching on demonstrations with the upstream recipe
-(lr 10⁻⁵, 10-update warm-up, betas 0.9/0.95, weight decay 0.1, gradient clip 2.0) and is evaluated after 692
-updates. The learning rate is constant after the warm-up and nothing in a run depends on its total budget:
-the paper's OPSD and Streaming-only students are the S300 snapshots of 900-update runs, and its
-Teacher-cache-only student is the S300 snapshot of a 2,000-update run; the 300-update configs of
-`configs/students/` train the same students.
+The paper evaluates S300 EMA for the main distillation comparisons and S692 EMA for SFT only.
 
 ## Environments
 
@@ -86,7 +78,6 @@ External resources (downloaded, not redistributed; see NOTICE for licenses):
 at revision `0e89d1e7` (θ₀; `python -m arm_opsd.cli download-base-model --output <dir>`), and for SFT only
 [`robbyant/libero-long-lerobot`](https://huggingface.co/datasets/robbyant/libero-long-lerobot) at revision
 `8c0313b1` (CC BY-NC-SA 4.0; `hf download robbyant/libero-long-lerobot --repo-type dataset --revision 8c0313b1c7cd9fa3798798479cbf59b11af8979d --local-dir <dir>`).
-Check the licenses of LingBot-VA's weights and of LIBERO-Pro2.0 on their pages before use.
 
 ## Smoke tests
 
@@ -99,9 +90,8 @@ EVAL_ROOT=<prepared host> bash scripts/smoke/eval_one_episode.sh  # released OPS
 ## Training
 
 The paper's students were trained on one node with 8 AMD Instinct MI355X GPUs (ROCm, 288 GB per GPU).
-CUDA builds of torch take the same code path, but training on CUDA GPUs has not been tested (only the tiny
-CPU/GPU smokes). Each rank holds a teacher and a student copy of the 5.1B-parameter transformer and drives
-one CPU LIBERO worker. Run the commands from `supplementary/arm_libero` with the model environment active.
+Each rank holds a teacher and a student copy of the 5.1B-parameter transformer and drives one CPU LIBERO worker.
+Run the commands from `supplementary/arm_libero` with the model environment active.
 Copy `configs/site.example.json`, fill in the machine paths, then:
 
 ```bash
@@ -171,9 +161,6 @@ It prints every row of *Paired comparisons on LIBERO*: Δ (first minus second, t
 bootstrap 95% interval (LIBERO-Pro2.0: whole task instances resampled within each task; LIBERO-Long: cases
 within each task) and the exact two-sided McNemar p. Single comparisons: `report` / `report-long`.
 
-Generation noise is seeded per episode from the master seed 42, so a rerun on the same hardware and software
-repeats the episodes; other GPUs or library versions change the arithmetic and individual episodes.
-
 ## Tables
 
 | Supplementary table | Rows | Configs / students | Evaluation |
@@ -188,24 +175,6 @@ The Hugging Face model repository publishes the OPSD S300 EMA student in `supple
 and the six ablation checkpoints under `ablations/arm_libero/` on `main`. The table above lists the training
 configs for reproducing their exports. Teacher (high-NFE) values in the main arm table are taken from
 the LingBot-VA and LIBERO-Pro2.0 papers. [WAM-Policy model repository](https://huggingface.co/AIGeeksGroup/WAM-Policy)
-
-## Checks kept in the code
-
-No identity or checksum verification of code, weights, data or environments. What the code checks:
-
-- **Teacher-cache reuse key**: a cache is used only if its teacher sampler (steps, shifts, guidance), base
-  model repo/revision and longest prefix match the configuration.
-- **Resume consistency**: a resumed run must have the same native/method/experiment configuration as the
-  checkpoint (and the same reset manifest and seed for its episode schedule).
-- **Tensor and pairing contract**: LingBot-VA / LIBERO-Long latent, action and text shapes, the model geometry
-  and strict weight keys, the LoRA tensors of an adapter, and that a student is loaded onto the base model
-  and sampler steps it was trained for (`student_1_2` refuses a student of another base or sampler).
-- **Input checks**: reset manifests (schema, horizon, case counts per split, the 50 official test init states
-  per task, unique case ids and physical resets), LIBERO-Pro2.0 instruction lists that must cover the plan,
-  a results directory that must hold one policy/student/seed/plan only (so a rerun resumes it), and
-  cross-rank agreement of round versions, counters and scheduler state during multi-GPU training.
-- The CPU LIBERO worker executes a repeated request id only once (its reply is replayed), so a retried
-  request never advances physics twice.
 
 ## License
 

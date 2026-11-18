@@ -5,7 +5,8 @@
 Reads ``requests.jsonl`` written by ``python -m wam_policy.inference.serve --log-dir`` (the
 default Standard100 runner always passes one) and reports the mean / median wall time of
 ``predict`` requests, i.e. one 16-command chunk (sampling with the history cache, without the
-feedback encoding of the next observation). Measure on an idle GPU; the paper used an RTX 5070 Ti.
+feedback encoding of the next observation). The paper measured 0.159 s per chunk on an
+RTX 5070 Ti with merged OPSD LoRA, a CPU VAE, and CUDA synchronization around sampling.
 """
 import argparse
 import json

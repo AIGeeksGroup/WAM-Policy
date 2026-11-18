@@ -128,19 +128,20 @@ scripts/evaluation/standard100.sh opsd_student runs/eval/opsd \
   "$WAM_WEIGHTS/stage1_2_opsd_student" --seeds 42
 ```
 
-This evaluates the released OPSD student and writes `trials.csv` and `summary.json`. Use `--seeds 42,43,44` for the paper's 300-episode protocol. The [accelerated runner](./scripts/evaluation/standard100_accelerated.sh) supports `--jobs case:seed,...`. The [trial merger](./src/wam_policy/evaluation/trials.py) combines partial results from disjoint pairs.
-
-The paper's 0.159 s per chunk was measured on an RTX 5070 Ti with merged OPSD LoRA, CPU VAE, and CUDA synchronization around sampling. Use the [latency CLI](./src/wam_policy/evaluation/latency.py) to summarize inference logs for the run you evaluate.
+Use `--seeds 42,43,44` for the paper's 300-episode protocol and see `--help` in the [evaluation CLIs](./src/wam_policy/evaluation/) for runner, trial merging and latency options.
 
 ### Reproducing the Paper
 
 | Paper table | Entry point or specification |
 |---|---|
 | Tab. 1: Success rate (%) on QLM-Bench Standard100 | [Default runner](./scripts/evaluation/standard100.sh) and [accelerated runner](./scripts/evaluation/standard100_accelerated.sh) |
+| Tab. 1: Leg-Manip baseline | [Leg-Manip implementation and Standard100 adaptation status](https://github.com/AIGeeksGroup/QLM-Bench/tree/main/baselines/leg_manip) |
 | Tab. 2: Training contexts | [OPSD config](./configs/stage1_2_opsd/opsd.json) and [OPSD ablation configs](./configs/stage1_2_opsd/ablations/) |
 | Tab. 3: Longer training | [Longer training config](./configs/stage1_2_opsd/ablations/longer_training.json) and [teacher cache only config](./configs/stage1_2_opsd/ablations/teacher_cache_only.json) |
+| Tab. 4: Distillation objective | [Standard100 runner](./scripts/evaluation/standard100.sh) for the 1/2-NFE teacher at seed 42 and the [900-update OPSD config](./configs/stage1_2_opsd/ablations/longer_training.json). The distribution-matching result uses the separate 900-update DMD training recipe in the supplementary material. |
 | Tab. 5: Sampling steps without distillation | [Standard100 runner](./scripts/evaluation/standard100.sh) with `teacher`, `--video-steps` and `--action-steps` |
 | Tab. 6: Proprioception in Stage 1.1 | [SFT config](./configs/ablations/proprioception/sft5000.json) and [training script](./scripts/ablations/proprioception/train.sh). Evaluate with `proprioception_teacher` and set `--teacher` to the [SFT5000 checkpoint](https://huggingface.co/AIGeeksGroup/WAM-Policy/tree/main/ablations/quadruped/rgb_proprioception/s5000). |
+| Tab. S1: Ablations on QLM-Bench Standard100 per task | Use the configurations and evaluation entry points for Tabs. 2–6 and report the results by task. |
 | Tab. S2: Success rate (%) of an arm WAM on LIBERO | [Arm evaluation](./supplementary/arm_libero/README.md#evaluation) |
 | Tab. S3: Ablation studies on LIBERO-Pro2.0: success rate (%) | [Arm configs and tables](./supplementary/arm_libero/README.md#tables) |
 | Tab. S4: Success rate (%) on LIBERO after longer training | [Longer training configs](./supplementary/arm_libero/configs/ablations/longer_training/) |
