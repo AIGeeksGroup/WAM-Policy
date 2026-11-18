@@ -1,0 +1,41 @@
+{
+  "_comment": "Stage 1.2 teacher target cache: the frozen Stage 1.1 teacher acts at 25/50 NFE in the QLM training environment on 8 streams; its own chunks (noise, video plan, action) become about 5000 regression targets. Run with `python -m wam_policy.opsd cache`; the cache is <output>/learner/cache. Its 64 task/position-stratified entries are the held-out set of every Stage 1.2 run and it is the previous cache of Stage 2.2 M-OPD.",
+  "seed": 42,
+  "world_size": 8,
+  "chunks_per_clip": 3,
+  "student_updates": 300,
+  "video_steps": 1,
+  "action_steps": 2,
+  "window_units": 8,
+  "lora_rank": 256,
+  "lora_alpha": 256,
+  "learning_rate": 3e-05,
+  "weight_decay": 0.01,
+  "grad_clip": 1.0,
+  "lr_warmup_steps": 20,
+  "ema_decay": 0.99,
+  "ema_start_step": 50,
+  "teacher_video_steps": 25,
+  "teacher_action_steps": 50,
+  "huber_c": 0.001,
+  "action_loss_weight": 1.0,
+  "action_valid_dims": 6,
+  "data_mode": "streaming",
+  "offline_contexts_per_rank": 3,
+  "heldout_contexts": 64,
+  "heldout_every": 50,
+  "checkpoint_every": 100,
+  "protected_checkpoints": [
+    300
+  ],
+  "history_reuse": true,
+  "render_mode": "full",
+  "cache_contexts": 5000,
+  "resources": {
+    "teacher": "${WAM_TEACHER}",
+    "base_model": "${WAM_BASE_MODEL}",
+    "prompt_root": "${WAM_PROMPTS}",
+    "train_pool": "${QLM_TRAIN_POOL}",
+    "qlm_python": "${QLM_PYTHON}"
+  }
+}

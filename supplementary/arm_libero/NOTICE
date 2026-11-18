@@ -1,0 +1,29 @@
+WAM-Policy: supplementary experiment "Generalization to an Arm WAM on LIBERO" (supplementary/arm_libero)
+
+This directory contains code derived from LingBot-VA
+(https://github.com/Robbyant/lingbot-va, commit 7c6ffa9bfc4b83582cafc860fab4c82cc7deeeeb),
+Copyright 2024-2025 The Robbyant Team Authors and The Alibaba Wan Team Authors,
+licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Vendored LingBot-VA files (wan_va/):
+  wan_va/modules/__init__.py, wan_va/modules/utils.py, wan_va/utils/scheduler.py
+    unchanged;
+  wan_va/__init__.py, wan_va/utils/__init__.py, wan_va/modules/model.py
+    modified, as stated at the top of each of these files.
+arm_opsd/sft_only/flow_matching.py and arm_opsd/sft_only/episodes.py reimplement the joint flow-matching
+loss and the LIBERO sample preparation of LingBot-VA (wan_va/train.py, wan_va/dataset/) for the SFT-only
+variant. The upstream websocket inference server, training script, dataset classes, RoboTwin/Franka
+examples, configuration files and papers are not included.
+
+Everything else in this directory is new code of WAM-Policy, licensed under the Apache License 2.0.
+
+External resources that are downloaded, not redistributed (each under its own license):
+  - robbyant/lingbot-va-posttrain-libero-long (Hugging Face model), revision 0e89d1e753019988aba484e8da2dc0810e264d9f:
+    the official LingBot-VA LIBERO-Long weights (teacher, initial student, Student w/o distillation).
+  - robbyant/libero-long-lerobot (Hugging Face dataset), revision 8c0313b1c7cd9fa3798798479cbf59b11af8979d:
+    the demonstrations of the SFT-only variant (CC BY-NC-SA 4.0).
+  - LIBERO (https://github.com/Lifelong-Robot-Learning/LIBERO, commit 8f1084e3132a39270c3a13ebe37270a43ece2a01)
+    and robosuite (https://github.com/ARISE-Initiative/robosuite, commit fbee5844ff5632f5b5698e204ec5357ca50be0df):
+    the CPU simulation of LIBERO-Long (MIT licenses).
+  - LIBERO-Pro2.0 evaluation package (Hugging Face dataset zhouxueyang/LIBERO-Pro2.0-Eval,
+    revision d1933228f8be59f5d8fa1d8e2e251b463dfb64bc): server, simulator and plan builder of LIBERO-Pro2.0.

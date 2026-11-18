@@ -1,0 +1,46 @@
+{
+  "_comment": "Stage 2.2 M-OPD: task-routed specialist teachers (push_box and open_room_door Stage 2.1 specialists on the Stage 1.1 teacher; every other task is taught by the plain teacher) distilled into the OPSD S300 EMA student for 300 streaming updates (eta = 0.5). Order: (1) build the OPSD teacher cache (configs/stage1_2_opsd/teacher_cache.json); (2) `python -m wam_policy.mopd cache --config this --previous-cache <OPSD cache> --output <dir>` collects only the expert tasks with their specialists and merges them into <dir>/cache; (3) `python -m wam_policy.mopd train` with MOPD_TEACHER_CACHE=<dir>/cache. render_mode sampled renders only the frames the policy receives (identical frames, faster simulation).",
+  "seed": 42,
+  "world_size": 8,
+  "chunks_per_clip": 3,
+  "student_updates": 300,
+  "video_steps": 1,
+  "action_steps": 2,
+  "window_units": 8,
+  "lora_rank": 256,
+  "lora_alpha": 256,
+  "learning_rate": 3e-05,
+  "weight_decay": 0.01,
+  "grad_clip": 1.0,
+  "lr_warmup_steps": 20,
+  "ema_decay": 0.99,
+  "ema_start_step": 50,
+  "teacher_video_steps": 25,
+  "teacher_action_steps": 50,
+  "huber_c": 0.001,
+  "action_loss_weight": 1.0,
+  "action_valid_dims": 6,
+  "data_mode": "streaming",
+  "offline_contexts_per_rank": 3,
+  "heldout_contexts": 64,
+  "heldout_every": 50,
+  "checkpoint_every": 100,
+  "protected_checkpoints": [
+    300
+  ],
+  "history_reuse": true,
+  "render_mode": "sampled",
+  "resources": {
+    "teacher": "${WAM_TEACHER}",
+    "base_model": "${WAM_BASE_MODEL}",
+    "prompt_root": "${WAM_PROMPTS}",
+    "train_pool": "${QLM_TRAIN_POOL}",
+    "qlm_python": "${QLM_PYTHON}",
+    "offline_cache": "${MOPD_TEACHER_CACHE}",
+    "initialized_student": "${OPSD_STUDENT}",
+    "experts": {
+      "push_box": "${MOPD_PUSH_BOX_SPECIALIST}",
+      "open_room_door": "${MOPD_OPEN_ROOM_DOOR_SPECIALIST}"
+    }
+  }
+}

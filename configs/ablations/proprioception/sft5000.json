@@ -1,0 +1,22 @@
+{
+  "cache_root": "$SFT_CACHE",
+  "snapshot": "$QLM_BENCH_SNAPSHOT",
+  "transformer": "$WAM_PROPRIO_RESOURCES/transformer-proprioception",
+  "state_root": "$WAM_PROPRIO_RESOURCES/proprioception-states",
+  "output_root": "$WAM_PROPRIO_OUTPUT",
+  "seed": 42,
+  "max_steps": 5000,
+  "learning_rate": 1e-05,
+  "betas": [0.9, 0.95],
+  "weight_decay": 0.1,
+  "warmup_steps": 10,
+  "grad_clip_norm": 1.0,
+  "accumulation": 1,
+  "checkpoint_every": 100,
+  "validation_every": 100,
+  "keep_checkpoints": 2,
+  "activation_checkpointing": true,
+  "attention": "flex",
+  "device": "cuda",
+  "walltime_seconds": 0
+}

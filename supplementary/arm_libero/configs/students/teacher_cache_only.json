@@ -1,0 +1,46 @@
+{
+  "description": "Teacher cache only (eta = 1): 48 teacher-cache entries per update, no streaming. Paper: S300 EMA (snapshot of a 2,000-update run).",
+  "method": {
+    "objective": "regression",
+    "state_steps": 1,
+    "action_steps": 2,
+    "teacher_video_steps": 20,
+    "teacher_action_steps": 50,
+    "lora_rank": 256,
+    "lora_alpha": 256,
+    "lora_dropout": 0.0,
+    "onpolicy_contexts_per_rank": 3,
+    "offline_contexts_per_rank": 6,
+    "collect_once_rounds": 100,
+    "replay_contexts_per_rank": 0,
+    "data_mode": "offline_only",
+    "student_updates": 300,
+    "world_size": 8,
+    "student_lr": 3e-05,
+    "weight_decay": 0.01,
+    "grad_clip": 1.0,
+    "huber_c": 0.001,
+    "action_loss_weight": 1.0
+  },
+  "experiment": {
+    "seed": 42,
+    "adam_betas": [
+      0.9,
+      0.999
+    ],
+    "adam_epsilon": 1e-08,
+    "student_lr_warmup_steps": 20,
+    "ema_decay": 0.99,
+    "ema_start_update": 50,
+    "checkpoint_every": 100,
+    "retain_checkpoints": 2,
+    "protected_checkpoints": [],
+    "student_snapshots": [
+      100,
+      200,
+      300
+    ],
+    "heldout_contexts": 64,
+    "heldout_every": 50
+  }
+}

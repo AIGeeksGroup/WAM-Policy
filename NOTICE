@@ -1,0 +1,41 @@
+WAM-Policy
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This repository contains code derived from the following third-party works.
+
+1. LingBot-VA (Robbyant)
+   https://github.com/Robbyant/lingbot-va (commit 7c6ffa9bfc4b83582cafc860fab4c82cc7deeeeb)
+   Apache License 2.0. Copyright 2024-2025 The Robbyant Team Authors.
+   src/wan_va/ is adapted from the upstream package (WanTransformer3DModel, attention masks,
+   causal VAE streaming wrapper, FlowMatchScheduler, activation checkpointing / FSDP helpers);
+   original copyright headers are retained. The Stage 1.1 flow-matching objective
+   (src/wam_policy/transfer/flow.py) follows the upstream training loss, and the 30D->9D action
+   head conversion (src/wam_policy/models/) starts from the upstream checkpoint layout.
+   Changes (marked "Modified by the WAM-Policy authors" in the changed files): an inference-only
+   key/value cache in WanAttention (logical ids, eviction), a reference (dense) attention backend,
+   lazy optional FlashAttention import, rotary dimensions rounded to even sizes, strict loading,
+   explicit dtype handling, the native 9D action interface, trimmed package exports and (ablation)
+   a proprioception branch. src/wan_va/modules/utils.py, utils/{scheduler,utils,logging}.py and
+   distributed/fsdp.py are unmodified upstream files.
+
+2. Wan (Alibaba Wan Team)
+   https://github.com/Wan-Video/Wan2.1 (via LingBot-VA)
+   Apache License 2.0. Copyright 2024-2025 The Alibaba Wan Team Authors.
+   Transformer and VAE components inherited through LingBot-VA; headers retained.
+
+   src/wan_va/utils/logging.py carries "Copyright (c) Meta Platforms, Inc. and affiliates." from
+   pytorch/torchtitan (BSD 3-Clause; full text in LICENSES/BSD-3-Clause-torchtitan.txt).
+
+3. Hugging Face diffusers / transformers
+   Apache License 2.0. Used as libraries; some module structure in src/wan_va follows diffusers.
+
+src/wam_policy/interface/ (spec/*.json, validation.py, history.py) is shared with QLM-Bench and written
+by the same authors; in this repository it is provided under the Apache License 2.0.
+
+supplementary/arm_libero/ is a separate sub-project with its own LICENSE and NOTICE (it vendors its
+own copy of LingBot-VA code).
+
+Model weights are not part of this repository. The released WAM-Policy checkpoints (Apache-2.0) are
+derived from robbyant/lingbot-va-base (revision 68b7bc1b35da6ddc67ea94c4ceb58d768fbb3f9c, Apache-2.0)
+and, for the arm student, robbyant/lingbot-va-posttrain-libero-long (Apache-2.0). QLM-Bench (simulation
+benchmark, data and the RAMBO controller, CC BY-NC 4.0) is a separate repository with its own license.

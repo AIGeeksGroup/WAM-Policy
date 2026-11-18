@@ -1,0 +1,33 @@
+{
+ "seed": 20261114,
+ "candidates": 8,
+ "starts_per_round": 2,
+ "window_chunks": 6,
+ "alpha_shared_noise": 1.0,
+ "beta": 0.1,
+ "nft_epsilon": 1e-05,
+ "reference_weight": 1.0,
+ "learning_rate": 0.0001,
+ "warmup_steps": 1,
+ "steps_per_round": 1,
+ "grad_clip": 1.0,
+ "ema": 0.5,
+ "skip_range_m": 0.004,
+ "probe_samples": 1,
+ "lora_rank": 32,
+ "lora_alpha": 32,
+ "smoke_starts": 2,
+ "pool": {
+  "probe_scenes": 1,
+  "train_scenes": 1,
+  "probe_per_scene": 1,
+  "train_per_scene": 3,
+  "train_min": 0
+ },
+ "note": "push_box at the smallest scale (a plumbing check, not training): 2 teacher episodes from reset, 1 probe scene + 1 training scene, one round of 2 starts x 8 candidates and one update step; acceleration switches at their defaults (rows 1, full rendering). Acceleration: rows only changes throughput (starts, candidates, seeds, samples per round and gradient batches are unchanged); row-batched and row-by-row sampling agree only to bf16 rounding, so trajectories are not bit-identical (with rows 1 every candidate rebuilds its start history on its own, which is much slower). render_mode sampled gives bit-identical policy frames. rows, learn_batch and render_mode may change when a run resumes.",
+ "pool_cases": 2,
+ "pool_reps": 1,
+ "max_rounds": 1,
+ "probe_k": 2,
+ "eval_every": 0
+}

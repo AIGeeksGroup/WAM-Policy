@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wam-policy"
+version = "1.0.0"
+description = "WAM-Policy: a world-action model policy for quadruped loco-manipulation (training, distillation, task RL and QLM-Bench evaluation)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+dependencies = ["numpy", "Pillow"]
+
+[project.optional-dependencies]
+policy = ["torch>=2.9,<2.10", "diffusers==0.36.0", "transformers==4.55.2", "accelerate==1.14.0", "safetensors",
+          "einops", "ftfy", "huggingface_hub"]
+# Demonstration reading. LeRobot 0.3.3 pins torch<2.8, so it is installed separately with
+# `pip install --no-deps lerobot==0.3.3`; these are the packages its dataset reader needs.
+data = ["pyarrow", "av>=14.2.0", "datasets>=2.19.0,<=3.6.0", "jsonlines>=4.0.0", "torchvision>=0.24,<0.25", "PyYAML"]
+tracking = ["wandb>=0.28"]
+
+[project.scripts]
+wam-serve = "wam_policy.inference.serve:main"
+wam-convert-native9 = "wam_policy.models.native9:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["wam_policy*", "wan_va*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "spec/*.json", "*.npy"]
+"wam_policy.task_rl.tasks.push_box" = ["data/*.npy"]

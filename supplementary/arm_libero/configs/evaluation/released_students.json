@@ -1,0 +1,47 @@
+{
+  "description": "Published students and their training configs. Fetch one by name with `python -m arm_opsd.evaluation.cli fetch-student --name NAME`.",
+  "students": {
+    "opsd_s300_ema": {
+      "repo": "AIGeeksGroup/WAM-Policy",
+      "path": "supplementary/arm_libero_opsd_student",
+      "revision": "main",
+      "config": "configs/students/opsd.json"
+    },
+    "teacher_cache_only_s300_ema": {
+      "repo": "AIGeeksGroup/WAM-Policy",
+      "path": "ablations/arm_libero/teacher_cache_only/s300_ema",
+      "revision": "main",
+      "config": "configs/students/teacher_cache_only.json"
+    },
+    "streaming_only_s300_ema": {
+      "repo": "AIGeeksGroup/WAM-Policy",
+      "path": "ablations/arm_libero/streaming_only/s300_ema",
+      "revision": "main",
+      "config": "configs/students/streaming_only.json"
+    },
+    "collected_once_s300_ema": {
+      "repo": "AIGeeksGroup/WAM-Policy",
+      "path": "ablations/arm_libero/collected_once/s300_ema",
+      "revision": "main",
+      "config": "configs/students/collected_once.json"
+    },
+    "sft_only_s692_ema": {
+      "repo": "AIGeeksGroup/WAM-Policy",
+      "path": "ablations/arm_libero/sft_only/s692_ema",
+      "revision": "main",
+      "config": "configs/students/sft_only.json"
+    },
+    "teacher_cache_only_s2000_ema": {
+      "repo": "AIGeeksGroup/WAM-Policy",
+      "path": "ablations/arm_libero/teacher_cache_only/s2000_ema",
+      "revision": "main",
+      "config": "configs/ablations/longer_training/teacher_cache_only_2000.json"
+    },
+    "opsd_s900_ema": {
+      "repo": "AIGeeksGroup/WAM-Policy",
+      "path": "ablations/arm_libero/opsd/s900_ema",
+      "revision": "main",
+      "config": "configs/ablations/longer_training/opsd_900.json"
+    }
+  }
+}

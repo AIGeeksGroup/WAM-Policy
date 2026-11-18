@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wam-policy-arm-libero"
+version = "1.0.0"
+description = "WAM-Policy supplementary experiment: OPSD on the arm WAM LingBot-VA (LIBERO-Long, LIBERO-Pro2.0)"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10,<3.13"
+# torch (>= 2.9, CUDA or ROCm build) is installed separately so that pip never replaces it;
+# requirements/model.txt pins the exact versions of the paper's evaluation environment.
+dependencies = [
+    "diffusers==0.36.0",
+    "transformers==4.55.2",
+    "tokenizers>=0.21.4",
+    "accelerate",
+    "einops",
+    "ftfy",
+    "huggingface_hub>=0.36",
+    "imageio[ffmpeg]",
+    "msgpack",
+    "opencv-python-headless",
+    "numpy>=1.26.4,<2",
+    "pillow",
+    "safetensors",
+]
+
+[project.optional-dependencies]
+wandb = ["wandb"]
+sft = ["pyarrow"]
+
+[project.scripts]
+arm-opsd = "arm_opsd.cli:main"
+arm-opsd-eval = "arm_opsd.evaluation.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["arm_opsd*", "wan_va*"]

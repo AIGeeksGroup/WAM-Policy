@@ -1,0 +1,42 @@
+{
+  "_comment": "Ablation 'Teacher cache only' (eta = 1): offline_only, 6 teacher-cache contexts per rank and update, no streams; trained 2000 updates in the paper (the S300 EMA is the eta comparison point, S2000 the longer-training point).",
+  "seed": 42,
+  "world_size": 8,
+  "chunks_per_clip": 3,
+  "student_updates": 2000,
+  "video_steps": 1,
+  "action_steps": 2,
+  "window_units": 8,
+  "lora_rank": 256,
+  "lora_alpha": 256,
+  "learning_rate": 3e-05,
+  "weight_decay": 0.01,
+  "grad_clip": 1.0,
+  "lr_warmup_steps": 20,
+  "ema_decay": 0.99,
+  "ema_start_step": 50,
+  "teacher_video_steps": 25,
+  "teacher_action_steps": 50,
+  "huber_c": 0.001,
+  "action_loss_weight": 1.0,
+  "action_valid_dims": 6,
+  "data_mode": "offline_only",
+  "offline_contexts_per_rank": 6,
+  "heldout_contexts": 64,
+  "heldout_every": 50,
+  "checkpoint_every": 100,
+  "protected_checkpoints": [
+    300,
+    2000
+  ],
+  "history_reuse": true,
+  "render_mode": "full",
+  "resources": {
+    "teacher": "${WAM_TEACHER}",
+    "base_model": "${WAM_BASE_MODEL}",
+    "prompt_root": "${WAM_PROMPTS}",
+    "train_pool": "${QLM_TRAIN_POOL}",
+    "qlm_python": "${QLM_PYTHON}",
+    "offline_cache": "${OPSD_TEACHER_CACHE}"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "_comment": "Stage 1.2 OPSD, paper main setting: eta = 0.5 (per rank and update 3 on-policy streaming contexts + 3 teacher-cache contexts, 8 ranks), 300 student updates (the paper reports the S300 EMA student: students/step_00000300/ema; the lr is constant after the 20-step warm-up). Needs the teacher cache (configs/stage1_2_opsd/teacher_cache.json) as OPSD_TEACHER_CACHE=<cache run>/learner/cache. Paper hardware: 8x AMD MI355X (about 8 h).",
+  "seed": 42,
+  "world_size": 8,
+  "chunks_per_clip": 3,
+  "student_updates": 300,
+  "video_steps": 1,
+  "action_steps": 2,
+  "window_units": 8,
+  "lora_rank": 256,
+  "lora_alpha": 256,
+  "learning_rate": 3e-05,
+  "weight_decay": 0.01,
+  "grad_clip": 1.0,
+  "lr_warmup_steps": 20,
+  "ema_decay": 0.99,
+  "ema_start_step": 50,
+  "teacher_video_steps": 25,
+  "teacher_action_steps": 50,
+  "huber_c": 0.001,
+  "action_loss_weight": 1.0,
+  "action_valid_dims": 6,
+  "data_mode": "streaming",
+  "offline_contexts_per_rank": 3,
+  "heldout_contexts": 64,
+  "heldout_every": 50,
+  "checkpoint_every": 100,
+  "protected_checkpoints": [
+    300
+  ],
+  "history_reuse": true,
+  "render_mode": "full",
+  "resources": {
+    "teacher": "${WAM_TEACHER}",
+    "base_model": "${WAM_BASE_MODEL}",
+    "prompt_root": "${WAM_PROMPTS}",
+    "train_pool": "${QLM_TRAIN_POOL}",
+    "qlm_python": "${QLM_PYTHON}",
+    "offline_cache": "${OPSD_TEACHER_CACHE}"
+  }
+}

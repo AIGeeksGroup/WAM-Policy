@@ -1,0 +1,65 @@
+{
+  "description": "Longer training: Teacher cache only for 2,000 updates (supplementary table 'Success rate (%) on LIBERO after longer training': S2000 EMA). Its S300 snapshot is the student of configs/students/teacher_cache_only.json.",
+  "method": {
+    "objective": "regression",
+    "state_steps": 1,
+    "action_steps": 2,
+    "teacher_video_steps": 20,
+    "teacher_action_steps": 50,
+    "lora_rank": 256,
+    "lora_alpha": 256,
+    "lora_dropout": 0.0,
+    "onpolicy_contexts_per_rank": 3,
+    "offline_contexts_per_rank": 6,
+    "collect_once_rounds": 100,
+    "replay_contexts_per_rank": 0,
+    "data_mode": "offline_only",
+    "student_updates": 2000,
+    "world_size": 8,
+    "student_lr": 3e-05,
+    "weight_decay": 0.01,
+    "grad_clip": 1.0,
+    "huber_c": 0.001,
+    "action_loss_weight": 1.0
+  },
+  "experiment": {
+    "seed": 42,
+    "adam_betas": [
+      0.9,
+      0.999
+    ],
+    "adam_epsilon": 1e-08,
+    "student_lr_warmup_steps": 20,
+    "ema_decay": 0.99,
+    "ema_start_update": 50,
+    "checkpoint_every": 100,
+    "retain_checkpoints": 2,
+    "protected_checkpoints": [
+      300
+    ],
+    "student_snapshots": [
+      100,
+      200,
+      300,
+      400,
+      500,
+      600,
+      700,
+      800,
+      900,
+      1000,
+      1100,
+      1200,
+      1300,
+      1400,
+      1500,
+      1600,
+      1700,
+      1800,
+      1900,
+      2000
+    ],
+    "heldout_contexts": 64,
+    "heldout_every": 50
+  }
+}

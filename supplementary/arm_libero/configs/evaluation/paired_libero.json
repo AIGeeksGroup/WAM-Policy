@@ -1,0 +1,125 @@
+{
+  "description": "Comparisons of the supplementary table 'Paired comparisons on LIBERO'. Delta = first minus second; + counts pairs in which only the first policy succeeds. Policy names are keys of the results map passed to `arm-opsd-eval paired-table --results`: base = Student w/o distillation (base_1_2); opsd, teacher_cache_only, streaming_only, collected_once = S300 EMA of configs/students/*.json; sft_only = S692 EMA; opsd_900, teacher_cache_only_2000 = S900 / S2000 EMA of configs/ablations/longer_training/*.json.",
+  "comparisons": [
+    {
+      "benchmark": "libero_pro2",
+      "label": "tc vs. W/o",
+      "first": "teacher_cache_only",
+      "second": "base"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "str vs. W/o",
+      "first": "streaming_only",
+      "second": "base"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "OPSD vs. W/o",
+      "first": "opsd",
+      "second": "base"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "OPSD vs. tc",
+      "first": "opsd",
+      "second": "teacher_cache_only"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "str vs. OPSD",
+      "first": "streaming_only",
+      "second": "opsd"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "str vs. tc",
+      "first": "streaming_only",
+      "second": "teacher_cache_only"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "once vs. W/o",
+      "first": "collected_once",
+      "second": "base"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "once vs. tc",
+      "first": "collected_once",
+      "second": "teacher_cache_only"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "once vs. OPSD",
+      "first": "collected_once",
+      "second": "opsd"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "once vs. str",
+      "first": "collected_once",
+      "second": "streaming_only"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "SFT^692 vs. W/o",
+      "first": "sft_only",
+      "second": "base"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "SFT^692 vs. tc",
+      "first": "sft_only",
+      "second": "teacher_cache_only"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "SFT^692 vs. OPSD",
+      "first": "sft_only",
+      "second": "opsd"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "tc vs. tc^2000",
+      "first": "teacher_cache_only",
+      "second": "teacher_cache_only_2000"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "OPSD vs. OPSD^900",
+      "first": "opsd",
+      "second": "opsd_900"
+    },
+    {
+      "benchmark": "libero_pro2",
+      "label": "OPSD^900 vs. tc^2000",
+      "first": "opsd_900",
+      "second": "teacher_cache_only_2000"
+    },
+    {
+      "benchmark": "libero_long",
+      "label": "tc vs. W/o",
+      "first": "teacher_cache_only",
+      "second": "base"
+    },
+    {
+      "benchmark": "libero_long",
+      "label": "OPSD vs. W/o",
+      "first": "opsd",
+      "second": "base"
+    },
+    {
+      "benchmark": "libero_long",
+      "label": "OPSD vs. tc",
+      "first": "opsd",
+      "second": "teacher_cache_only"
+    },
+    {
+      "benchmark": "libero_long",
+      "label": "OPSD^900 vs. tc^2000",
+      "first": "opsd_900",
+      "second": "teacher_cache_only_2000"
+    }
+  ]
+}

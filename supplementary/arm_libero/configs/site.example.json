@@ -1,0 +1,29 @@
+{
+  "description": "Site file: every machine path, and the optional W&B / Hugging Face upload settings. Copy it, fill it in, pass it with --site. Relative paths are resolved against this file.",
+  "machine": {
+    "model_root": "/path/to/lingbot-va-posttrain-libero-long",
+    "cpu_python": "/path/to/envs/libero-cpu/bin/python",
+    "worker_config": "/path/to/envs/libero-cpu/worker-env.json",
+    "reset_manifest": "/path/to/libero-resets/manifest.json",
+    "output_dir": "/path/to/runs/opsd",
+    "offline_cache": "/path/to/runs/teacher-cache",
+    "sft_dataset": "/path/to/libero-long-lerobot",
+    "device": "cuda",
+    "network_dtype": "bfloat16",
+    "worker_timeout_s": 180,
+    "process_group_timeout_s": 1800,
+    "cpu_affinity": [],
+    "activation_checkpointing": false,
+    "visualization_every": 400
+  },
+  "wandb": {
+    "project": null,
+    "entity": null,
+    "mode": "online"
+  },
+  "hub": {
+    "repo": null,
+    "path_in_repo": "arm_libero/opsd",
+    "revision": null
+  }
+}

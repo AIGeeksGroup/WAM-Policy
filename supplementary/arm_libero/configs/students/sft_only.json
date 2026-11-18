@@ -1,0 +1,51 @@
+{
+  "description": "SFT only (no teacher): the official LingBot-VA LIBERO flow-matching fine-tuning recipe (lr 1e-5, AdamW betas 0.9/0.95, weight decay 0.1, 10-step warm-up, clip 2.0) with the LoRA-256 student, one whole demonstration episode per rank and update on robbyant/libero-long-lerobot. 692 updates match the supervised chunks of 2,000 teacher-cache-only updates. Paper: S692 EMA.",
+  "method": {
+    "objective": "sft_fm",
+    "state_steps": 1,
+    "action_steps": 2,
+    "teacher_video_steps": 20,
+    "teacher_action_steps": 50,
+    "lora_rank": 256,
+    "lora_alpha": 256,
+    "lora_dropout": 0.0,
+    "onpolicy_contexts_per_rank": 3,
+    "offline_contexts_per_rank": 1,
+    "collect_once_rounds": 100,
+    "replay_contexts_per_rank": 0,
+    "data_mode": "offline_only",
+    "student_updates": 692,
+    "world_size": 8,
+    "student_lr": 1e-05,
+    "weight_decay": 0.1,
+    "grad_clip": 2.0,
+    "huber_c": 0.001,
+    "action_loss_weight": 1.0
+  },
+  "experiment": {
+    "seed": 42,
+    "adam_betas": [
+      0.9,
+      0.95
+    ],
+    "adam_epsilon": 1e-08,
+    "student_lr_warmup_steps": 10,
+    "ema_decay": 0.99,
+    "ema_start_update": 50,
+    "checkpoint_every": 100,
+    "retain_checkpoints": 2,
+    "protected_checkpoints": [],
+    "student_snapshots": [
+      100,
+      104,
+      200,
+      300,
+      400,
+      500,
+      600,
+      692
+    ],
+    "heldout_contexts": 64,
+    "heldout_every": 50
+  }
+}

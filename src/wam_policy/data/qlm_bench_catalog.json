@@ -1,0 +1,70 @@
+{
+  "split_per_release": {
+    "train": 80,
+    "validation": 10,
+    "test": 10
+  },
+  "episodes_per_release": 100,
+  "releases": [
+    {
+      "task": "push_box",
+      "release": "mujoco-push-100-20261015-v1",
+      "canonical_root": "canonical/lerobot_v2_1/mujoco-push-100-20261015-v1",
+      "instruction": "Push the box inside the outlined area."
+    },
+    {
+      "task": "press_button",
+      "release": "mujoco-press-100-20261015-v1",
+      "canonical_root": "canonical/lerobot_v2_1/mujoco-press-100-20261015-v1",
+      "instruction": "Press the button."
+    },
+    {
+      "task": "lift_basket",
+      "release": "mujoco-lift-100-20261015-v1",
+      "canonical_root": "canonical/lerobot_v2_1/mujoco-lift-100-20261015-v1",
+      "instruction": "Lift the basket by its handle."
+    },
+    {
+      "task": "kick_ball_to_goal",
+      "release": "mujoco-kick-100-20261015-v1",
+      "canonical_root": "canonical/lerobot_v2_1/mujoco-kick-100-20261015-v1",
+      "instruction": "Kick the ball through the goal."
+    },
+    {
+      "task": "sweep_block_to_zone",
+      "release": "mujoco-sweep-100-20261017-v1",
+      "canonical_root": "canonical/lerobot_v2_1/mujoco-sweep-100-20261017-v1",
+      "instruction": "Sweep the block into the outlined area."
+    },
+    {
+      "task": "close_fridge_door",
+      "release": "mujoco-fridge-100-20261017-v1",
+      "canonical_root": "canonical/lerobot_v2_1/mujoco-fridge-100-20261017-v1",
+      "instruction": "Push against the fridge door until the door closes."
+    },
+    {
+      "task": "close_oven_door",
+      "release": "mujoco-oven-100-20261017-v1",
+      "canonical_root": "canonical/lerobot_v2_1/mujoco-oven-100-20261017-v1",
+      "instruction": "Push the oven door until the door closes."
+    },
+    {
+      "task": "turn_valve",
+      "release": "mujoco-valve-100-20261017-v1",
+      "canonical_root": "canonical/lerobot_v2_1/mujoco-valve-100-20261017-v1",
+      "instruction": "Rotate the valve lever upward to the upright position."
+    },
+    {
+      "task": "pull_open_drawer",
+      "release": "mujoco-drawer-100-20261017-v1",
+      "canonical_root": "canonical/lerobot_v2_1/mujoco-drawer-100-20261017-v1",
+      "instruction": "Slide your foot into the drawer handle opening and pull the drawer outward."
+    },
+    {
+      "task": "open_room_door",
+      "release": "mujoco-door-100-20261017-v1",
+      "canonical_root": "canonical/lerobot_v2_1/mujoco-door-100-20261017-v1",
+      "instruction": "Press down the lever handle, then push the door open."
+    }
+  ]
+}
