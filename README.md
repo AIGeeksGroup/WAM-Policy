@@ -68,7 +68,7 @@ This gives 1,000 demonstrations, 100 per task, each recording the two camera str
 The code includes the reviewed executors and recipes of the six articulated tasks, the reference traces
 and template for push, press, lift and kick, and the executor libraries (`src/qlm_bench/synthesis/`).
 `scripts/synthesis/example_one_demonstration.py` re-generates and checks one demonstration physics trace on a
-Standard100 scene. The full 100-episode campaigns require the original scene-source assets and pilot records.
+Standard100 scene.
 The Hugging Face dataset contains the resulting demonstrations. [Demonstration synthesis code and inputs](scripts/synthesis/README.md)
 
 ### Download Data
