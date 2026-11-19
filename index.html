@@ -7,7 +7,7 @@
 <meta name="description" content="WAM-Policy: World Action Models with On-Policy Distillation for Quadrupedal Loco-Manipulation.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=STIX+Two+Text:ital,wght@0,500;1,500&display=swap" rel="stylesheet">
 <style>
   :root {
     --paper: #080808;
@@ -30,7 +30,7 @@
 
   * { box-sizing: border-box; }
 
-  html { background: var(--paper); scroll-behavior: smooth; }
+  html { background: var(--paper); scroll-behavior: smooth; overflow-x: clip; }
 
   body {
     margin: 0;
@@ -481,6 +481,744 @@
     text-align: center;
   }
 
+
+  /* ---------- method (figures rebuilt in HTML) ---------- */
+  .mfig {
+    --ln: #3a3a3a;
+    --pulse: transparent;
+    --nd: #141414;
+    --nd-b: #2a2a2a;
+    --v: rgb(var(--green-rgb) / .07);
+    --a: rgb(150 230 200 / .045);
+    margin: clamp(28px, 4vw, 44px) 0 0;
+  }
+
+  .mfig + .mfig { margin-top: clamp(56px, 7vw, 84px); }
+
+  .stage-h { margin: clamp(40px, 5vw, 60px) 0 0; text-align: center; }
+  .mfig + .stage-h { margin-top: clamp(72px, 9vw, 110px); }
+  .stage-k { display: inline-block; margin-bottom: 10px; font: 700 12px/1 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
+  .stage-h h3 { margin: 0; font: 600 clamp(20px, 2.2vw, 26px)/1.25 var(--font-sans); letter-spacing: -.02em; color: var(--ink); text-wrap: balance; }
+
+  .mfig-frame {
+    position: relative;
+    padding: clamp(16px, 2vw, 24px);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--paper-2);
+    font: 500 12.5px/1.35 var(--font-sans);
+    color: #d6d6d6;
+  }
+
+  .mfig-frame * { box-sizing: border-box; }
+
+  .mfig-caption {
+    max-width: 980px;
+    margin: 20px auto 0;
+    font: 400 14.5px/1.75 var(--font-sans);
+    color: #a8a8a8;
+    text-align: left;
+    text-wrap: pretty;
+  }
+
+  .mfig-caption b { color: var(--ink); font-weight: 600; }
+
+  .m {
+    font-family: 'STIX Two Text', 'Cambria Math', 'Times New Roman', serif;
+    font-style: italic;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  .m.up { font-style: normal; }
+  .m sub, .m sup { font-size: .68em; line-height: 0; }
+  .m sub .up, .m sup .up { font-style: normal; }
+  .ovl { text-decoration: overline; text-decoration-thickness: 1px; }
+
+  .st-h {
+    margin: 0 0 12px;
+    font: 600 16px/1.3 var(--font-sans);
+    color: var(--ink);
+    letter-spacing: -.01em;
+  }
+
+  .st-h2 {
+    margin: 0 0 10px;
+    font: 600 14px/1.3 var(--font-sans);
+    color: var(--ink);
+  }
+
+  .kick {
+    font: 500 10.5px/1.3 var(--font-mono);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  /* panels and nodes */
+  .pnl {
+    position: relative;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: #0e0e0e;
+    transition: border-color .5s var(--ease-out), box-shadow .5s var(--ease-out), background-color .5s var(--ease-out);
+  }
+
+  .pnl > .st-h2 { display: flex; align-items: center; gap: 8px; }
+
+  .pnl.on, .band.on {
+    border-color: rgb(var(--green-rgb) / .65);
+    background-color: rgb(var(--green-rgb) / .035);
+    box-shadow: 0 0 0 1px rgb(var(--green-rgb) / .18), 0 0 36px rgb(var(--green-rgb) / .10);
+  }
+
+  .num {
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 999px;
+    font: 500 10.5px/1 var(--font-mono);
+    color: var(--muted);
+    transition: color .4s, border-color .4s, background-color .4s;
+  }
+
+  .on .num-own {
+    color: #04140d;
+    border-color: var(--green);
+    background: var(--green);
+  }
+
+  .nd {
+    position: relative;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--nd-b);
+    border-radius: 8px;
+    background: var(--nd);
+    text-align: center;
+    transition: border-color .45s var(--ease-out), background-color .45s var(--ease-out), color .45s, box-shadow .45s;
+    transition-delay: 0s;
+  }
+
+  .nd b { display: block; font-weight: 600; color: var(--ink); }
+  .nd small { display: block; margin-top: 2px; font: 400 11.5px/1.3 var(--font-sans); color: var(--muted); }
+  .nd.v { background: var(--v); }
+  .nd.a { background: var(--a); }
+  .nd.ghost { background: transparent; border-style: dashed; }
+
+  .on .nd, .nd.on {
+    border-color: rgb(var(--green-rgb) / .7);
+    box-shadow: 0 0 18px rgb(var(--green-rgb) / .10);
+    transition-delay: calc(var(--i, 0) * 160ms);
+  }
+
+  .on .nd.v, .on .nd.hl { background: rgb(var(--green-rgb) / .14); }
+
+  .lbl {
+    font: 400 11.5px/1.3 var(--font-sans);
+    color: var(--muted);
+  }
+
+  /* arrows: a solid line + a green pulse that runs along it when its step is active */
+  .ar {
+    position: relative;
+    flex: 1 1 16px;
+    min-width: 16px;
+    min-height: 12px;
+    align-self: center;
+  }
+
+  .ar::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 5px;
+    top: 50%;
+    height: 1.5px;
+    transform: translateY(-50%);
+    background-color: var(--ln);
+    background-image: linear-gradient(90deg, transparent 42%, var(--pulse) 50%, transparent 58%);
+    background-size: 300% 100%;
+    background-repeat: no-repeat;
+    animation: mf-px 1.4s linear infinite;
+    transition: background-color .4s;
+  }
+
+  .ar::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 6px solid var(--ln);
+    transition: border-color .4s;
+  }
+
+  .ar.l::before { left: 5px; right: 0; animation-direction: reverse; }
+  .ar.l::after { right: auto; left: 0; border-left: 0; border-right: 6px solid var(--ln); }
+
+  .ar.d, .ar.u {
+    flex: 0 0 auto;
+    width: 12px;
+    min-width: 12px;
+    min-height: 16px;
+    height: 18px;
+    justify-self: center;
+    align-self: center;
+    margin: 0 auto;
+  }
+
+  .ar.d::before, .ar.u::before {
+    left: 50%;
+    right: auto;
+    top: 0;
+    bottom: 5px;
+    width: 1.5px;
+    height: auto;
+    transform: translateX(-50%);
+    background-image: linear-gradient(180deg, transparent 42%, var(--pulse) 50%, transparent 58%);
+    background-size: 100% 300%;
+    animation-name: mf-py;
+  }
+
+  .ar.d::after, .ar.u::after {
+    left: 50%;
+    right: auto;
+    top: auto;
+    bottom: 0;
+    transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 0;
+    border-top: 6px solid var(--ln);
+  }
+
+  .ar.u::before { top: 5px; bottom: 0; animation-direction: reverse; }
+  .ar.u::after { top: 0; bottom: auto; border-top: 0; border-bottom: 6px solid var(--ln); }
+
+  .ar.dash::before {
+    background-color: transparent;
+    background-image: repeating-linear-gradient(90deg, var(--ln) 0 4px, transparent 4px 7px);
+    background-size: auto;
+    animation: none;
+  }
+
+  .ar.d.dash::before, .ar.u.dash::before {
+    background-image: repeating-linear-gradient(180deg, var(--ln) 0 4px, transparent 4px 7px);
+  }
+
+  .ar.tall { height: 100%; min-height: 26px; }
+
+  .on .ar, .ar.on { --ln: rgb(var(--green-rgb) / .85); --pulse: #d9fff0; }
+
+  @keyframes mf-px { from { background-position: 100% 0; } to { background-position: 0 0; } }
+  @keyframes mf-py { from { background-position: 0 100%; } to { background-position: 0 0; } }
+
+  /* small inline icons */
+  .ico { width: 14px; height: 14px; flex: none; vertical-align: -2px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  .ico.hot { color: var(--green); }
+  .ico.lock { color: var(--muted); width: 12px; height: 12px; }
+
+  /* mini "camera view" tiles (drawn, not images) */
+  .view {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border: 1px solid #262626;
+    border-radius: 5px;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / .05), transparent 60%),
+      repeating-linear-gradient(90deg, rgb(255 255 255 / .035) 0 1px, transparent 1px 12px),
+      #0a0a0a;
+    overflow: hidden;
+    transition: border-color .45s, filter .45s;
+  }
+
+  .view svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .on .view.tgt { border-color: rgb(var(--green-rgb) / .6); }
+  .view.blur svg { filter: blur(1.4px); opacity: .8; }
+
+  .vcap { margin-top: 4px; font: 400 11px/1.25 var(--font-sans); color: var(--muted); text-align: center; }
+
+  .glyph { width: 100%; height: auto; display: block; color: #8a8a8a; }
+  .on .glyph { color: #cfe9de; }
+
+  /* ===== Figure 2 ===== */
+  .f2 {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1.12fr);
+    grid-template-rows: auto auto 24px auto 24px auto;
+    column-gap: 4px;
+  }
+
+  .f2 > .st-h { grid-column: 1 / -1; }
+  .f2 .p-arm { grid-column: 1; grid-row: 2; }
+  .f2 .x-arm { grid-column: 2; grid-row: 2; }
+  .f2 .p-ifc { grid-column: 3; grid-row: 2; }
+  .f2 .x-ifc { grid-column: 3; grid-row: 3; }
+  .f2 .p-qlm { grid-column: 1; grid-row: 4 / 7; margin-top: 12px; display: flex; flex-direction: column; }
+  .f2 .p-qlm > .qlm { flex: 1; }
+  .f2 .p-qlm .demo svg { height: 48px; }
+  .f2 .p-qlm .pipe .nd { min-height: 56px; }
+  .f2 .x-qlm { grid-column: 2; grid-row: 4; }
+  .f2 .p-ops { grid-column: 3; grid-row: 4; }
+  .f2 .x-ops { grid-column: 3; grid-row: 5; }
+  .f2 .p-cl { grid-column: 3; grid-row: 6; }
+  .f2 .x-arm, .f2 .x-qlm { display: flex; align-items: center; }
+  .f2 .x-ifc, .f2 .x-ops { display: flex; justify-content: center; }
+  .f2 .x-qlm { flex-direction: column; justify-content: center; gap: 4px; }
+  .f2 .x-qlm .ar { flex: none; width: 100%; }
+
+  .sub-h {
+    grid-column: 1 / -1;
+    margin: 0 0 10px;
+    font: 600 14px/1.3 var(--font-sans);
+    color: #cfcfcf;
+  }
+
+  /* arm-centric WAM */
+  .arm-body { display: flex; gap: 14px; align-items: center; }
+  .arm-src { flex: 0 0 92px; text-align: center; }
+  .arm-src .kick { display: block; margin-bottom: 6px; }
+  .arm-src svg { width: 92px; height: 70px; color: #7c7c7c; transition: color .5s; }
+  .p-arm.on .arm-src svg { color: #cfe9de; }
+
+  .io {
+    flex: 1;
+    display: grid;
+    grid-template-columns: max-content 18px minmax(96px, 1fr) 18px max-content;
+    grid-template-rows: auto 18px auto 18px auto;
+    align-items: center;
+    column-gap: 4px;
+  }
+
+  .io .lbl { text-align: right; }
+  .io .lbl.o { text-align: left; }
+  .io .vd { grid-column: 3; }
+  .io .ar.r { min-width: 14px; }
+  .io .loop { font: 500 10px/1.2 var(--font-mono); color: var(--dim); text-align: right; letter-spacing: .02em; }
+  .io .loop svg { width: 14px; height: 14px; vertical-align: -3px; }
+
+  /* interface adaptation */
+  .ifc { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 16px minmax(0, 1fr); gap: 10px 8px; align-items: stretch; }
+  .ifc > .ar { align-self: center; }
+  .sub {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    background: #111;
+  }
+  .sub > .ttl { margin-bottom: 8px; font: 600 12.5px/1.25 var(--font-sans); color: var(--ink); text-align: center; }
+  .sub.vis { background: rgb(var(--green-rgb) / .03); }
+  .sub .nd { flex: 1; display: grid; place-items: center; }
+  .views { display: grid; gap: 6px; }
+  .views.v3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .views.v2 { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 72%; margin: 0 auto; }
+
+  /* QLM-Bench data synthesis */
+  .qlm { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr) 22px minmax(0, 1fr); gap: 0 4px; align-items: stretch; }
+  .qlm .kick { margin-bottom: 8px; }
+  .qcol { display: flex; flex-direction: column; min-width: 0; }
+  .prompts { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; flex: 1; }
+  .prompt {
+    padding: 2px 0 2px 9px;
+    border-left: 2px solid #3a3a3a;
+    font: 400 12.5px/1.4 var(--font-sans);
+    color: #cfcfcf;
+    transition: border-color .4s, color .4s;
+    transition-delay: 0s;
+  }
+  .prompt.dots { border-left-color: transparent; color: var(--dim); padding-left: 11px; }
+  .on .prompt { border-left-color: var(--green); color: var(--ink); transition-delay: calc(var(--i, 0) * 160ms); }
+  .on .prompt.dots { border-left-color: transparent; }
+  .pipe { display: flex; flex-direction: column; flex: 1; }
+  .pipe .nd { flex: 1; display: grid; place-items: center; min-height: 44px; }
+  .llm { display: flex !important; align-items: center; justify-content: center; gap: 8px; }
+  .llm svg { width: 18px; height: 18px; color: var(--muted); }
+  .on .llm svg { color: var(--green); }
+  .demos { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .demo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 8px 5px;
+    border: 1px solid var(--nd-b);
+    border-radius: 8px;
+    background: #121212;
+    opacity: .55;
+    transform: translateX(-4px);
+    transition: opacity .45s, transform .45s var(--ease-out), border-color .45s;
+    transition-delay: 0s;
+  }
+  .demo svg { width: 100%; height: 34px; color: #9a9a9a; }
+  .demo span { font: 400 10.5px/1.2 var(--font-mono); color: var(--muted); }
+  .on .demo { opacity: 1; transform: none; border-color: rgb(var(--green-rgb) / .55); transition-delay: calc(var(--i, 0) * 160ms + 500ms); }
+  .on .demo svg { color: #cfe9de; }
+  .bracket { position: relative; display: flex; align-items: center; }
+  .bracket::before { content: ""; position: absolute; left: 2px; top: 22px; bottom: 6px; width: 1.5px; background: var(--ln); transition: background-color .4s; }
+  .bracket .ar { margin-left: 2px; }
+
+  /* OPSD */
+  .ops { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+  .ops-stack { display: flex; flex-direction: column; }
+  .ops-stack .nd { padding: 9px 10px; }
+  .gen { display: flex; flex-direction: column; justify-content: center; gap: 6px; padding-left: 14px; border-left: 1px solid var(--rule); }
+  .gen .ttl { font: 600 12.5px/1.3 var(--font-sans); color: var(--ink); }
+  .gen .row2 { display: flex; justify-content: space-between; font: 400 11.5px/1.2 var(--font-sans); color: var(--muted); }
+  .gen .row2 b { font: 500 11.5px/1.2 var(--font-mono); color: #d6d6d6; }
+  .bar { height: 8px; border-radius: 3px; background: #1a1a1a; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 3px; background: rgb(var(--green-rgb) / .35); transition: width 1.1s var(--ease-out); }
+  .bar.lo i { background: var(--green); }
+  .on .bar i { width: var(--w); transition-delay: .2s; }
+  .speed { margin-top: 4px; font: 700 22px/1.1 var(--font-sans); letter-spacing: -.02em; color: var(--ink); }
+  .on .speed .x { color: var(--green); }
+
+  /* closed-loop inference */
+  .cl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .cl-top .st-h2 { margin: 0; }
+  .quote { font: 400 13px/1.3 var(--font-sans); color: var(--muted); font-style: italic; }
+  .on .quote { color: var(--green); }
+  .cl-row { display: grid; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr) 20px minmax(0, 1fr); gap: 4px; align-items: stretch; }
+  .cl-row .nd { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+  .cl-row .nd .glyph { max-width: 120px; margin: auto; }
+  .cl-row .views { gap: 4px; }
+  .track { position: relative; margin: 14px 4px 0; height: 34px; }
+  .track .rail { position: absolute; left: 0; right: 0; top: 10px; height: 1.5px; background: repeating-linear-gradient(90deg, #3a3a3a 0 4px, transparent 4px 7px); }
+  .track .tick { position: absolute; top: 6px; width: 1px; height: 10px; background: #3a3a3a; }
+  .track .dot { position: absolute; top: 5px; left: 100%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #3a3a3a; box-shadow: 0 0 0 4px rgb(var(--green-rgb) / 0); transition: left 0s, background-color .3s; }
+  .on .track .dot { left: 0%; background: var(--green); box-shadow: 0 0 0 4px rgb(var(--green-rgb) / .18); transition: left 2.2s cubic-bezier(.45, 0, .55, 1) .3s, background-color .3s; }
+  .track .ends { position: absolute; left: 0; right: 0; top: 20px; display: flex; justify-content: space-between; font: 500 10.5px/1.2 var(--font-mono); color: var(--dim); letter-spacing: .04em; }
+  .track .mid { position: absolute; left: 50%; top: 20px; transform: translateX(-50%); font: 400 10.5px/1.2 var(--font-mono); color: var(--dim); }
+
+  /* ===== Figure 3 ===== */
+  .f3-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px 24px; flex-wrap: wrap; margin-bottom: 12px; }
+  .f3-head .st-h { margin: 0; }
+  .legend { display: grid; grid-template-columns: repeat(3, max-content); gap: 4px 20px; font: 400 11.5px/1.3 var(--font-sans); color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .ln { display: inline-block; width: 22px; height: 0; border-top: 1.5px solid #8c8c8c; }
+  .legend .ln.dash { border-top-style: dashed; }
+  .legend .sg { font: 700 13px/1 var(--font-sans); color: #d6d6d6; letter-spacing: -1px; }
+
+  .f3 { display: grid; grid-template-columns: minmax(0, 1fr) 158px minmax(0, 1.08fr); gap: 0 6px; align-items: stretch; }
+  .f3 .p-ctx { grid-column: 1; grid-row: 1; }
+  .f3 .mix { grid-column: 2; grid-row: 1; }
+  .f3 .p-tl { grid-column: 3; grid-row: 1; }
+  .f3 .upd-row { grid-column: 1 / -1; grid-row: 2; }
+
+  .band {
+    position: relative;
+    padding: 10px;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: #111;
+    transition: border-color .5s var(--ease-out), box-shadow .5s var(--ease-out), background-color .5s var(--ease-out);
+  }
+  .band + .band { margin-top: 0; }
+  .who { display: flex; align-items: center; gap: 7px; font: 600 13px/1.3 var(--font-sans); color: var(--ink); }
+  .who .lite { font-weight: 400; color: var(--muted); }
+  .traj-h { margin: 6px 0 8px; font: 600 12px/1.3 var(--font-sans); color: #cfcfcf; text-align: center; }
+
+  .toks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 8px;
+    background: #0c0c0c;
+  }
+  .toks.stack { box-shadow: 4px -4px 0 -1px #0c0c0c, 4px -4px 0 0 #262626, 8px -8px 0 -1px #0c0c0c, 8px -8px 0 0 #1e1e1e; margin: 8px 8px 0 0; }
+  .tok { flex: 1 1 0; min-width: 44px; padding: 5px 3px; border-radius: 6px; border: 1px solid #262626; background: #151515; text-align: center; font: 400 11px/1.25 var(--font-sans); color: var(--muted); transition: border-color .4s, background-color .4s, color .4s; transition-delay: 0s; }
+  .tok .m { display: block; font-size: 14px; color: #e6e6e6; }
+  .tok.v { background: var(--v); }
+  .tok.a { background: var(--a); }
+  .tok.cur { border-style: dashed; }
+  .toks .gap { flex: none; color: var(--dim); font: 500 12px/1 var(--font-mono); }
+  .term { flex: none; padding: 6px 10px; border: 1px solid #333; border-radius: 999px; font: 400 11px/1 var(--font-sans); color: var(--muted); }
+  .on .tok { border-color: rgb(var(--green-rgb) / .6); color: #d6d6d6; transition-delay: calc(var(--i, 0) * 140ms); }
+  .on .tok.v { background: rgb(var(--green-rgb) / .14); }
+
+  .cache {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 7px 10px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 7px;
+    background: #161616;
+    font: 600 12.5px/1.2 var(--font-sans);
+    color: var(--ink);
+    transition: border-color .45s, background-color .45s;
+    transition-delay: 0s;
+  }
+  .cache .m { font-weight: 500; color: #d6d6d6; font-size: 14px; }
+  .on .cache { border-color: rgb(var(--green-rgb) / .7); background: rgb(var(--green-rgb) / .1); transition-delay: .9s; }
+
+  .bias { position: relative; margin: 6px 0; padding: 0 4px; }
+  .bias .kick { text-transform: none; letter-spacing: .02em; font-size: 11px; }
+  .bias svg { display: block; width: 100%; height: 70px; overflow: visible; }
+  .bias .c { fill: none; stroke-width: 2; stroke-dasharray: 260; stroke-dashoffset: 0; }
+  .bias .t { stroke: #a9c9bb; }
+  .bias .s { stroke: var(--green); }
+  .bias .halo { stroke-width: 14; stroke-linecap: round; opacity: .12; }
+  .bias .pt { stroke: none; }
+  .bias.on .c { animation: mf-draw 1.6s var(--ease-out) both; }
+  @keyframes mf-draw { from { stroke-dashoffset: 260; } to { stroke-dashoffset: 0; } }
+  .bias .dl { font-family: 'STIX Two Text', 'Times New Roman', serif; font-style: italic; font-size: 13px; }
+
+  .mix { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 0 2px; }
+  .mix .ar.tall { flex: 1 1 auto; height: auto; }
+  .mix-box {
+    width: 100%;
+    padding: 12px 8px;
+    border: 1px solid var(--nd-b);
+    border-radius: 10px;
+    background: #141414;
+    text-align: center;
+    transition: border-color .5s, background-color .5s, box-shadow .5s;
+  }
+  .mix-box b { display: block; font: 600 13px/1.3 var(--font-sans); color: var(--ink); }
+  .mix-box .m { font-size: 14px; color: #e6e6e6; }
+  .mix-box .f { display: block; margin-top: 6px; font-size: 12.5px; line-height: 1.5; }
+  .mix-box.on { border-color: var(--green); background: rgb(var(--green-rgb) / .12); box-shadow: 0 0 30px rgb(var(--green-rgb) / .15); }
+  .mix .side { font: 400 10.5px/1.25 var(--font-mono); color: var(--dim); text-align: center; margin: 4px 0; }
+  .mix .out { display: flex; align-items: center; width: 100%; margin: 6px 0; }
+  .mix .out .lbl { font: 400 10.5px/1.2 var(--font-mono); color: var(--dim); margin-right: 4px; }
+
+  /* target & loss grid: steps | video stream | arrow | action stream */
+  .tl { display: flex; flex-direction: column; gap: 0; }
+  .tl-row { display: grid; grid-template-columns: 112px minmax(0, 1fr) 22px minmax(0, 1fr); gap: 0 6px; align-items: stretch; }
+  .tl-row .nd { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+  .tl-row .nd .eq { font-size: 13.5px; color: #e6e6e6; white-space: nowrap; }
+  .tl-row .nd .eq .ico.lock { margin-right: 3px; }
+  .tl-row .views { grid-template-columns: 1fr; gap: 0; }
+  .tl-row .views .view { border-radius: 0; aspect-ratio: 16 / 6; }
+  .tl-row .views .view:first-child { border-radius: 5px 5px 0 0; }
+  .tl-row .views .view:last-child { border-radius: 0 0 5px 5px; border-top: 0; }
+  .tl-row .act { display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 12; border: 1px solid #262626; border-radius: 5px; background: #0a0a0a; }
+  .tl-row .act .glyph { width: 78%; }
+  .tl-side .who { flex-wrap: wrap; row-gap: 4px; }
+  .tl-side { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+  .steps { display: flex; flex-direction: column; gap: 6px; }
+  .steps span { display: flex; align-items: center; gap: 6px; font: 400 11px/1.2 var(--font-sans); color: var(--muted); white-space: nowrap; }
+  .steps svg { width: 26px; height: 10px; flex: none; }
+  .tl-mid { display: grid; grid-template-columns: 112px minmax(0, 1fr) 22px minmax(0, 1fr); gap: 0 6px; padding: 6px 10px; }
+  .tl-mid .lbl { align-self: center; text-align: right; }
+  .nz { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; }
+  .nz-col { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .nz-in { display: flex; align-items: center; gap: 6px; }
+  .nz-in .m { font-size: 15px; color: #e6e6e6; }
+  .noise { width: 42px; height: 42px; display: grid; grid-template-columns: repeat(7, 1fr); border: 1px solid #333; border-radius: 3px; overflow: hidden; }
+  .noise i { display: block; transition: background-color .25s; }
+  .loss {
+    display: grid;
+    place-items: center;
+    min-height: 48px;
+    border: 1px solid var(--nd-b);
+    border-radius: 8px;
+    background: #141414;
+    font-size: 19px;
+    color: #e6e6e6;
+    transition: border-color .45s, background-color .45s;
+  }
+  .loss .m { font-style: normal; font-family: 'STIX Two Text', 'Times New Roman', serif; }
+  .loss.on { border-color: var(--green); background: rgb(var(--green-rgb) / .12); }
+  .nz-col .ar.dash { height: 14px; min-height: 14px; }
+  .sgrad { display: flex; align-items: center; justify-content: center; gap: 0; }
+  .sgrad .ar { min-width: 10px; }
+  .sgrad b { margin: 0 2px; font: 700 14px/1 var(--font-sans); color: #d6d6d6; letter-spacing: -1px; }
+
+  .upd-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 0 8px; align-items: center; margin-top: 12px; }
+  .upd, .ltot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    border: 1px solid var(--nd-b);
+    border-radius: 10px;
+    background: #141414;
+    transition: border-color .5s, background-color .5s, box-shadow .5s;
+  }
+  .upd b { font: 700 17px/1.2 var(--font-sans); color: var(--ink); }
+  .upd .m, .ltot .m { font-size: 18px; color: #e6e6e6; }
+  .upd .ico { width: 18px; height: 18px; }
+  .upd.on, .ltot.on { border-color: var(--green); background: rgb(var(--green-rgb) / .12); box-shadow: 0 0 30px rgb(var(--green-rgb) / .14); }
+  .upd-row .link { display: flex; align-items: center; gap: 8px; }
+  .upd-row .link .ar { flex: 1; }
+
+  /* stage 2 */
+  .s2 { display: grid; grid-template-columns: minmax(0, 1.55fr) 26px minmax(0, 1fr); gap: 0 4px; align-items: stretch; }
+  .s2 > .ar { align-self: center; }
+  .rl { display: grid; grid-template-columns: minmax(84px, .9fr) 26px minmax(0, 4fr); gap: 0 4px; align-items: center; }
+  .rl-rows { display: flex; flex-direction: column; gap: 10px; }
+  .rl-row { display: grid; grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr) 16px minmax(0, 1fr) 16px minmax(0, 1.1fr); gap: 0 3px; align-items: stretch; }
+  .rl-row .nd { display: grid; place-items: center; padding: 8px 6px; }
+  .rl-row .nd b { font-size: 12px; }
+  .rl-row .nd.hl b, .opd .nd.hl b { color: var(--ink); }
+  .branch { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: space-around; }
+  .branch::before { content: ""; position: absolute; left: 2px; top: 25%; bottom: 25%; width: 1.5px; background: var(--ln); transition: background-color .4s; }
+  .branch .ar { flex: none; margin-left: 2px; width: calc(100% - 2px); }
+  .opd { display: grid; grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr) 16px minmax(0, 1fr); grid-template-rows: auto 22px auto; gap: 0 3px; align-items: stretch; }
+  .opd .nd { display: grid; place-items: center; padding: 8px 6px; }
+  .opd .nd b { font-size: 12.5px; }
+  .opd .big b { font-size: 15px; }
+  .opd .ar.u { grid-row: 2; }
+
+  /* figure step tabs */
+  .fig-tabs { margin-bottom: 18px; }
+  .fig-tabs .task-btn { height: 32px; padding: 0 13px; font-size: 13px; gap: 8px; }
+  .fig-tabs .task-btn .n { font: 500 11px/1 var(--font-mono); color: var(--dim); }
+  .fig-tabs .task-btn[aria-selected="true"] .n { color: var(--green); }
+
+  @media (max-width: 1040px) {
+    .f2 { display: flex; flex-direction: column; }
+    .f2 > * { margin-top: 0 !important; }
+    .f2 .x-arm, .f2 .x-qlm, .f2 .x-ifc, .f2 .x-ops { justify-content: center; padding: 4px 0; }
+    .f2 .x-arm .ar, .f2 .x-qlm .ar { display: none; }
+    .f2 .x-arm::after, .f2 .x-qlm::after { content: ""; display: block; width: 0; height: 18px; border-left: 1.5px solid #3a3a3a; margin: 0 auto; }
+    .f2 .p-arm { order: 1; } .f2 .x-arm { order: 2; } .f2 .p-ifc { order: 3; } .f2 .x-ifc { order: 4; display: none; }
+    .f2 .p-qlm { order: 5; } .f2 .x-qlm { order: 6; } .f2 .p-ops { order: 7; } .f2 .x-ops { order: 8; } .f2 .p-cl { order: 9; }
+    .f3 { display: flex; flex-direction: column; }
+    .mix { flex-direction: row; gap: 8px; padding: 10px 0; }
+    .mix .ar.tall, .mix .side { display: none; }
+    .mix .out { width: auto; flex-direction: column; }
+    .mix-box { flex: 1; }
+    .s2 { display: flex; flex-direction: column; gap: 10px; }
+    .s2 > .ar { display: none; }
+  }
+
+  @media (max-width: 720px) {
+    .mfig-frame { padding: 12px; }
+    .arm-src { display: none; }
+    .ifc { grid-template-columns: 1fr; }
+    .ifc > .ar { display: none; }
+    .qlm { grid-template-columns: 1fr; gap: 10px; }
+    .qlm .bracket, .qlm > .ar { display: none; }
+    .prompts { flex-direction: row; flex-wrap: wrap; }
+    .prompt { flex: 1 1 40%; }
+    .demos { flex-direction: row; flex-wrap: wrap; }
+    .demo { flex: 1 1 40%; }
+    .ops { grid-template-columns: 1fr; }
+    .gen { padding: 12px 0 0; border-left: 0; border-top: 1px solid var(--rule); }
+    .cl-row { grid-template-columns: 1fr; }
+    .cl-row .ar { display: none; }
+    .legend { grid-template-columns: repeat(2, max-content); }
+    .tl-row, .tl-mid { grid-template-columns: 1fr; gap: 8px; }
+    .tl-row > .ar, .tl-mid > .lbl { display: none; }
+    .tl-side { flex-direction: row; }
+    .upd-row { grid-template-columns: 1fr; gap: 8px; }
+    .upd-row .link .ar { display: none; }
+    .rl { grid-template-columns: 1fr; gap: 8px; }
+    .rl .branch { display: none; }
+    .rl-row { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .rl-row > .ar { display: none; }
+    .opd { grid-template-columns: 1fr; grid-template-rows: none; gap: 6px; }
+    .opd > .ar { display: none; }
+    .mix { flex-direction: column; }
+    .fig-tabs .task-btn { height: 30px; padding: 0 11px; font-size: 12.5px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mfig *, .mfig *::before, .mfig *::after { animation: none !important; transition: none !important; }
+  }
+
+  .f2 > .f2-h { grid-column: 1 / -1; grid-row: 1; }
+  .m .up { font-style: normal; }
+  .m sub sub { font-size: .8em; vertical-align: -.15em; }
+  .ss { display: inline-block; vertical-align: -.36em; margin: 0 1px 0 .5px; font-size: .62em; line-height: 1; text-align: left; }
+  .m .ss sup, .m .ss sub { display: block; font-size: 1em; vertical-align: baseline; line-height: 1.02; }
+  .bias svg { height: auto; max-height: 96px; }
+  .mix .out .mix-box { flex: 1; min-width: 0; }
+  .opd .c1r2 { grid-column: 1; grid-row: 2; }
+  .opd .c3r2 { grid-column: 3; grid-row: 2; }
+  .opd .c1r3 { grid-column: 1; grid-row: 3; }
+  .opd .c3r3 { grid-column: 3; grid-row: 3; }
+  .on .st-h2 .num { color: #04140d; border-color: var(--green); background: var(--green); }
+  .tl-row .nd .eq { white-space: normal; font-size: 12.5px; line-height: 1.5; }
+  .ico.frz { color: #a9c9bb; }
+
+  @media (max-width: 720px) {
+    .opd > * { grid-column: auto !important; grid-row: auto !important; }
+  }
+
+  /* ---------- method: curves rebuilt as live SVG ---------- */
+  .cv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 32px; }
+  .cv-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 0; }
+  .cv-group { min-width: 0; padding: 0 16px; }
+  .cv-group + .cv-group { border-left: 1px solid var(--rule); }
+  .cv-group:first-child { padding-left: 0; }
+  .cv-group:last-child { padding-right: 0; }
+  .cv-row .cv-grid { gap: 16px 18px; }
+  .cv-gh { margin: 0 0 10px; font: 500 11px/1.3 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--green); text-align: center; }
+  .cv-row .cv-legend { gap: 4px 14px; font-size: 11.5px; margin-top: 10px; }
+  .cv-row .cv-title { font-size: 12.5px; }
+  @media (max-width: 1040px) {
+    .cv-row { grid-template-columns: 1fr; gap: 26px; }
+    .cv-group, .cv-group:first-child, .cv-group:last-child { padding: 0; }
+    .cv-group + .cv-group { border-left: 0; border-top: 1px solid var(--rule); padding-top: 22px; }
+  }
+  .cv-panel { min-width: 0; }
+  .cv-title { margin: 0 0 4px; font: 600 13.5px/1.3 var(--font-sans); color: var(--ink); }
+  .cv-svg { display: block; width: 100%; overflow: visible; }
+  .cv-svg text { font: 400 10.5px var(--font-mono); fill: #8c8c8c; }
+  .cv-svg .ax-l { font: 400 11.5px var(--font-sans); fill: #a8a8a8; }
+  .cv-svg .grid { stroke: #1c1c1c; stroke-width: 1; }
+  .cv-svg .axis { stroke: #3a3a3a; stroke-width: 1; }
+  .cv-svg .scan { stroke: rgb(var(--green-rgb) / .55); stroke-width: 1; }
+  .cv-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 20px; margin-top: 16px; font: 400 12px/1.3 var(--font-sans); color: var(--muted); }
+  .cv-legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .sw { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--green); }
+  .sw.faint { border-top-width: 1px; border-color: rgb(var(--green-rgb) / .45); }
+  .sw.dash { border-top-style: dashed; }
+  .sw.dot { border-top-style: dotted; }
+  .sw.band { height: 10px; border: 0; border-radius: 2px; background: linear-gradient(var(--green), var(--green)) 0 50% / 100% 2px no-repeat, rgb(var(--green-rgb) / .2); }
+  .sw.mk { position: relative; border-top: 1px dotted #e6e6e6; }
+  .sw.mk::after { content: ""; position: absolute; left: 50%; top: -4px; width: 6px; height: 6px; margin-left: -3px; border: 1.2px solid #e6e6e6; background: var(--paper-2); }
+  .sw.mk.circ::after { border-radius: 50%; }
+  .sw.mk.solid { border-top-style: solid; }
+
+  @media (max-width: 720px) {
+    .cv-grid { grid-template-columns: 1fr; gap: 18px; }
+  }
+
+  /* ---------- QLM-Bench ---------- */
+  .qlm-bench { margin-top: clamp(28px, 4vw, 44px); }
+  .qlm-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 26px 16px; }
+  .qtile { margin: 0; min-width: 0; }
+  .qv { position: relative; overflow: hidden; border: 1px solid var(--rule); border-radius: 12px; background: #000; transition: border-color .3s var(--ease-out); }
+  .qtile:hover .qv { border-color: rgb(var(--green-rgb) / .55); }
+  .qv video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+  .qtile figcaption { margin-top: 10px; }
+  .qtile figcaption b { display: block; font: 600 13.5px/1.35 var(--font-sans); color: var(--ink); }
+  .qtile figcaption span { display: block; margin-top: 3px; font: 400 12.5px/1.45 var(--font-sans); color: var(--muted); }
+  @media (max-width: 1040px) { .qlm-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 720px) { .qlm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; } }
+
+  @media (max-width: 560px) {
+    .topbar .brand { font-size: 0; gap: 0; }
+    .topbar .hdr-actions { gap: 5px !important; }
+    .topbar .hdr-btn { height: 30px !important; padding: 0 10px !important; font-size: 12px !important; }
+  }
+
   @media (max-width: 720px) {
     .rails { display: none; }
     .shell { width: 100%; padding: 0 20px; }
@@ -516,6 +1254,7 @@
       <nav class="hdr-actions" aria-label="Sections">
         <a class="res-btn hdr-btn" href="#sim2real">Sim to Real</a>
         <a class="res-btn hdr-btn" href="#mujoco">MuJoCo Simulation</a>
+        <a class="res-btn hdr-btn" href="#method">Method</a>
       </nav>
     </header>
 
@@ -605,6 +1344,455 @@
             <div class="row row-one"><figure class="tile"><video src="sim/close_fridge_door/run4/sim_close_fridge_door_run4_exo-camera.mp4" data-run="run4" data-view="exo-camera" muted playsinline preload="auto" data-master></video><span class="tag">Exo-centric Camera</span></figure></div>
             <div class="row row-four"><figure class="tile"><video src="sim/close_fridge_door/run4/sim_close_fridge_door_run4_ego-centric-observation.mp4" data-run="run4" data-view="ego-centric-observation" muted playsinline preload="auto"></video><span class="tag">Ego-centric Observation</span></figure><figure class="tile"><video src="sim/close_fridge_door/run4/sim_close_fridge_door_run4_ego-centric-imagination.mp4" data-run="run4" data-view="ego-centric-imagination" muted playsinline preload="auto"></video><span class="tag">Ego-centric Imagination</span></figure><figure class="tile"><video src="sim/close_fridge_door/run4/sim_close_fridge_door_run4_top-down-observation.mp4" data-run="run4" data-view="top-down-observation" muted playsinline preload="auto"></video><span class="tag">Top-down Observation</span></figure><figure class="tile"><video src="sim/close_fridge_door/run4/sim_close_fridge_door_run4_top-down-imagination.mp4" data-run="run4" data-view="top-down-imagination" muted playsinline preload="auto"></video><span class="tag">Top-down Imagination</span></figure></div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="method" aria-labelledby="method-title">
+      <div class="divider" aria-hidden="true"></div>
+      <h2 id="method-title">Method</h2>
+      <p class="chapter-sub"><b>Stage 1</b> transfers an arm-centric WAM to the quadruped and accelerates it with OPSD; <b>Stage 2</b> improves it per task and merges the teachers with M-OPD.</p>
+
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <defs>
+          <symbol id="i-frz" viewBox="0 0 24 24"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M9 3.5l3 2.2 3-2.2M9 20.5l3-2.2 3 2.2M2.6 10.6l3.4.7.9-3.4M21.4 13.4l-3.4-.7-.9 3.4M2.6 13.4l3.4-.7.9 3.4M21.4 10.6l-3.4.7-.9-3.4"/></symbol>
+          <symbol id="i-hot" viewBox="0 0 24 24"><path d="M12 22c4 0 7-2.7 7-6.6 0-3.6-2.6-5.7-3.7-8.6-.4 1.6-1.3 2.7-2.4 3.2.2-3.4-1.4-6.3-4-8 .3 3.4-1.7 5.4-3.2 7.3C4.6 11 5 12.6 5 15.4 5 19.3 8 22 12 22z"/><path d="M12 22c-1.8 0-3-1.2-3-2.9 0-1.9 1.6-2.8 2.4-4.6.8 1.2 3.6 2.4 3.6 4.6 0 1.7-1.2 2.9-3 2.9z"/></symbol>
+          <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol>
+          <symbol id="i-loop" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"/></symbol>
+          <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></symbol>
+          <!-- quadruped with a mounted arm -->
+          <symbol id="g-dog" viewBox="0 0 120 62"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="32" y="25" width="52" height="13" rx="4"/><path d="M84 29h7M84 34h5"/><path d="M39 38l-5 9 4 10M49 38l-3 9 5 10M72 38l-4 9 5 10M80 38l-2 9 5 10"/><path d="M62 25l3-15h17l5 5M87 15l4-1M87 15l2 4"/><circle cx="65" cy="10" r="1.6"/></g></symbol>
+          <!-- bimanual arm (source embodiment) -->
+          <symbol id="g-arms" viewBox="0 0 92 70"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 66h18M19 66V40l14-19 9 14M42 35l-4 4M42 35l4 3"/><path d="M64 66h18M73 66V40L59 21l-9 14M50 35l4 4M50 35l-4 3"/><circle cx="19" cy="40" r="2.6"/><circle cx="33" cy="21" r="2.6"/><circle cx="73" cy="40" r="2.6"/><circle cx="59" cy="21" r="2.6"/></g></symbol>
+          <!-- camera-view drawings -->
+          <symbol id="v-head" viewBox="0 0 100 56"><g fill="none" stroke="#6a6a6a" stroke-width="1.6" stroke-linecap="round"><path d="M0 40h100"/><path d="M22 40l6-14h10M78 40l-6-14H62"/><rect x="40" y="30" width="20" height="10" rx="1.5"/></g></symbol>
+          <symbol id="v-wrist" viewBox="0 0 100 56"><g fill="none" stroke="#6a6a6a" stroke-width="2" stroke-linecap="round"><path d="M36 0v26l6 10M64 0v26l-6 10"/><ellipse cx="50" cy="50" rx="26" ry="6"/></g></symbol>
+          <symbol id="v-ego" viewBox="0 0 100 56"><rect x="35" y="9" width="30" height="34" rx="3" fill="#1f1f1f" stroke="#5a5a5a" stroke-width="1.2"/><circle cx="50" cy="26" r="7.5" fill="rgb(0 196 124 / .85)"/><circle cx="50" cy="26" r="11" fill="none" stroke="rgb(0 196 124 / .35)" stroke-width="1.2"/></symbol>
+          <symbol id="v-top" viewBox="0 0 100 56"><path d="M0 46L100 34V56H0z" fill="#191919"/><rect x="41" y="12" width="18" height="26" rx="2" fill="#2a2a2a" stroke="#5a5a5a" stroke-width="1.2"/><rect x="41" y="18" width="18" height="5" fill="rgb(0 196 124 / .55)"/><circle cx="50" cy="31" r="4.2" fill="rgb(0 196 124 / .85)"/></symbol>
+          <!-- demonstration scenes -->
+          <symbol id="s-press" viewBox="0 0 120 40"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="3" width="7" height="34" rx="1"/><circle cx="17" cy="17" r="2.8"/></g><use href="#g-dog" x="24" y="1" width="80" height="40"/></symbol>
+          <symbol id="s-box" viewBox="0 0 120 40"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="20" width="16" height="15" rx="1"/><rect x="2" y="30" width="34" height="8" rx="1" stroke-dasharray="2 2.5"/></g><use href="#g-dog" x="30" y="1" width="80" height="40"/></symbol>
+          <symbol id="s-goal" viewBox="0 0 120 40"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 37V8h20v29M9 8v29M14 8v29M19 8v29M4 16h20M4 24h20M4 31h20" stroke-width="1"/><circle cx="32" cy="33" r="4"/></g><use href="#g-dog" x="34" y="1" width="80" height="40"/></symbol>
+          <symbol id="s-oven" viewBox="0 0 120 40"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="8" width="22" height="29" rx="2"/><path d="M26 12l7 4v18l-7 3M30 22v6"/></g><use href="#g-dog" x="32" y="1" width="80" height="40"/></symbol>
+          <!-- sampler-step keys -->
+          <symbol id="k-tv" viewBox="0 0 26 10"><circle cx="3" cy="7" r="2" fill="none" stroke="#a9c9bb" stroke-width="1.2"/><path d="M6 6.5Q14 0 25 3" fill="none" stroke="#a9c9bb" stroke-width="1.4" stroke-dasharray="1.2 1.8" stroke-linecap="round"/></symbol>
+          <symbol id="k-ta" viewBox="0 0 26 10"><circle cx="3" cy="7" r="2" fill="none" stroke="#a9c9bb" stroke-width="1.2"/><path d="M6 6.5Q14 0 25 3" fill="none" stroke="#a9c9bb" stroke-width="1.4" stroke-dasharray=".6 1" stroke-linecap="round"/></symbol>
+          <symbol id="k-s1" viewBox="0 0 26 10"><circle cx="3" cy="5" r="2" fill="none" stroke="#00c47c" stroke-width="1.2"/><path d="M6 5H25" stroke="#00c47c" stroke-width="1.6"/></symbol>
+          <symbol id="k-s2" viewBox="0 0 26 10"><circle cx="3" cy="5" r="2" fill="none" stroke="#00c47c" stroke-width="1.2"/><path d="M6 5H25" stroke="#00c47c" stroke-width="1.6"/><circle cx="15.5" cy="5" r="1.8" fill="#00c47c"/></symbol>
+        </defs>
+      </svg>
+
+      <div class="stage-h"><span class="stage-k">Stage 1</span><h3>Cross-Morphology Policy Adaptation and Acceleration</h3></div>
+
+      <!-- ===================== Figure 2 (rebuilt) ===================== -->
+      <figure class="mfig" data-fig id="fig-stage1">
+        <div class="task-tabs fig-tabs" role="tablist" aria-label="Stage 1 modules">
+          <button type="button" class="res-btn task-btn" role="tab" data-go="1" aria-selected="false"><span class="n">01</span>Arm-centric WAM</button>
+          <button type="button" class="res-btn task-btn" role="tab" data-go="2" aria-selected="false"><span class="n">02</span>Interface Adaptation</button>
+          <button type="button" class="res-btn task-btn" role="tab" data-go="3" aria-selected="false"><span class="n">03</span>QLM-Bench Data Synthesis</button>
+          <button type="button" class="res-btn task-btn" role="tab" data-go="4" aria-selected="false"><span class="n">04</span>OPSD</button>
+          <button type="button" class="res-btn task-btn" role="tab" data-go="5" aria-selected="false"><span class="n">05</span>Closed-loop Inference</button>
+        </div>
+
+        <div class="mfig-frame">
+          <div class="f2">
+            <div class="f2-h">
+              <div class="sub-h">Stage 1.1: Cross-Morphology Policy Transfer</div>
+            </div>
+
+            <div class="pnl p-arm" data-step="1">
+              <div class="st-h2"><span class="num">1</span>Arm-centric WAM</div>
+              <div class="arm-body">
+                <div class="arm-src"><span class="kick">Source embodiment</span><svg viewBox="0 0 92 70" aria-hidden="true"><use href="#g-arms"/></svg></div>
+                <div class="io">
+                  <span class="lbl">Task<br>instruction</span><i class="ar"></i><div class="nd vd" style="--i:0"><b>Text Encoder</b><span class="m">ℓ</span></div><i></i><i></i>
+                  <i></i><i></i><i class="ar d"></i><i></i><i></i>
+                  <span class="lbl">Image<br>observation</span><i class="ar"></i><div class="nd v vd" style="--i:1"><b>Video Stream</b><span class="m">z<sub>k</sub> → Z<sub>k</sub></span></div><i class="ar"></i><span class="lbl o">Future<br>imagination</span>
+                  <i></i><i></i><i class="ar d"></i><i></i><i></i>
+                  <span class="loop"><svg class="ico" aria-hidden="true"><use href="#i-loop"/></svg> Autoregressive</span><i></i><div class="nd a vd" style="--i:2"><b>Action Stream</b><span class="m">A<sub>k</sub></span></div><i class="ar"></i><span class="lbl o">Robot<br>action</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="x-arm" data-step="2"><i class="ar"></i></div>
+
+            <div class="pnl p-ifc" data-step="2">
+              <div class="st-h2"><span class="num">2</span>Interface Adaptation</div>
+              <div class="ifc">
+                <div class="sub vis">
+                  <div class="ttl">Visual Adaptation</div>
+                  <div class="views v3">
+                    <div><div class="view"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-head"/></svg></div><div class="vcap">Head</div></div>
+                    <div><div class="view"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-wrist"/></svg></div><div class="vcap">Left wrist</div></div>
+                    <div><div class="view"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-wrist"/></svg></div><div class="vcap">Right wrist</div></div>
+                  </div>
+                  <i class="ar d"></i>
+                  <div class="views v2">
+                    <div><div class="view tgt"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-ego"/></svg></div><div class="vcap">Ego-centric</div></div>
+                    <div><div class="view tgt"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-top"/></svg></div><div class="vcap">Top-down</div></div>
+                  </div>
+                </div>
+                <div class="sub">
+                  <div class="ttl">Action Adaptation</div>
+                  <div class="nd a" style="--i:1">Joint + Gripper<small>(30D)</small></div>
+                  <i class="ar d"></i>
+                  <div class="nd a hl" style="--i:2">Body + Foot End<small>(9D)</small></div>
+                </div>
+                <i class="ar"></i>
+                <div class="sub">
+                  <div class="ttl">Controller Execution</div>
+                  <div class="nd" style="--i:3">Low-level Whole-Body Controller <span class="m">𝒞</span></div>
+                  <i class="ar d"></i>
+                  <div class="nd hl" style="--i:4">Joint torque</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="x-ifc" data-step="4"><i class="ar d"></i></div>
+
+            <div class="pnl p-qlm" data-step="3">
+              <div class="st-h2"><span class="num">3</span>QLM-Bench Data Synthesis</div>
+              <div class="qlm">
+                <div class="qcol">
+                  <div class="kick">Task prompts</div>
+                  <div class="prompts">
+                    <div class="prompt" style="--i:0">Press the button.</div>
+                    <div class="prompt" style="--i:1">Push the box inside the outlined area.</div>
+                    <div class="prompt" style="--i:2">Kick the ball through the goal.</div>
+                    <div class="prompt dots">…</div>
+                    <div class="prompt" style="--i:3">Push the oven door until the door closes.</div>
+                  </div>
+                </div>
+                <div class="bracket"><i class="ar"></i></div>
+                <div class="qcol">
+                  <div class="kick">&nbsp;</div>
+                  <div class="pipe">
+                    <div class="nd llm" style="--i:4"><svg class="ico" aria-hidden="true"><use href="#i-spark"/></svg><b>LLMs</b></div>
+                    <i class="ar d"></i>
+                    <div class="nd" style="--i:5">Reference Trajectory</div>
+                    <i class="ar d"></i>
+                    <div class="nd" style="--i:6">Scene Randomization</div>
+                    <i class="ar d"></i>
+                    <div class="nd hl" style="--i:7">Automatic Synthesis</div>
+                  </div>
+                </div>
+                <i class="ar"></i>
+                <div class="qcol">
+                  <div class="kick">Demonstrations</div>
+                  <div class="demos">
+                    <div class="demo" style="--i:0"><svg viewBox="0 0 120 40" aria-hidden="true"><use href="#s-press"/></svg><span>press button</span></div>
+                    <div class="demo" style="--i:1"><svg viewBox="0 0 120 40" aria-hidden="true"><use href="#s-box"/></svg><span>push box</span></div>
+                    <div class="demo" style="--i:2"><svg viewBox="0 0 120 40" aria-hidden="true"><use href="#s-goal"/></svg><span>kick ball to goal</span></div>
+                    <div class="demo" style="--i:3"><svg viewBox="0 0 120 40" aria-hidden="true"><use href="#s-oven"/></svg><span>close oven door</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="x-qlm" data-step="4"><i class="ar"></i></div>
+
+            <div class="pnl p-ops" data-step="4">
+              <div class="st-h2"><span class="num">4</span>Stage 1.2: On-Policy Self-Distillation (OPSD)</div>
+              <div class="ops">
+                <div class="ops-stack">
+                  <div class="nd" style="--i:0">High-NFE Quadrupedal WAM&nbsp; <span class="m">π<sub class="up">T</sub></span></div>
+                  <i class="ar d"></i>
+                  <div class="nd hl" style="--i:1"><b>On-Policy Self-Distillation (OPSD)</b></div>
+                  <i class="ar d"></i>
+                  <div class="nd v" style="--i:2">Low-NFE Quadrupedal WAM&nbsp; <span class="m">π<sub class="up">S</sub></span></div>
+                </div>
+                <div class="gen">
+                  <div class="ttl">Generation time / chunk</div>
+                  <div class="row2"><span>High-NFE</span><b>2.226 s</b></div>
+                  <div class="bar"><i style="--w:100%"></i></div>
+                  <div class="row2"><span>Low-NFE</span><b>0.159 s</b></div>
+                  <div class="bar lo"><i style="--w:7.14%"></i></div>
+                  <div class="speed"><span class="x"><span data-count="14.0">14.0</span>×</span> Speed-up</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="x-ops" data-step="5"><i class="ar d"></i></div>
+
+            <div class="pnl p-cl" data-step="5">
+              <div class="cl-top"><div class="st-h2"><span class="num">5</span>Closed-loop Inference</div><span class="quote">“Press the button.”</span></div>
+              <div class="cl-row">
+                <div class="nd v" style="--i:2"><b>Real State</b><svg class="glyph" viewBox="0 0 120 40" aria-hidden="true"><use href="#s-press"/></svg></div>
+                <i class="ar l"></i>
+                <div class="nd a" style="--i:1"><b>Inverse Dynamics</b><svg class="glyph" viewBox="0 0 120 62" aria-hidden="true"><use href="#g-dog"/></svg></div>
+                <i class="ar l"></i>
+                <div class="nd v" style="--i:0"><b>Future Imagination</b><div class="views"><div class="view tgt"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-ego"/></svg></div><div class="view tgt"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-top"/></svg></div></div></div>
+              </div>
+              <div class="track" aria-hidden="true">
+                <div class="rail"></div>
+                <i class="tick" style="left:12.5%"></i><i class="tick" style="left:25%"></i><i class="tick" style="left:37.5%"></i><i class="tick" style="left:50%"></i><i class="tick" style="left:62.5%"></i><i class="tick" style="left:75%"></i><i class="tick" style="left:87.5%"></i>
+                <div class="dot"></div>
+                <div class="ends"><span>End</span><span>Start</span></div>
+                <div class="mid">every chunk</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <figcaption class="mfig-caption"><b>Stage 1: Cross-Morphology Policy Adaptation and Acceleration.</b> Stage 1.1 fine-tunes an arm-centric WAM on quadruped demonstrations synthesized in QLM-Bench. Visual Adaptation replaces the head and wrist views (images from Mobile ALOHA) by the ego-centric and top-down views, Action Adaptation replaces the 30-dimensional arm command by the 9-dimensional quadruped command, and the whole-body controller <span class="m">𝒞</span> converts each command into joint torques. Stage 1.2, OPSD, distills the transferred policy, as the high-NFE teacher <span class="m">π<sub class="up">T</sub></span>, into the 1/2-NFE student <span class="m">π<sub class="up">S</sub></span>; the generation time counts the sampling of video and action only. Bottom right shows the closed loop of the policy on the task “Press the button.” Imagined views and rendered demonstrations are illustrations.</figcaption>
+      </figure>
+
+
+      <!-- ===================== Figure 3 (rebuilt) ===================== -->
+      <figure class="mfig" data-fig id="fig-opsd">
+        <div class="task-tabs fig-tabs" role="tablist" aria-label="OPSD modules">
+          <button type="button" class="res-btn task-btn" role="tab" data-go="1" aria-selected="false"><span class="n">01</span>Teacher Cache</button>
+          <button type="button" class="res-btn task-btn" role="tab" data-go="2" aria-selected="false"><span class="n">02</span>Student Rollout</button>
+          <button type="button" class="res-btn task-btn" role="tab" data-go="3" aria-selected="false"><span class="n">03</span>Context Mixing</button>
+          <button type="button" class="res-btn task-btn" role="tab" data-go="4" aria-selected="false"><span class="n">04</span>Teacher Targets</button>
+          <button type="button" class="res-btn task-btn" role="tab" data-go="5" aria-selected="false"><span class="n">05</span>Student &amp; Loss</button>
+          <button type="button" class="res-btn task-btn" role="tab" data-go="6" aria-selected="false"><span class="n">06</span>Student Update</button>
+        </div>
+
+        <div class="mfig-frame">
+          <div class="f3-head">
+            <h3 class="st-h">Stage 1.2: On-Policy Self-Distillation</h3>
+            <div class="legend" aria-label="Legend">
+              <span><svg class="ico frz" aria-hidden="true"><use href="#i-frz"/></svg>frozen</span>
+              <span><svg class="ico lock" aria-hidden="true"><use href="#i-lock"/></svg>fixed targets</span>
+              <span><i class="ln"></i>regression</span>
+              <span><svg class="ico hot" aria-hidden="true"><use href="#i-hot"/></svg>trainable</span>
+              <span><i class="ln dash"></i>gradient</span>
+              <span><b class="sg">‖</b>stop-gradient</span>
+            </div>
+          </div>
+
+          <div class="f3">
+            <div class="pnl p-ctx">
+              <div class="st-h2">Training Context</div>
+
+              <div class="band" data-step="1">
+                <div class="who"><svg class="ico frz" aria-hidden="true"><use href="#i-frz"/></svg>Teacher <span class="m">π<sub class="up">T</sub></span><span class="num num-own">1</span></div>
+                <div class="traj-h">Closed-loop trajectory</div>
+                <div class="toks stack">
+                  <div class="tok" style="--i:0">Text<span class="m">ℓ</span></div>
+                  <div class="tok v" style="--i:1">Video<span class="m">z<sub>1</sub></span></div>
+                  <div class="tok a" style="--i:2">Action<span class="m">A<sub>1</sub></span></div>
+                  <div class="tok v" style="--i:3">Video<span class="m">z<sub>2</sub></span></div>
+                  <div class="tok a" style="--i:4">Action<span class="m">A<sub>2</sub></span></div>
+                  <span class="gap">…</span><i class="ar" style="flex:0 0 16px"></i><span class="term">Terminal</span>
+                </div>
+                <i class="ar d"></i>
+                <div class="cache">Teacher Cache <span class="m">H, ε<sub>Z</sub>, ε<sub>A</sub>, Z<sub class="up">T</sub>, A<sub class="up">T</sub></span></div>
+              </div>
+
+              <div class="bias" data-step="2">
+                <div class="kick">Environment-level exposure bias</div>
+                <svg viewBox="0 0 320 78" aria-hidden="true">
+                  <path class="c t halo" d="M24 34 L74 36 L124 32 L174 28 L224 27 L268 28"/>
+                  <path class="c s halo" d="M24 34 L74 42 L124 45 L174 50 L224 58 L268 66"/>
+                  <path class="c t" d="M24 34 L74 36 L124 32 L174 28 L224 27 L274 28"/>
+                  <path class="c s" d="M24 34 L74 42 L124 45 L174 50 L224 58 L274 67"/>
+                  <g class="pt" fill="#a9c9bb"><circle cx="74" cy="36" r="2.6"/><circle cx="124" cy="32" r="2.6"/><circle cx="174" cy="28" r="2.6"/><circle cx="224" cy="27" r="2.6"/><path d="M282 28l-9 -4.5v9z"/></g>
+                  <g class="pt" fill="#00c47c"><circle cx="74" cy="42" r="2.6"/><circle cx="124" cy="45" r="2.6"/><circle cx="174" cy="50" r="2.6"/><circle cx="224" cy="58" r="2.6"/><path d="M282 68.5l-9.4 -2.6 1.7 8.8z"/></g>
+                  <text class="dl" x="290" y="26" fill="#a9c9bb">d<tspan font-size="9" dy="4">π</tspan><tspan font-size="7" dy="2" font-style="normal">T</tspan></text>
+                  <text class="dl" x="290" y="70" fill="#00c47c">d<tspan font-size="9" dy="4">π</tspan><tspan font-size="7" dy="2" font-style="normal">S</tspan></text>
+                </svg>
+              </div>
+
+              <div class="band" data-step="2">
+                <div class="who"><svg class="ico hot" aria-hidden="true"><use href="#i-hot"/></svg>Student <span class="m">π<sub class="up">S</sub></span><span class="lite">· streaming rollout</span><span class="num num-own">2</span></div>
+                <div class="traj-h">Context&nbsp; <span class="m">H<sub>k</sub> = (ℓ, z<sub>≤k</sub>, A<sub>&lt;k</sub>)</span></div>
+                <div class="toks">
+                  <div class="tok" style="--i:0">Text<span class="m">ℓ</span></div>
+                  <div class="tok v" style="--i:1">Video<span class="m">z<sub>1</sub></span></div>
+                  <div class="tok a" style="--i:2">Action<span class="m">A<sub>1</sub></span></div>
+                  <span class="gap">…</span>
+                  <div class="tok v" style="--i:3">Video<span class="m">z<sub>k−1</sub></span></div>
+                  <div class="tok a" style="--i:4">Action<span class="m">A<sub>k−1</sub></span></div>
+                  <div class="tok v cur" style="--i:5">Current obs.<span class="m">z<sub>k</sub></span></div>
+                </div>
+                <i class="ar d"></i>
+                <div class="cache">New Contexts</div>
+              </div>
+            </div>
+
+            <div class="mix">
+              <span class="side">teacher cache</span>
+              <i class="ar d tall" data-step="3"></i>
+              <div class="out">
+                <div class="mix-box" data-step="3"><b>Context&nbsp; <span class="m">H ∼ <span class="ovl">d</span></span></b><span class="f m"><span class="ovl">d</span> = (1 − η) d<sub>π<sub class="up">S</sub></sub> + η d<sub>π<sub class="up">T</sub></sub></span></div>
+                <i class="ar" data-step="4" style="flex:0 0 14px"></i>
+              </div>
+              <i class="ar u tall" data-step="3"></i>
+              <span class="side">new contexts</span>
+            </div>
+
+            <div class="pnl p-tl">
+              <div class="st-h2">Target &amp; Loss</div>
+              <div class="tl">
+                <div class="band" data-step="4">
+                  <div class="tl-row">
+                    <div class="tl-side">
+                      <div class="who"><svg class="ico frz" aria-hidden="true"><use href="#i-frz"/></svg>Teacher <span class="m">π<sub class="up">T</sub></span><span class="num num-own">4</span></div>
+                      <div class="steps"><span><svg aria-hidden="true"><use href="#k-tv"/></svg>25 video steps</span><span><svg aria-hidden="true"><use href="#k-ta"/></svg>50 action steps</span></div>
+                    </div>
+                    <div class="nd v" style="--i:0"><b>Video Stream</b><span class="eq m"><svg class="ico lock" aria-hidden="true"><use href="#i-lock"/></svg>Z<sub class="up">T</sub> = Φ<span class="ss"><sup>Z</sup><sub class="up">T</sub></span>(ε<sub>Z</sub> | H)</span><div class="views"><div class="view"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-ego"/></svg></div><div class="view"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-top"/></svg></div></div></div>
+                    <i class="ar"></i>
+                    <div class="nd a" style="--i:1"><b>Action Stream</b><span class="eq m"><svg class="ico lock" aria-hidden="true"><use href="#i-lock"/></svg>A<sub class="up">T</sub> = Φ<span class="ss"><sup>A</sup><sub class="up">T</sub></span>(ε<sub>A</sub> | Z<sub class="up">T</sub>, H)</span><div class="act"><svg class="glyph" viewBox="0 0 120 62" aria-hidden="true"><use href="#g-dog"/></svg></div></div>
+                  </div>
+                </div>
+
+                <div class="tl-mid">
+                  <span class="lbl">Shared<br>noise</span>
+                  <div class="nz">
+                    <div class="nz-col"><i class="ar u" data-step="4"></i><div class="nz-in"><span class="m">ε<sub>Z</sub></span><span class="noise" data-noise="z" aria-hidden="true"></span></div><i class="ar d" data-step="5"></i></div>
+                    <div class="nz-col"><i class="ar d dash" data-step="5"></i><div class="loss" data-step="5"><span class="m"><span class="up">ℒ</span><sub>Z</sub></span></div><i class="ar d dash" data-step="5"></i></div>
+                  </div>
+                  <i></i>
+                  <div class="nz">
+                    <div class="nz-col"><i class="ar u" data-step="4"></i><div class="nz-in"><span class="m">ε<sub>A</sub></span><span class="noise" data-noise="a" aria-hidden="true"></span></div><i class="ar d" data-step="5"></i></div>
+                    <div class="nz-col"><i class="ar d dash" data-step="5"></i><div class="loss" data-step="5"><span class="m"><span class="up">ℒ</span><sub>A</sub></span></div><i class="ar d dash" data-step="5"></i></div>
+                  </div>
+                </div>
+
+                <div class="band" data-step="5">
+                  <div class="tl-row">
+                    <div class="tl-side">
+                      <div class="who"><svg class="ico hot" aria-hidden="true"><use href="#i-hot"/></svg>Student <span class="m">π<sub class="up">S</sub></span><span class="num num-own">5</span></div>
+                      <div class="steps"><span><svg aria-hidden="true"><use href="#k-s1"/></svg>1 video step</span><span><svg aria-hidden="true"><use href="#k-s2"/></svg>2 action steps</span></div>
+                    </div>
+                    <div class="nd v" style="--i:0"><b>Video Stream</b><span class="eq m">Ẑ = Φ<span class="ss"><sup>Z</sup><sub class="up">S</sub></span>(ε<sub>Z</sub> | H)</span><div class="views"><div class="view blur"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-ego"/></svg></div><div class="view blur"><svg viewBox="0 0 100 56" aria-hidden="true"><use href="#v-top"/></svg></div></div></div>
+                    <div class="sgrad"><b title="stop-gradient">‖</b><i class="ar"></i></div>
+                    <div class="nd a" style="--i:1"><b>Action Stream</b><span class="eq m">Â = Φ<span class="ss"><sup>A</sup><sub class="up">S</sub></span>(ε<sub>A</sub> | sg(Ẑ), H)</span><div class="act"><svg class="glyph" viewBox="0 0 120 62" aria-hidden="true"><use href="#g-dog"/></svg></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="upd-row">
+              <div class="upd" data-step="6"><svg class="ico hot" aria-hidden="true"><use href="#i-hot"/></svg><b>Student Update</b><span class="m">θ<sub class="up">S</sub> = θ<sub>0</sub> + Δ</span></div>
+              <div class="link"><i class="ar l" data-step="6"></i><div class="ltot" data-step="5 6"><span class="m"><span class="up">ℒ</span> = <span class="up">ℒ</span><sub>Z</sub> + λ<sub>A</sub><span class="up">ℒ</span><sub>A</sub></span></div></div>
+            </div>
+          </div>
+
+        </div>
+
+        <figcaption class="mfig-caption"><b>On-Policy Self-Distillation (Stage 1.2).</b> Left (Training Context): training contexts mix the teacher cache, which the frozen teacher collects in closed loop before training, with the contexts that the student reaches in its own streaming rollouts (<span class="m">H ∼ <span class="ovl">d</span></span>). Right (Target &amp; Loss): on each context, teacher and student sample from the same noise, and the student’s one-step video stream and two-step action stream are regressed to the targets of the teacher’s high-NFE sampler, with a stop-gradient on the plan that conditions the student’s action. Plan images and rendered actions are illustrations, not model outputs.</figcaption>
+      </figure>
+
+
+      <figure class="mfig" data-cv id="fig-curves-s1">
+        <div class="mfig-frame">
+          <div class="cv-row">
+            <div class="cv-group">
+              <div class="cv-gh">Stage 1.1 · fine-tuning</div>
+              <div class="cv-grid">
+                <div class="cv-panel" data-chart="s4-video"><div class="cv-title">Video loss</div></div>
+                <div class="cv-panel" data-chart="s4-action"><div class="cv-title">Action loss</div></div>
+              </div>
+              <div class="cv-legend"><span><i class="sw faint"></i>Training (per update)</span><span><i class="sw"></i>Training (100-update mean)</span><span><i class="sw dash" style="border-color:#e6e6e6"></i>Validation</span></div>
+            </div>
+            <div class="cv-group">
+              <div class="cv-gh">Stage 1.2 · OPSD</div>
+              <div class="cv-grid">
+                <div class="cv-panel" data-chart="s2-video"><div class="cv-title">OPSD: video</div></div>
+                <div class="cv-panel" data-chart="s2-action"><div class="cv-title">OPSD: action</div></div>
+              </div>
+              <div class="cv-legend"><span><i class="sw" style="border-color:#8fb3a4"></i>Teacher cache only (<span class="m">η</span> = 1)</span><span><i class="sw dash" style="border-color:#e6e6e6"></i>Streaming only (<span class="m">η</span> = 0)</span><span><i class="sw"></i>OPSD (Ours, <span class="m">η</span> = 0.5)</span></div>
+            </div>
+          </div>
+        </div>
+        <figcaption class="mfig-caption"><b>Left: fine-tuning losses of the transferred policy (Stage 1.1)</b>, on a logarithmic scale. Light: training loss of each update; dark: its centered moving average over 100 updates, i.e. one pass over the 800 training demonstrations; dashed: validation loss on 10 held-out demonstrations per task, every 100 updates.<br><b>Right: distillation loss of OPSD.</b> The held-out loss is evaluated every 50 updates. Held-out loss of the students of the three training-context sources, on the same 64 held-out contexts, with a square-root horizontal axis; the dotted line marks 300 updates, after which the students are evaluated. The held-out contexts are drawn from the teacher cache, so the curves do not rank the sources: they disadvantage Streaming only, which trains on no cached contexts.</figcaption>
+      </figure>
+
+      <div class="stage-h"><span class="stage-k">Stage 2</span><h3>Task-Specific Improvement and Merging</h3></div>
+
+      <!-- ===================== Figure 3, bottom (rebuilt) ===================== -->
+      <figure class="mfig" data-fig id="fig-stage2">
+        <div class="task-tabs fig-tabs" role="tablist" aria-label="Stage 2 modules">
+          <button type="button" class="res-btn task-btn" role="tab" data-go="1" aria-selected="false"><span class="n">01</span>Task-Specific RL</button>
+          <button type="button" class="res-btn task-btn" role="tab" data-go="2" aria-selected="false"><span class="n">02</span>M-OPD</button>
+        </div>
+
+        <div class="mfig-frame">
+            <div class="s2">
+              <div class="pnl p-rl" data-step="1">
+                <div class="st-h2"><span class="num">1</span>Stage 2.1: Task-Specific Reinforcement Learning</div>
+                <div class="rl">
+                  <div class="nd" style="--i:0"><b>OPSD teacher</b><small>High-NFE</small></div>
+                  <div class="branch"><i class="ar"></i><i class="ar"></i></div>
+                  <div class="rl-rows">
+                    <div class="rl-row">
+                      <div class="nd" style="--i:1"><b>Candidate Windows</b></div><i class="ar"></i>
+                      <div class="nd" style="--i:2"><b>Task-specific Reward</b></div><i class="ar"></i>
+                      <div class="nd hl" style="--i:3"><b>DiffusionNFT Update</b></div><i class="ar"></i>
+                      <div class="nd v" style="--i:4"><b>Specialist teacher</b><small>(push box)</small></div>
+                    </div>
+                    <div class="rl-row">
+                      <div class="nd" style="--i:2"><b>Candidate Windows</b></div><i class="ar"></i>
+                      <div class="nd" style="--i:3"><b>Task-specific Reward</b></div><i class="ar"></i>
+                      <div class="nd hl" style="--i:4"><b>DiffusionNFT Update</b></div><i class="ar"></i>
+                      <div class="nd v" style="--i:5"><b>Specialist teacher</b><small>(open door)</small></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <i class="ar" data-step="2"></i>
+              <div class="pnl p-opd" data-step="2">
+                <div class="st-h2"><span class="num">2</span>Stage 2.2: Multi-Teacher On-Policy Distillation</div>
+                <div class="opd">
+                  <div class="nd" style="--i:1"><b>Task Router</b></div><i class="ar"></i>
+                  <div class="nd hl big" style="--i:2"><b>M-OPD</b></div><i class="ar"></i>
+                  <div class="nd v" style="--i:4"><b>M-OPD student <svg class="ico hot" aria-hidden="true"><use href="#i-hot"/></svg></b><small>1/2-NFE</small></div>
+                  <i class="ar u c1r2"></i><i class="ar u c3r2"></i>
+                  <div class="nd c1r3" style="--i:0"><b>OPSD teacher</b><small>High-NFE</small></div>
+                  <div class="nd c3r3" style="--i:3"><b>OPSD student</b><small>Init.</small></div>
+                </div>
+              </div>
+            </div>
+        </div>
+
+        <figcaption class="mfig-caption"><b>Task-Specific Improvement and Merging (Stage 2).</b> Stage 2.1 tunes the OPSD teacher by reinforcement learning into a specialist teacher for each selected task, and Stage 2.2, M-OPD, distills the teachers, routed by task, into one 1/2-NFE student that starts from the OPSD student.</figcaption>
+      </figure>
+
+      <figure class="mfig" data-cv id="fig-curves-s2">
+        <div class="mfig-frame">
+          <div class="cv-row">
+            <div class="cv-group">
+              <div class="cv-gh">Stage 2.1 · specialist teachers</div>
+              <div class="cv-grid">
+                <div class="cv-panel" data-chart="s1-push"><div class="cv-title">Push box (mm)</div></div>
+                <div class="cv-panel" data-chart="s1-door"><div class="cv-title">Open door (cm)</div></div>
+              </div>
+              <div class="cv-legend"><span><i class="sw band"></i>Specialist teacher reward (±1 SE)</span><span><i class="sw mk"></i>Specialist teacher success</span><span><i class="sw dash" style="border-color:#8c8c8c"></i>OPSD teacher reward</span><span><i class="sw dot" style="border-color:#8c8c8c"></i>OPSD teacher success</span></div>
+            </div>
+            <div class="cv-group">
+              <div class="cv-gh">Stage 2.2 · M-OPD</div>
+              <div class="cv-grid">
+                <div class="cv-panel" data-chart="mopd-video"><div class="cv-title">M-OPD: video</div></div>
+                <div class="cv-panel" data-chart="mopd-action"><div class="cv-title">M-OPD: action</div></div>
+              </div>
+              <div class="cv-legend"><span><i class="sw faint"></i>Training loss</span><span><i class="sw"></i>Training, 25-update mean</span><span><i class="sw mk circ solid"></i>Held-out</span></div>
+            </div>
+          </div>
+        </div>
+        <figcaption class="mfig-caption"><b>Left: specialist teachers during Stage 2.1.</b> Solid line (left axis): reward gain over the OPSD teacher on held-out start states after each round, paired by start state and noise, with a band of ±1 standard error over scenes; the two rewards measure different quantities (the box reward in mm, the offset of the foot on the door handle in cm). Squares (right axis): closed-loop success over 32 episodes after rounds 4, 9, and 14; the dotted line is the success of the OPSD teacher. For opening the door, the success falls from 19 of 32 episodes after round 4 to 6 after round 9 while the reward gain stays positive, so the reward is only a proxy of success there; the specialist teacher is the update after round 4.<br><b>Right: distillation loss of M-OPD.</b> The held-out loss is evaluated every 50 updates. The M-OPD student starts from the OPSD student and learns from the specialist teachers routed by task. The light line is the training loss of every update, computed on the contexts sampled for that update rather than on the held-out contexts; the dark line is its centered moving average over 25 updates, with shorter windows at both ends; the circles are the held-out loss. The held-out contexts of M-OPD come from its own teacher cache, so its loss is not on the scale of the OPSD losses.</figcaption>
+      </figure>
+    </section>
+
+    <section class="chapter" id="qlm-bench" aria-labelledby="qlm-title">
+      <div class="divider" aria-hidden="true"></div>
+      <h2 id="qlm-title">QLM-Bench</h2>
+      <p class="chapter-sub">The ten tasks of <b>QLM-Bench</b>, one demonstration per task from the observer camera of the dataset.</p>
+
+      <div class="qlm-bench">
+        <div class="qlm-grid">
+          <figure class="qtile"><div class="qv"><video src="qlm/close_fridge_door.mp4" muted loop playsinline preload="metadata"></video></div><figcaption><b>Close a fridge door</b><span>“Push against the fridge door until the door closes.”</span></figcaption></figure>
+          <figure class="qtile"><div class="qv"><video src="qlm/close_oven_door.mp4" muted loop playsinline preload="metadata"></video></div><figcaption><b>Close an oven door</b><span>“Push the oven door until the door closes.”</span></figcaption></figure>
+          <figure class="qtile"><div class="qv"><video src="qlm/turn_valve.mp4" muted loop playsinline preload="metadata"></video></div><figcaption><b>Turn a valve</b><span>“Rotate the valve lever upward to the upright position.”</span></figcaption></figure>
+          <figure class="qtile"><div class="qv"><video src="qlm/pull_open_drawer.mp4" muted loop playsinline preload="metadata"></video></div><figcaption><b>Pull open a drawer</b><span>“Slide your foot into the drawer handle opening and pull the drawer outward.”</span></figcaption></figure>
+          <figure class="qtile"><div class="qv"><video src="qlm/open_room_door.mp4" muted loop playsinline preload="metadata"></video></div><figcaption><b>Open a room door</b><span>“Press down the lever handle, then push the door open.”</span></figcaption></figure>
+          <figure class="qtile"><div class="qv"><video src="qlm/press_button.mp4" muted loop playsinline preload="metadata"></video></div><figcaption><b>Press a button</b><span>“Press the button.”</span></figcaption></figure>
+          <figure class="qtile"><div class="qv"><video src="qlm/lift_basket.mp4" muted loop playsinline preload="metadata"></video></div><figcaption><b>Lift a basket</b><span>“Lift the basket by its handle.”</span></figcaption></figure>
+          <figure class="qtile"><div class="qv"><video src="qlm/kick_ball_to_goal.mp4" muted loop playsinline preload="metadata"></video></div><figcaption><b>Kick a ball through a goal</b><span>“Kick the ball through the goal.”</span></figcaption></figure>
+          <figure class="qtile"><div class="qv"><video src="qlm/push_box.mp4" muted loop playsinline preload="metadata"></video></div><figcaption><b>Push a box into a target area</b><span>“Push the box inside the outlined area.”</span></figcaption></figure>
+          <figure class="qtile"><div class="qv"><video src="qlm/sweep_block_to_zone.mp4" muted loop playsinline preload="metadata"></video></div><figcaption><b>Sweep a block into a target area</b><span>“Sweep the block into the outlined area.”</span></figcaption></figure>
         </div>
       </div>
     </section>
@@ -739,6 +1927,161 @@
 
     select(0);
   });
+})();
+</script>
+<script>
+/* Method figures: modules light up one after another (auto-advances while the figure is on screen; tabs jump to a module). */
+(() => {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const countUp = el => {
+    const to = parseFloat(el.dataset.count), t0 = performance.now();
+    const f = now => {
+      const p = Math.min(1, (now - t0) / 1100), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = (1 + (to - 1) * e).toFixed(1);
+      if (p < 1 && el.closest('.on')) requestAnimationFrame(f); else el.textContent = to.toFixed(1);
+    };
+    requestAnimationFrame(f);
+  };
+
+  document.querySelectorAll('[data-fig]').forEach(fig => {
+    const els = [...fig.querySelectorAll('[data-step]')];
+    const tabs = [...fig.querySelectorAll('[data-go]')];
+    const n = tabs.length;
+    let cur = 0, timer = 0, visible = false, started = false;
+
+    const show = k => {
+      cur = k;
+      els.forEach(e => e.classList.toggle('on', e.dataset.step.split(' ').includes(String(k))));
+      tabs.forEach(t => t.setAttribute('aria-selected', String(+t.dataset.go === k)));
+      if (!reduce) fig.querySelectorAll('[data-count]').forEach(c => { if (c.closest('.on')) countUp(c); });
+    };
+    const start = () => { if (!reduce && !timer) timer = setInterval(() => show(cur % n + 1), 3400); };
+    const stop = () => { clearInterval(timer); timer = 0; };
+
+    tabs.forEach(t => t.addEventListener('click', () => { stop(); started = true; show(+t.dataset.go); if (visible) start(); }));
+
+    if (reduce) show(1);
+    new IntersectionObserver(([en]) => {
+      visible = en.isIntersecting;
+      if (visible) { if (!started) { started = true; show(1); } start(); } else stop();
+    }, { threshold: 0.2 }).observe(fig);
+  });
+
+  /* shared-noise grids: re-sampled while the noise is in use */
+  const noises = [...document.querySelectorAll('.noise')];
+  const paint = nz => nz.querySelectorAll('i').forEach(c => {
+    if (nz.dataset.noise === 'z') {
+      c.style.backgroundColor = `hsl(${Math.round(120 + Math.random() * 70)} ${Math.round(40 + Math.random() * 50)}% ${Math.round(14 + Math.random() * 46)}%)`;
+    } else {
+      const g = Math.round(28 + Math.random() * 170);
+      c.style.backgroundColor = `rgb(${g} ${g} ${g})`;
+    }
+  });
+  noises.forEach(nz => { for (let i = 0; i < 49; i++) nz.appendChild(document.createElement('i')); paint(nz); });
+  if (!reduce) setInterval(() => {
+    if (document.hidden) return;
+    noises.forEach(nz => { const mid = nz.closest('.tl-mid'); if (mid && mid.querySelector('.on')) paint(nz); });
+  }, 320);
+})();
+</script>
+<script type="application/json" id="curve-data">{"S4":{"video":{"raw":[[-1,0.26476],[7,0.21365],[19,0.20895],[27,0.18979],[36,0.21117],[45,0.13948],[52,0.19642],[58,0.18399],[68,0.14606],[75,0.181],[89,0.15797],[96,0.16033],[106,0.13612],[113,0.14247],[123,0.12263],[127,0.13627],[133,0.14463],[140,0.1433],[146,0.15063],[156,0.14588],[160,0.15687],[167,0.12611],[174,0.14402],[184,0.1216],[190,0.15013],[197,0.11077],[203,0.15275],[213,0.13855],[223,0.1066],[230,0.12462],[239,0.13396],[242,0.14226],[254,0.11103],[266,0.097818],[268,0.14025],[281,0.13148],[289,0.12497],[299,0.13064],[307,0.10837],[314,0.10968],[321,0.10896],[327,0.11735],[334,0.10948],[340,0.094403],[348,0.10285],[357,0.12234],[362,0.087093],[370,0.11419],[375,0.12257],[385,0.11032],[397,0.10408],[407,0.11984],[417,0.089409],[425,0.10703],[433,0.098214],[440,0.10731],[447,0.11039],[459,0.088977],[468,0.11031],[475,0.12433],[482,0.088067],[491,0.089572],[503,0.096604],[508,0.098264],[514,0.086081],[523,0.11122],[535,0.090524],[548,0.1064],[557,0.09627],[567,0.10882],[578,0.091482],[582,0.10339],[588,0.080227],[598,0.10385],[610,0.08164],[623,0.080762],[634,0.092132],[639,0.086237],[646,0.08778],[652,0.089114],[659,0.088487],[665,0.082977],[673,0.087464],[687,0.081791],[697,0.10398],[710,0.094068],[724,0.087099],[731,0.079438],[741,0.10091],[747,0.10882],[757,0.087283],[768,0.068612],[777,0.083959],[785,0.10495],[793,0.078118],[801,0.10034],[810,0.081987],[818,0.093743],[824,0.10189],[827,0.088242],[833,0.095419],[837,0.074203],[849,0.085417],[856,0.081979],[868,0.076213],[878,0.076571],[886,0.082904],[891,0.095806],[899,0.074835],[915,0.092333],[924,0.096518],[932,0.080235],[939,0.084436],[943,0.075572],[949,0.098526],[956,0.097516],[968,0.085353],[975,0.078056],[982,0.087509],[991,0.071842],[995,0.067548],[1003,0.088493],[1007,0.070644],[1015,0.091166],[1022,0.068559],[1030,0.086506],[1039,0.088048],[1053,0.085614],[1056,0.067939],[1066,0.089108],[1073,0.070241],[1076,0.087348],[1087,0.082669],[1095,0.094282],[1104,0.069925],[1112,0.087844],[1123,0.089061],[1131,0.085367],[1133,0.069457],[1149,0.092705],[1156,0.060955],[1162,0.075439],[1176,0.070605],[1182,0.072847],[1189,0.0719],[1193,0.073814],[1205,0.084638],[1212,0.079985],[1215,0.065865],[1231,0.07693],[1237,0.068991],[1246,0.084835],[1251,0.080597],[1256,0.07074],[1262,0.076943],[1269,0.068582],[1275,0.09227],[1283,0.073983],[1291,0.06981],[1304,0.066021],[1314,0.07656],[1322,0.075721],[1331,0.08037],[1334,0.066264],[1342,0.089465],[1347,0.062826],[1358,0.073308],[1365,0.065793],[1376,0.062719],[1385,0.065987],[1390,0.083105],[1400,0.069103],[1404,0.078348],[1411,0.078256],[1421,0.078463],[1429,0.069093],[1436,0.070823],[1442,0.063831],[1454,0.08636],[1459,0.066748],[1465,0.084746],[1472,0.068064],[1484,0.077089],[1490,0.067626],[1494,0.081003],[1503,0.068054],[1510,0.061899],[1519,0.072577],[1527,0.064293],[1533,0.08686],[1541,0.072963],[1549,0.075042],[1555,0.077393],[1563,0.069787],[1567,0.070896],[1581,0.06436],[1587,0.061421],[1592,0.068723],[1598,0.079517],[1608,0.070011],[1614,0.072761],[1620,0.07079],[1626,0.066949],[1633,0.068486],[1636,0.068518],[1643,0.061382],[1656,0.076081],[1661,0.080128],[1668,0.064561],[1673,0.075918],[1692,0.083463],[1704,0.074213],[1712,0.057975],[1721,0.064702],[1730,0.080889],[1741,0.060142],[1750,0.074417],[1757,0.073419],[1763,0.066916],[1770,0.070416],[1776,0.070476],[1783,0.070699],[1790,0.07375],[1799,0.065905],[1811,0.077481],[1815,0.070177],[1822,0.062731],[1827,0.058695],[1837,0.062557],[1844,0.078823],[1849,0.083395],[1856,0.06238],[1863,0.065818],[1867,0.071249],[1872,0.072753],[1879,0.067631],[1884,0.068268],[1897,0.066009],[1902,0.071536],[1908,0.078369],[1914,0.065607],[1920,0.073454],[1929,0.074416],[1943,0.062344],[1952,0.068096],[1958,0.065989],[1965,0.078493],[1974,0.07454],[1984,0.080951],[1987,0.057968],[2003,0.072965],[2013,0.079253],[2022,0.062077],[2025,0.057564],[2039,0.06869],[2046,0.067786],[2058,0.058284],[2060,0.061583],[2071,0.074112],[2073,0.059302],[2079,0.081039],[2086,0.061944],[2092,0.064321],[2096,0.064287],[2102,0.062548],[2111,0.062842],[2127,0.060366],[2139,0.055717],[2142,0.072534],[2150,0.063659],[2159,0.065407],[2166,0.066001],[2169,0.061669],[2177,0.070012],[2186,0.065351],[2193,0.059672],[2200,0.067448],[2206,0.075056],[2213,0.071671],[2221,0.062238],[2224,0.065027],[2229,0.065941],[2234,0.06312],[2241,0.054961],[2254,0.053996],[2260,0.060023],[2269,0.072395],[2279,0.054097],[2287,0.05807],[2302,0.069242],[2309,0.065551],[2316,0.067693],[2323,0.065432],[2328,0.051663],[2341,0.055814],[2350,0.0643],[2354,0.052538],[2362,0.070101],[2367,0.069632],[2374,0.05887],[2378,0.075113],[2388,0.079545],[2396,0.072346],[2402,0.059325],[2409,0.058676],[2416,0.057963],[2423,0.068315],[2432,0.059511],[2440,0.058308],[2450,0.071963],[2457,0.059706],[2462,0.05678],[2469,0.064707],[2475,0.058982],[2484,0.05739],[2499,0.076632],[2508,0.057684],[2513,0.059646],[2518,0.067675],[2522,0.051987],[2532,0.065566],[2541,0.052289],[2549,0.057998],[2553,0.071922],[2567,0.047419],[2577,0.076692],[2586,0.068915],[2593,0.056904],[2602,0.055177],[2614,0.070578],[2625,0.057928],[2633,0.073865],[2642,0.062186],[2646,0.066604],[2654,0.057896],[2660,0.065784],[2668,0.066182],[2676,0.069063],[2686,0.058879],[2696,0.058832],[2709,0.053855],[2713,0.052833],[2724,0.05724],[2731,0.057846],[2737,0.062164],[2744,0.06615],[2748,0.065159],[2761,0.066367],[2771,0.061072],[2780,0.060316],[2787,0.070366],[2798,0.067017],[2803,0.050917],[2811,0.072224],[2821,0.056914],[2824,0.067074],[2833,0.05021],[2838,0.055165],[2843,0.067075],[2854,0.071126],[2867,0.07445],[2871,0.060915],[2877,0.05567],[2886,0.06978],[2890,0.053479],[2898,0.065622],[2906,0.04793],[2917,0.057296],[2927,0.068397],[2935,0.053913],[2948,0.063445],[2955,0.058293],[2963,0.064574],[2971,0.05608],[2977,0.060136],[2983,0.061421],[2991,0.050822],[3001,0.064981],[3009,0.056527],[3021,0.0701],[3030,0.05355],[3039,0.069421],[3049,0.06456],[3054,0.063813],[3060,0.062563],[3065,0.064589],[3071,0.060226],[3078,0.059512],[3083,0.059564],[3089,0.056836],[3098,0.069564],[3108,0.064829],[3114,0.050929],[3125,0.057776],[3129,0.067016],[3136,0.058651],[3141,0.076545],[3148,0.056462],[3154,0.05962],[3161,0.05873],[3166,0.064282],[3174,0.066129],[3182,0.052353],[3190,0.053082],[3197,0.06371],[3204,0.069425],[3215,0.058908],[3227,0.062684],[3231,0.064817],[3245,0.062048],[3251,0.056349],[3258,0.058059],[3264,0.059058],[3271,0.057103],[3275,0.056506],[3282,0.062104],[3290,0.05331],[3298,0.05525],[3312,0.066173],[3319,0.0565],[3326,0.062445],[3337,0.052392],[3340,0.069176],[3346,0.066059],[3353,0.061734],[3364,0.060149],[3371,0.060813],[3375,0.068057],[3382,0.059221],[3386,0.058419],[3393,0.059622],[3399,0.057083],[3409,0.052091],[3419,0.050728],[3432,0.057],[3441,0.049656],[3455,0.05901],[3462,0.058353],[3468,0.057601],[3479,0.050671],[3484,0.062203],[3494,0.064379],[3500,0.049699],[3508,0.045249],[3522,0.05605],[3529,0.059128],[3534,0.06923],[3543,0.047958],[3550,0.052857],[3559,0.059742],[3564,0.063396],[3571,0.060108],[3579,0.051609],[3588,0.065655],[3595,0.048457],[3603,0.054665],[3608,0.064055],[3616,0.066137],[3622,0.052443],[3629,0.06301],[3642,0.058642],[3649,0.058768],[3656,0.051957],[3664,0.050511],[3676,0.068759],[3684,0.048669],[3696,0.058882],[3703,0.054508],[3711,0.057866],[3719,0.062794],[3727,0.051051],[3736,0.066306],[3751,0.064224],[3760,0.070264],[3769,0.052392],[3773,0.05063],[3784,0.06168],[3791,0.059175],[3795,0.063759],[3801,0.048054],[3816,0.06281],[3825,0.050464],[3832,0.060256],[3837,0.051641],[3841,0.05586],[3848,0.055547],[3853,0.070996],[3865,0.06214],[3873,0.058849],[3880,0.050318],[3892,0.051447],[3898,0.047443],[3909,0.052319],[3917,0.048028],[3932,0.062522],[3941,0.047096],[3952,0.046655],[3963,0.060006],[3971,0.05343],[3982,0.059437],[3995,0.060729],[4002,0.052767],[4008,0.059552],[4015,0.051781],[4026,0.047016],[4037,0.04726],[4047,0.050888],[4060,0.049272],[4064,0.04987],[4070,0.053322],[4078,0.045138],[4088,0.049417],[4096,0.048253],[4104,0.047743],[4113,0.061833],[4119,0.045784],[4122,0.06426],[4130,0.047473],[4140,0.061663],[4143,0.047782],[4150,0.051403],[4162,0.055996],[4166,0.051111],[4173,0.047239],[4180,0.051645],[4186,0.059629],[4197,0.050861],[4206,0.048654],[4215,0.060045],[4223,0.053524],[4235,0.064552],[4245,0.063387],[4257,0.060852],[4263,0.064835],[4271,0.049579],[4275,0.048471],[4283,0.05733],[4290,0.059992],[4294,0.048051],[4303,0.05748],[4309,0.046767],[4320,0.051067],[4327,0.052484],[4335,0.063781],[4346,0.048141],[4353,0.059901],[4359,0.053563],[4367,0.067521],[4375,0.0558],[4381,0.054458],[4387,0.052653],[4393,0.06119],[4409,0.048498],[4424,0.050821],[4429,0.049432],[4440,0.045777],[4452,0.051221],[4454,0.059704],[4461,0.047587],[4468,0.057986],[4473,0.048732],[4485,0.058945],[4488,0.055849],[4496,0.049643],[4502,0.049433],[4508,0.05003],[4523,0.04471],[4531,0.056685],[4544,0.066715],[4549,0.051526],[4556,0.05739],[4560,0.064432],[4567,0.054881],[4574,0.051646],[4582,0.057589],[4589,0.060907],[4596,0.050317],[4609,0.059883],[4614,0.062714],[4624,0.059665],[4633,0.051548],[4637,0.061789],[4645,0.048076],[4653,0.048452],[4659,0.049134],[4670,0.055434],[4672,0.047922],[4679,0.049789],[4685,0.053425],[4690,0.05191],[4696,0.049225],[4707,0.058385],[4716,0.048802],[4720,0.050326],[4727,0.052963],[4735,0.06132],[4746,0.050997],[4758,0.044489],[4770,0.043561],[4777,0.050591],[4787,0.061652],[4797,0.042567],[4806,0.051725],[4813,0.05224],[4821,0.058885],[4830,0.064841],[4840,0.056944],[4844,0.050284],[4854,0.061455],[4859,0.054887],[4869,0.051167],[4876,0.049031],[4883,0.054082],[4889,0.052885],[4896,0.05552],[4903,0.049529],[4911,0.048727],[4918,0.054604],[4924,0.045713],[4930,0.060445],[4941,0.050862],[4945,0.057788],[4950,0.044942],[4955,0.06706],[4965,0.045881],[4977,0.049953],[4986,0.046132],[4992,0.062566],[4999,0.0444]],"mean":[[-1,0.19223],[48,0.17679],[66,0.16428],[154,0.13625],[170,0.13265],[182,0.13106],[202,0.12682],[251,0.12069],[253,0.12058],[266,0.11883],[333,0.11139],[411,0.10427],[423,0.10318],[434,0.10275],[441,0.10298],[453,0.10205],[471,0.10073],[489,0.099766],[492,0.099595],[506,0.098408],[513,0.098427],[535,0.096949],[568,0.095402],[584,0.09412],[600,0.093404],[604,0.093186],[609,0.092964],[617,0.092962],[621,0.092632],[623,0.0927],[639,0.092329],[646,0.092543],[656,0.092246],[663,0.092283],[700,0.092052],[709,0.091813],[718,0.091772],[740,0.090318],[753,0.089325],[760,0.088785],[765,0.088954],[770,0.088904],[776,0.088921],[782,0.088776],[799,0.088075],[802,0.087922],[822,0.087026],[830,0.087119],[846,0.086428],[879,0.084178],[889,0.083744],[894,0.083699],[905,0.08316],[914,0.083244],[920,0.083201],[925,0.082999],[949,0.082548],[950,0.082677],[974,0.082921],[992,0.082434],[1014,0.081253],[1024,0.081227],[1031,0.081208],[1034,0.081087],[1046,0.080676],[1053,0.080303],[1070,0.079171],[1074,0.079322],[1078,0.079297],[1080,0.079208],[1089,0.07904],[1093,0.078887],[1100,0.078739],[1104,0.07868],[1120,0.078445],[1123,0.078276],[1134,0.077963],[1136,0.078123],[1140,0.077998],[1156,0.07794],[1158,0.077776],[1169,0.077796],[1173,0.078197],[1183,0.077519],[1195,0.077315],[1199,0.077535],[1211,0.07741],[1229,0.07704],[1247,0.077584],[1261,0.077125],[1269,0.077299],[1278,0.077168],[1290,0.077523],[1295,0.077898],[1305,0.077291],[1307,0.077435],[1311,0.077025],[1320,0.077019],[1332,0.075966],[1345,0.075637],[1349,0.075521],[1357,0.075484],[1375,0.074252],[1382,0.074133],[1400,0.073766],[1404,0.073473],[1410,0.073613],[1420,0.073801],[1426,0.073768],[1433,0.073748],[1441,0.073575],[1444,0.073477],[1462,0.072941],[1476,0.073498],[1480,0.073413],[1493,0.073437],[1499,0.073278],[1502,0.073412],[1524,0.072716],[1534,0.072941],[1558,0.073154],[1576,0.072325],[1608,0.071822],[1619,0.071908],[1631,0.07138],[1641,0.0719],[1680,0.070918],[1687,0.070967],[1696,0.07072],[1709,0.070941],[1727,0.070836],[1769,0.070105],[1776,0.070136],[1795,0.069831],[1799,0.069541],[1801,0.06961],[1809,0.069424],[1818,0.06901],[1824,0.069038],[1841,0.068678],[1852,0.069078],[1856,0.068851],[1861,0.069268],[1877,0.068674],[1891,0.069216],[1913,0.068856],[1919,0.068832],[1937,0.068764],[1952,0.068053],[1965,0.067539],[1973,0.067641],[1995,0.066718],[2008,0.067065],[2017,0.06641],[2028,0.066489],[2033,0.066959],[2038,0.066699],[2046,0.066968],[2048,0.066849],[2054,0.066816],[2062,0.066904],[2080,0.067309],[2086,0.067431],[2111,0.066667],[2118,0.066651],[2149,0.065806],[2151,0.065924],[2155,0.065598],[2162,0.065982],[2177,0.065534],[2185,0.065565],[2191,0.065648],[2194,0.065503],[2204,0.06553],[2208,0.065589],[2214,0.065616],[2228,0.065004],[2242,0.06531],[2245,0.065221],[2253,0.065167],[2285,0.06412],[2290,0.064133],[2291,0.06406],[2297,0.063932],[2310,0.063856],[2325,0.063739],[2330,0.064177],[2337,0.063692],[2357,0.064212],[2361,0.063725],[2374,0.064222],[2382,0.064031],[2394,0.064011],[2406,0.064355],[2426,0.06359],[2429,0.063479],[2436,0.06341],[2440,0.063197],[2444,0.063248],[2452,0.06338],[2459,0.063194],[2463,0.063581],[2482,0.062953],[2489,0.063025],[2491,0.063045],[2506,0.062567],[2513,0.062913],[2527,0.062822],[2549,0.062689],[2557,0.062606],[2561,0.062464],[2569,0.062354],[2590,0.062921],[2617,0.062425],[2627,0.062639],[2637,0.062244],[2666,0.062552],[2672,0.062802],[2677,0.062655],[2691,0.062085],[2699,0.062263],[2719,0.06186],[2728,0.061835],[2759,0.061],[2771,0.061427],[2782,0.061119],[2790,0.061034],[2795,0.060868],[2802,0.060942],[2810,0.061176],[2814,0.061309],[2823,0.061392],[2831,0.061419],[2852,0.061507],[2859,0.061483],[2861,0.061563],[2885,0.061568],[2896,0.061222],[2902,0.061258],[2913,0.060918],[2926,0.06046],[2956,0.05997],[2961,0.059846],[2971,0.05975],[2976,0.059603],[3001,0.059296],[3009,0.059202],[3015,0.059325],[3020,0.059224],[3031,0.059309],[3049,0.059881],[3054,0.059696],[3062,0.059498],[3067,0.059418],[3085,0.059319],[3095,0.059573],[3119,0.058903],[3132,0.059262],[3133,0.059193],[3149,0.058616],[3160,0.058562],[3172,0.059332],[3175,0.059284],[3184,0.058978],[3192,0.058656],[3216,0.059332],[3225,0.059035],[3227,0.059148],[3230,0.058857],[3233,0.058964],[3239,0.059207],[3256,0.058949],[3263,0.059016],[3280,0.059225],[3289,0.05904],[3293,0.059217],[3298,0.059171],[3309,0.058999],[3315,0.058915],[3320,0.05897],[3326,0.059154],[3339,0.058711],[3347,0.059093],[3357,0.058883],[3359,0.059076],[3369,0.058834],[3371,0.058703],[3377,0.058782],[3382,0.058848],[3391,0.058996],[3402,0.05865],[3444,0.057965],[3452,0.058073],[3463,0.057699],[3472,0.057732],[3509,0.056987],[3518,0.057187],[3533,0.057048],[3534,0.056995],[3539,0.057103],[3546,0.057217],[3553,0.057202],[3583,0.05708],[3591,0.056975],[3614,0.057339],[3622,0.057148],[3629,0.05746],[3633,0.057388],[3645,0.057049],[3652,0.057011],[3658,0.057101],[3670,0.05695],[3684,0.05663],[3700,0.056282],[3703,0.056527],[3708,0.056391],[3716,0.056314],[3727,0.056518],[3735,0.056397],[3748,0.056431],[3752,0.056653],[3760,0.056905],[3783,0.05685],[3788,0.056686],[3790,0.056773],[3799,0.056944],[3803,0.056668],[3810,0.057039],[3846,0.056282],[3848,0.056495],[3856,0.056214],[3878,0.055911],[3879,0.055861],[3883,0.055965],[3889,0.056157],[3901,0.055804],[3910,0.055577],[3929,0.056163],[3942,0.055718],[3947,0.055652],[3949,0.055681],[3959,0.055539],[3972,0.055825],[3980,0.056044],[3993,0.055899],[4009,0.056262],[4022,0.055846],[4030,0.055381],[4038,0.055812],[4051,0.055396],[4056,0.055325],[4060,0.055328],[4070,0.054972],[4075,0.054842],[4082,0.054809],[4093,0.055029],[4105,0.0547],[4116,0.055011],[4130,0.054801],[4132,0.054634],[4146,0.05453],[4159,0.054603],[4165,0.05477],[4172,0.055],[4176,0.054782],[4181,0.054912],[4187,0.054851],[4194,0.054864],[4215,0.054433],[4246,0.054895],[4271,0.054403],[4275,0.054559],[4278,0.054438],[4295,0.054614],[4303,0.05441],[4305,0.054522],[4329,0.055194],[4339,0.055011],[4345,0.054832],[4348,0.054667],[4361,0.055062],[4368,0.054892],[4376,0.05499],[4386,0.055121],[4398,0.054743],[4402,0.054819],[4405,0.054828],[4411,0.054746],[4421,0.054309],[4427,0.054195],[4434,0.054226],[4446,0.054446],[4463,0.054058],[4479,0.053475],[4484,0.053445],[4491,0.053485],[4500,0.053676],[4503,0.053571],[4511,0.053633],[4534,0.054049],[4561,0.054101],[4565,0.054175],[4573,0.054217],[4583,0.054521],[4594,0.054693],[4603,0.054457],[4619,0.053905],[4621,0.053818],[4632,0.053366],[4638,0.0535],[4641,0.053409],[4649,0.053336],[4676,0.052925],[4681,0.05304],[4686,0.053022],[4695,0.052853],[4701,0.052797],[4707,0.05283],[4713,0.052863],[4721,0.052771],[4741,0.053238],[4751,0.05314],[4756,0.053371],[4759,0.053237],[4767,0.053098],[4784,0.053049],[4795,0.052631],[4801,0.052831],[4809,0.052878],[4813,0.0527],[4832,0.052558],[4837,0.05269],[4841,0.052606],[4848,0.052619],[4856,0.052738],[4881,0.052894],[4888,0.052891],[4897,0.053082],[4906,0.052903],[4918,0.053095],[4930,0.052877],[4935,0.053105],[4940,0.053018],[4945,0.053146],[4948,0.053099],[4968,0.05297],[4975,0.052962],[4981,0.052684],[4996,0.052632],[5000,0.052713]],"val":[[0,0.20966],[100,0.14064],[200,0.11917],[300,0.10736],[400,0.099358],[500,0.093582],[600,0.088889],[700,0.085481],[800,0.08252],[900,0.07993],[1000,0.077635],[1100,0.075536],[1200,0.074097],[1300,0.072473],[1400,0.07105],[1500,0.069772],[1600,0.0689],[1700,0.067927],[1800,0.066471],[1900,0.065917],[2000,0.065214],[2100,0.064325],[2200,0.063662],[2300,0.062782],[2400,0.0623],[2500,0.061558],[2600,0.061159],[2700,0.060603],[2800,0.059979],[2900,0.059654],[3000,0.05892],[3100,0.059046],[3200,0.058334],[3300,0.057916],[3400,0.057467],[3500,0.056964],[3600,0.056849],[3700,0.056185],[3800,0.0561],[3900,0.055647],[4000,0.055284],[4100,0.055061],[4200,0.054903],[4300,0.054622],[4400,0.054296],[4500,0.054336],[4600,0.05383],[4700,0.053454],[4800,0.053329],[4900,0.053084],[5000,0.053165]],"dom":[[-101.116,5101.116],[0.03759,0.3103]]},"action":{"raw":[[0,1.2969],[7,1.4171],[15,1.0252],[57,0.073371],[86,0.048781],[97,0.04336],[104,0.025512],[109,0.029122],[117,0.033239],[122,0.024281],[130,0.035227],[134,0.020615],[148,0.016964],[163,0.015732],[171,0.014563],[178,0.016759],[188,0.015378],[191,0.021044],[201,0.014732],[213,0.015247],[216,0.013821],[228,0.015909],[235,0.012688],[243,0.01523],[251,0.013696],[264,0.01185],[272,0.016614],[276,0.010533],[284,0.01417],[303,0.013892],[313,0.011054],[316,0.0090121],[322,0.012913],[333,0.014408],[342,0.015241],[354,0.0081221],[365,0.008487],[375,0.010615],[382,0.0095986],[390,0.0082398],[393,0.0078838],[402,0.0096498],[405,0.0094941],[412,0.0087157],[419,0.0084675],[423,0.0078054],[432,0.0090624],[440,0.010223],[454,0.0060968],[469,0.0072927],[476,0.0074761],[489,0.010847],[505,0.0054978],[512,0.0073919],[521,0.0079277],[534,0.0085886],[536,0.0059247],[542,0.0090778],[553,0.0055362],[555,0.0092924],[562,0.0057254],[566,0.0081118],[573,0.0054255],[582,0.0055018],[586,0.0058844],[597,0.0087317],[607,0.0065707],[610,0.0065904],[617,0.006522],[623,0.0070085],[631,0.0055989],[639,0.00613],[648,0.0048868],[656,0.0062627],[664,0.0048979],[677,0.0050687],[684,0.0058569],[693,0.0044515],[696,0.0091984],[709,0.0053318],[715,0.0068638],[723,0.0044837],[730,0.007854],[737,0.0067358],[750,0.0063164],[771,0.0058777],[779,0.0050255],[785,0.0049669],[788,0.0099258],[797,0.0043115],[805,0.0066219],[817,0.0051482],[828,0.004875],[831,0.0052259],[834,0.0037269],[843,0.0041501],[846,0.0061785],[853,0.0056842],[857,0.0060116],[870,0.0046081],[877,0.0048124],[883,0.0041385],[890,0.0042545],[894,0.0063673],[903,0.0034884],[912,0.0038186],[925,0.0049171],[934,0.0036088],[942,0.0041657],[950,0.004764],[962,0.0049157],[969,0.0042985],[978,0.0035253],[985,0.0048034],[993,0.0037348],[1000,0.0049644],[1008,0.0037029],[1018,0.0055395],[1026,0.0043877],[1034,0.0045557],[1042,0.0032264],[1053,0.0035869],[1055,0.0058853],[1064,0.0036142],[1071,0.0035687],[1083,0.0047961],[1091,0.0035587],[1098,0.003],[1113,0.0046754],[1122,0.0033122],[1130,0.0044022],[1136,0.0032752],[1145,0.0034143],[1157,0.0043312],[1164,0.0058144],[1170,0.0031783],[1180,0.0036938],[1190,0.0036994],[1197,0.0036791],[1201,0.0045279],[1207,0.0036858],[1211,0.0030191],[1218,0.0028304],[1225,0.0044461],[1232,0.0037514],[1238,0.0042125],[1245,0.0036802],[1253,0.0046281],[1260,0.0061312],[1274,0.0047825],[1282,0.0034879],[1292,0.0031258],[1305,0.0032098],[1313,0.0034149],[1324,0.0032262],[1333,0.0039175],[1340,0.0031819],[1346,0.0044951],[1362,0.0023631],[1371,0.0031486],[1377,0.0030198],[1384,0.0035077],[1387,0.0033021],[1395,0.0032765],[1403,0.0027001],[1411,0.0039865],[1416,0.0045146],[1427,0.0035756],[1433,0.003664],[1439,0.0033531],[1442,0.0048904],[1445,0.0053041],[1455,0.0046775],[1465,0.0026928],[1481,0.002329],[1486,0.0036259],[1490,0.0024408],[1498,0.0028498],[1510,0.0019603],[1518,0.0029453],[1522,0.0036322],[1529,0.0026673],[1534,0.0027507],[1548,0.0033217],[1554,0.0035141],[1562,0.0030225],[1568,0.002786],[1575,0.0027846],[1579,0.0022672],[1585,0.0022417],[1592,0.0022933],[1603,0.0022139],[1618,0.0030894],[1623,0.004077],[1630,0.0040455],[1638,0.002367],[1641,0.0029582],[1648,0.0031331],[1657,0.0035253],[1667,0.003457],[1671,0.003162],[1677,0.0031585],[1683,0.002949],[1694,0.0039399],[1697,0.0023531],[1709,0.0033966],[1714,0.0022124],[1722,0.0023632],[1727,0.0024735],[1733,0.0039458],[1740,0.002445],[1746,0.0024446],[1754,0.0032942],[1760,0.0032982],[1764,0.0029867],[1771,0.0041279],[1777,0.0023421],[1787,0.0037965],[1792,0.002178],[1797,0.0028945],[1800,0.0034698],[1808,0.0024265],[1814,0.0024459],[1821,0.0024804],[1830,0.0020625],[1843,0.0027223],[1851,0.0033825],[1855,0.0034936],[1864,0.0025322],[1873,0.0024953],[1880,0.0026245],[1888,0.0020995],[1896,0.0022832],[1905,0.0018303],[1913,0.0021275],[1919,0.0030224],[1929,0.0026592],[1936,0.0026196],[1939,0.0032212],[1951,0.0020878],[1959,0.0015882],[1967,0.002153],[1981,0.0025196],[1988,0.0033052],[1997,0.0017846],[2005,0.0020897],[2017,0.0019152],[2021,0.0032917],[2033,0.0029863],[2042,0.0021476],[2050,0.003123],[2063,0.0045961],[2072,0.0031103],[2080,0.0029699],[2087,0.00242],[2095,0.0030388],[2109,0.0022359],[2118,0.0030722],[2126,0.0018985],[2133,0.0028466],[2145,0.002136],[2150,0.0032168],[2155,0.0025955],[2161,0.0019342],[2172,0.0035739],[2174,0.0018067],[2183,0.0034538],[2192,0.0020303],[2200,0.0032643],[2211,0.0018573],[2220,0.0022845],[2224,0.002521],[2230,0.0023614],[2235,0.0019864],[2246,0.0027897],[2260,0.0025805],[2266,0.0024939],[2272,0.0021405],[2283,0.0016456],[2287,0.0017699],[2294,0.0027823],[2298,0.0021117],[2305,0.0022792],[2310,0.002394],[2316,0.0025922],[2330,0.0030068],[2339,0.0031153],[2347,0.0028248],[2354,0.0020814],[2360,0.0021076],[2366,0.0017636],[2375,0.0027311],[2385,0.0015945],[2394,0.002938],[2401,0.0016739],[2408,0.0020346],[2411,0.0014834],[2428,0.0018827],[2435,0.0024759],[2442,0.0020535],[2456,0.0015708],[2464,0.0032776],[2477,0.0016498],[2483,0.0019209],[2493,0.0023214],[2500,0.0023954],[2504,0.0017948],[2509,0.0033549],[2519,0.0023881],[2530,0.0023209],[2543,0.002843],[2551,0.0029983],[2555,0.0019475],[2567,0.0018726],[2574,0.0019024],[2589,0.0017392],[2592,0.0015777],[2598,0.0030309],[2605,0.0017901],[2612,0.0031598],[2616,0.0020722],[2627,0.0015965],[2637,0.0016522],[2648,0.0016499],[2656,0.0027182],[2667,0.0014706],[2676,0.0021847],[2684,0.0027967],[2691,0.0022486],[2698,0.0023271],[2706,0.001627],[2713,0.0021167],[2720,0.0016927],[2728,0.0018888],[2731,0.0014982],[2737,0.0014972],[2749,0.0015356],[2760,0.0017622],[2768,0.0018678],[2774,0.0013491],[2780,0.0025393],[2791,0.0024581],[2801,0.0018973],[2807,0.0019825],[2813,0.0020135],[2818,0.0028231],[2828,0.0016178],[2835,0.0022633],[2845,0.0022474],[2862,0.001474],[2869,0.001682],[2875,0.0018609],[2879,0.0032859],[2889,0.0014658],[2897,0.0020451],[2902,0.0014002],[2909,0.0022351],[2916,0.0020795],[2923,0.0024879],[2931,0.0024231],[2934,0.0021442],[2939,0.0017982],[2951,0.0016989],[2963,0.0013378],[2966,0.0033859],[2973,0.0012699],[2984,0.0024165],[2994,0.0017344],[3000,0.0020105],[3009,0.0016943],[3016,0.001696],[3024,0.0015402],[3030,0.0027661],[3039,0.0015548],[3046,0.0025577],[3051,0.0026538],[3062,0.0013391],[3065,0.0024942],[3075,0.0017072],[3086,0.0013581],[3089,0.0015232],[3098,0.0033214],[3103,0.0016461],[3112,0.0022514],[3121,0.0016043],[3127,0.0016115],[3136,0.0018724],[3142,0.0020426],[3147,0.0021915],[3153,0.0019629],[3162,0.0013274],[3168,0.0021541],[3171,0.0013636],[3181,0.0016676],[3185,0.0021665],[3190,0.0013567],[3196,0.0023195],[3203,0.0016545],[3213,0.0013176],[3227,0.0015332],[3235,0.0023646],[3243,0.002799],[3257,0.0017043],[3265,0.0021296],[3273,0.0014574],[3289,0.0015584],[3292,0.0013616],[3300,0.0023475],[3307,0.0025171],[3319,0.0017447],[3325,0.0016159],[3332,0.0016065],[3339,0.001644],[3350,0.0022588],[3364,0.0020086],[3370,0.0018889],[3377,0.0021059],[3385,0.0017658],[3401,0.0017296],[3409,0.002372],[3418,0.0012798],[3426,0.0025336],[3435,0.0014378],[3442,0.0020352],[3450,0.0012152],[3454,0.0012288],[3461,0.002055],[3468,0.0011835],[3473,0.0020298],[3478,0.0013273],[3488,0.0012297],[3499,0.001227],[3506,0.0013754],[3520,0.0021294],[3525,0.0022532],[3530,0.0015095],[3538,0.002209],[3548,0.0013107],[3558,0.0015383],[3561,0.0014653],[3568,0.0014713],[3575,0.001479],[3585,0.00123],[3597,0.0016522],[3608,0.0015499],[3615,0.0015567],[3622,0.0018753],[3630,0.0013903],[3637,0.0016853],[3644,0.0016279],[3652,0.002196],[3655,0.0020144],[3667,0.0020471],[3679,0.0012883],[3688,0.0019962],[3695,0.0016413],[3703,0.0019109],[3710,0.0019299],[3717,0.0018362],[3724,0.0019044],[3731,0.0015838],[3737,0.0013151],[3744,0.0019208],[3751,0.0014659],[3759,0.0016443],[3765,0.0018379],[3773,0.0014421],[3780,0.0015697],[3796,0.0022317],[3803,0.0013171],[3820,0.0013723],[3826,0.0013478],[3832,0.0025981],[3840,0.0022666],[3855,0.0013569],[3862,0.0017082],[3868,0.0012413],[3877,0.001167],[3888,0.0013982],[3895,0.0010724],[3911,0.001212],[3922,0.001151],[3927,0.0013531],[3933,0.0020725],[3947,0.0016949],[3959,0.0023936],[3973,0.0014581],[3978,0.0020387],[3985,0.0014316],[3990,0.0022644],[4001,0.001177],[4012,0.0020793],[4019,0.0012761],[4026,0.0018854],[4038,0.0030882],[4050,0.0017941],[4060,0.0019999],[4072,0.0010332],[4081,0.0013145],[4085,0.0018278],[4094,0.0010461],[4104,0.0017269],[4118,0.0010652],[4135,0.0016209],[4144,0.001215],[4148,0.0016744],[4159,0.0010985],[4168,0.0010034],[4183,0.0009257],[4187,0.0010731],[4195,0.0017446],[4201,0.0017722],[4211,0.0016452],[4219,0.001694],[4225,0.0010338],[4231,0.0014469],[4238,0.0014077],[4245,0.0015855],[4253,0.0011862],[4260,0.0011765],[4267,0.0012348],[4272,0.0011476],[4279,0.0015255],[4286,0.0014983],[4297,0.0011231],[4302,0.0015422],[4309,0.0013707],[4317,0.001269],[4328,0.001859],[4340,0.00097379],[4351,0.0014573],[4357,0.0010365],[4364,0.0017477],[4372,0.0011133],[4380,0.0009397],[4387,0.0011565],[4395,0.0017541],[4406,0.0010046],[4418,0.0010604],[4425,0.0013278],[4432,0.0012782],[4438,0.0012827],[4447,0.0008075],[4456,0.0013506],[4463,0.0012584],[4471,0.0010893],[4478,0.0018504],[4484,0.00092686],[4495,0.0011092],[4500,0.001965],[4511,0.0015395],[4515,0.0010961],[4522,0.0016776],[4534,0.00092882],[4548,0.0020831],[4553,0.0015467],[4557,0.00091809],[4563,0.0016431],[4570,0.001144],[4577,0.0013584],[4584,0.0012618],[4592,0.0014665],[4600,0.001042],[4615,0.00098836],[4621,0.0011151],[4628,0.00094888],[4634,0.0019067],[4645,0.001001],[4652,0.0014375],[4659,0.00094022],[4670,0.00077369],[4673,0.0012467],[4680,0.001129],[4692,0.0019757],[4713,0.00117],[4721,0.0015742],[4737,0.0019249],[4747,0.0011062],[4757,0.001583],[4760,0.00091905],[4767,0.0011023],[4774,0.0018851],[4787,0.0017026],[4789,0.00084213],[4796,0.00146],[4806,0.00096806],[4814,0.00098472],[4827,0.0011921],[4835,0.0013257],[4842,0.0011244],[4850,0.0011886],[4855,0.0013526],[4861,0.0011134],[4866,0.0010665],[4873,0.00094305],[4893,0.0010633],[4898,0.0015265],[4903,0.0011118],[4918,0.0010216],[4922,0.0015406],[4926,0.0011355],[4933,0.0010857],[4943,0.0017553],[4951,0.0010966],[4957,0.0013991],[4961,0.001508],[4972,0.0018248],[4985,0.0012308],[4993,0.0015531],[5000,0.0013621]],"mean":[[0,0.70818],[53,0.34233],[98,0.041737],[152,0.023251],[190,0.018472],[226,0.015894],[265,0.013228],[308,0.01149],[382,0.0095585],[405,0.0088384],[430,0.0083222],[468,0.0078519],[498,0.0075062],[518,0.0075414],[529,0.007375],[564,0.0070205],[616,0.0063459],[635,0.0062382],[679,0.005904],[682,0.005943],[693,0.0058594],[733,0.005673],[823,0.0052178],[875,0.0047075],[886,0.004629],[896,0.004625],[912,0.0045379],[926,0.0044591],[930,0.0044273],[942,0.0044652],[954,0.0044231],[964,0.0044231],[986,0.0043769],[999,0.0043223],[1018,0.0043636],[1028,0.0043898],[1118,0.0041621],[1151,0.0039949],[1163,0.0040046],[1167,0.0039823],[1170,0.0039501],[1189,0.0039375],[1196,0.0039132],[1212,0.0039246],[1217,0.0039114],[1235,0.003877],[1271,0.0039512],[1287,0.0038536],[1336,0.0035536],[1351,0.0035095],[1371,0.0033241],[1387,0.003325],[1392,0.0033327],[1409,0.0034249],[1410,0.0034322],[1426,0.0034691],[1448,0.0034384],[1455,0.0034245],[1460,0.0034289],[1473,0.0033963],[1500,0.0033529],[1573,0.0030853],[1586,0.0030821],[1621,0.0029953],[1678,0.0029947],[1703,0.0029284],[1709,0.0029199],[1742,0.0028489],[1755,0.0028232],[1783,0.0027912],[1791,0.0027857],[1803,0.0028353],[1819,0.0029293],[1827,0.0029167],[1829,0.0029294],[1842,0.0028907],[1853,0.002904],[1892,0.0028591],[1914,0.0026246],[1917,0.0026348],[1926,0.0026064],[1953,0.002588],[1966,0.0026204],[1971,0.0025902],[1993,0.0025467],[2008,0.0025504],[2014,0.0025974],[2026,0.0025617],[2042,0.0025111],[2056,0.0025572],[2083,0.0025423],[2108,0.0025605],[2119,0.0025247],[2132,0.0025431],[2134,0.0025518],[2146,0.0025545],[2156,0.0025372],[2185,0.0024947],[2203,0.0024648],[2212,0.0024869],[2228,0.002428],[2290,0.0023045],[2297,0.0023054],[2324,0.0022523],[2385,0.0021963],[2412,0.0021704],[2421,0.002208],[2428,0.0022011],[2432,0.0022243],[2442,0.0022536],[2464,0.002302],[2498,0.0023655],[2506,0.002353],[2514,0.0023643],[2529,0.0023304],[2548,0.0022593],[2553,0.0022408],[2600,0.0021847],[2614,0.0021575],[2648,0.0022129],[2674,0.0021144],[2680,0.0021218],[2687,0.0021148],[2828,0.0019365],[2836,0.0019471],[2866,0.0018834],[2875,0.0018752],[2884,0.0018755],[2931,0.0018861],[2952,0.001879],[2967,0.0018972],[2975,0.0019055],[3001,0.0019082],[3010,0.0019238],[3019,0.0019337],[3023,0.001944],[3033,0.0019596],[3061,0.0019414],[3068,0.001952],[3100,0.0018752],[3103,0.0018569],[3148,0.0018057],[3155,0.0018058],[3163,0.001801],[3171,0.0017974],[3193,0.0018255],[3198,0.0018383],[3228,0.0018571],[3236,0.0018484],[3239,0.0018441],[3262,0.0017916],[3277,0.0018023],[3291,0.0017316],[3293,0.0017444],[3297,0.0017272],[3310,0.0016763],[3315,0.0016606],[3321,0.0016683],[3330,0.0016803],[3338,0.001679],[3390,0.0016887],[3432,0.0016747],[3440,0.001688],[3458,0.0017046],[3466,0.0016849],[3476,0.0017123],[3484,0.0016908],[3498,0.0017103],[3517,0.0017126],[3537,0.0016816],[3576,0.0015981],[3579,0.0016094],[3598,0.0015548],[3625,0.0015884],[3671,0.0016945],[3674,0.0016907],[3686,0.0017157],[3692,0.001716],[3738,0.001679],[3747,0.001659],[3846,0.00163],[3861,0.0015811],[3893,0.0014699],[3900,0.0014737],[3915,0.0014727],[3924,0.0014823],[3926,0.0014779],[3937,0.0015019],[3950,0.0015374],[3986,0.001612],[3995,0.0016429],[4005,0.001632],[4011,0.0016302],[4029,0.0015705],[4057,0.0015214],[4070,0.0014906],[4079,0.0014904],[4096,0.001469],[4133,0.0014151],[4142,0.001406],[4178,0.0013725],[4190,0.0013865],[4207,0.0014116],[4233,0.0013782],[4241,0.0013812],[4260,0.0013678],[4287,0.0013834],[4300,0.0013894],[4333,0.0014029],[4343,0.001391],[4361,0.0014045],[4369,0.0013866],[4374,0.0013764],[4399,0.0013598],[4409,0.0013779],[4437,0.0013913],[4460,0.0013961],[4477,0.0013933],[4499,0.0014074],[4509,0.0013877],[4522,0.0013921],[4528,0.0013882],[4536,0.0013819],[4562,0.0013454],[4584,0.0013057],[4601,0.0012936],[4608,0.001291],[4616,0.0012846],[4622,0.0012765],[4651,0.0012916],[4686,0.0013043],[4692,0.001312],[4718,0.0013359],[4732,0.001365],[4739,0.001357],[4748,0.0013387],[4769,0.0013215],[4800,0.0013333],[4819,0.0013071],[4919,0.001335],[4938,0.0012995],[4946,0.0012916],[4956,0.0012922]],"val":[[0,1.3714],[100,0.036447],[200,0.017048],[300,0.010381],[400,0.0081631],[500,0.0065892],[600,0.0058207],[700,0.0057883],[800,0.0046465],[900,0.0041081],[1000,0.0039398],[1100,0.0049351],[1200,0.0036116],[1300,0.0033599],[1400,0.0030752],[1500,0.0031166],[1600,0.0026433],[1700,0.002735],[1800,0.0024633],[1900,0.0024523],[2000,0.0023205],[2100,0.0025618],[2200,0.0022419],[2300,0.0021508],[2400,0.0019191],[2500,0.0022425],[2600,0.0020867],[2700,0.0018773],[2800,0.001866],[2900,0.0016777],[3000,0.0020945],[3100,0.001712],[3200,0.0020809],[3300,0.0016004],[3400,0.0016531],[3500,0.0017473],[3600,0.0014254],[3700,0.001605],[3800,0.0015129],[3900,0.0015289],[4000,0.0015131],[4100,0.001424],[4200,0.0014879],[4300,0.0013849],[4400,0.0013563],[4500,0.0014195],[4600,0.0013692],[4700,0.0014754],[4800,0.0012582],[4900,0.0013527],[5000,0.0012203]],"dom":[[-101.116,5101.116],[0.000532,2.067]]}},"S2top":{"teacher_cache":{"video":[[0,0.088624],[50,0.073966],[100,0.068549],[150,0.064939],[200,0.065421],[250,0.062278],[300,0.060311],[350,0.059814],[400,0.060195],[450,0.059523],[500,0.05983],[550,0.060194],[600,0.058158],[650,0.057951],[700,0.056579],[750,0.056281],[800,0.056859],[850,0.05635],[900,0.055791],[950,0.056285],[1000,0.055317],[1050,0.056176],[1100,0.055526],[1150,0.054268],[1200,0.055263],[1250,0.055188],[1300,0.054808],[1350,0.054521],[1400,0.054233],[1450,0.05366],[1500,0.054202],[1550,0.053277],[1600,0.053858],[1650,0.053239],[1700,0.052391],[1750,0.053608],[1800,0.052368],[1850,0.052948],[1900,0.052502],[1950,0.052262],[2000,0.052751]],"action":[[0,0.0077358],[50,0.0054035],[100,0.0049551],[150,0.0047263],[200,0.0047017],[250,0.0044116],[300,0.0043956],[350,0.0041984],[400,0.0042466],[450,0.0039784],[500,0.0039265],[550,0.0040214],[600,0.0037799],[650,0.0038397],[700,0.003821],[750,0.0036952],[800,0.0038006],[850,0.0037675],[900,0.0037547],[950,0.0038046],[1000,0.0036047],[1050,0.0037182],[1100,0.0035471],[1150,0.0034614],[1200,0.0036862],[1250,0.0037044],[1300,0.0035248],[1350,0.0035883],[1400,0.0035582],[1450,0.0036472],[1500,0.0035789],[1550,0.0036233],[1600,0.0036643],[1650,0.0034503],[1700,0.0033831],[1750,0.0034104],[1800,0.0034355],[1850,0.0035581],[1900,0.0034764],[1950,0.0033941],[2000,0.0034818]]},"streaming":{"video":[[0,0.088624],[50,0.07554],[100,0.072006],[150,0.07001],[200,0.065524],[250,0.064918],[300,0.064544],[350,0.064197],[400,0.062868],[450,0.062344],[500,0.062834],[550,0.062252],[600,0.061093],[650,0.062476],[700,0.061101],[750,0.060567],[800,0.060257],[850,0.058709],[900,0.059716]],"action":[[0,0.0077358],[50,0.005685],[100,0.005097],[150,0.0050898],[200,0.0046562],[250,0.0045754],[300,0.0046236],[350,0.0045078],[400,0.004493],[450,0.0042724],[500,0.0043177],[550,0.0041004],[600,0.0045703],[650,0.0046276],[700,0.004322],[750,0.0041431],[800,0.004283],[850,0.0039454],[900,0.0039601]]},"opsd":{"video":[[0,0.088624],[50,0.074602],[100,0.067836],[150,0.06376],[200,0.062706],[250,0.061014],[300,0.061146],[350,0.060599],[400,0.059779],[450,0.060767],[500,0.058946],[550,0.05978],[600,0.059623],[650,0.058542],[700,0.057781],[750,0.056215],[800,0.055437],[850,0.055205],[900,0.056034]],"action":[[0,0.0077358],[50,0.00546],[100,0.0048986],[150,0.0045482],[200,0.0044464],[250,0.004303],[300,0.004249],[350,0.0042344],[400,0.0042202],[450,0.0041182],[500,0.0041688],[550,0.0041085],[600,0.0038762],[650,0.0040522],[700,0.0040139],[750,0.0036375],[800,0.0035577],[850,0.0037264],[900,0.0038164]]},"dom_video":[0.05008,0.09078],"dom_action":[0.003122,0.007994],"dom_x":[0,2058]},"S2mopd":{"video":{"raw":[[0.9,0.05012],[1.9,0.05253],[2.9,0.052685],[3.9,0.055814],[5.9,0.053356],[6.9,0.055436],[7.9,0.056311],[9.9,0.053598],[10.9,0.055916],[11.9,0.061656],[12.9,0.063294],[13.9,0.057104],[14.9,0.059552],[15.9,0.065219],[17.9,0.058712],[18.9,0.057255],[19.9,0.052501],[20.9,0.054084],[21.9,0.061057],[22.9,0.061313],[23.9,0.06302],[24.9,0.061277],[26.0,0.058349],[27.0,0.062537],[28.0,0.062928],[29.0,0.067317],[30.0,0.065667],[31.0,0.05967],[32.0,0.066719],[33.0,0.070371],[34.0,0.06312],[35.0,0.071479],[36.0,0.062683],[37.0,0.063382],[38.0,0.063197],[39.0,0.062803],[40.0,0.063824],[41.0,0.060163],[42.0,0.058971],[43.0,0.063276],[44.0,0.060489],[46.0,0.062853],[47.0,0.068385],[48.0,0.061622],[49.0,0.062959],[50.0,0.066874],[52.0,0.061101],[53.0,0.063808],[54.0,0.064499],[55.0,0.058112],[56.0,0.061536],[57.0,0.062527],[58.0,0.062095],[59.0,0.059855],[60.0,0.071349],[61.0,0.063018],[62.0,0.061425],[63.0,0.061563],[64.0,0.068824],[65.0,0.063652],[66.0,0.069835],[67.0,0.057136],[68.0,0.0556],[69.0,0.061781],[70.0,0.055777],[71.0,0.058177],[72.0,0.056311],[73.0,0.0619],[74.0,0.064199],[75.0,0.058182],[76.0,0.058097],[77.0,0.056362],[78.0,0.056541],[79.0,0.058548],[80.0,0.053947],[83.0,0.063176],[84.0,0.055281],[85.0,0.063259],[86.0,0.05979],[87.0,0.062489],[88.0,0.068163],[90.0,0.059106],[91.0,0.065031],[92.0,0.066422],[93.0,0.068792],[94.0,0.058912],[95.0,0.055662],[96.0,0.060502],[97.0,0.06066],[98.0,0.059204],[99.0,0.059068],[100.0,0.057314],[101.0,0.05761],[102.0,0.05189],[103.0,0.054428],[104.0,0.055785],[106.0,0.06079],[107.0,0.056765],[108.0,0.059805],[109.0,0.060849],[110.0,0.055093],[111.0,0.056013],[112.0,0.057569],[113.0,0.055557],[114.0,0.050542],[116.0,0.053191],[117.0,0.056014],[118.0,0.057157],[119.0,0.061754],[120.0,0.054706],[121.0,0.060718],[122.0,0.056031],[123.0,0.062136],[125.0,0.058206],[126.0,0.055056],[127.0,0.058315],[128.0,0.055056],[129.0,0.057796],[130.0,0.054956],[131.0,0.056683],[132.0,0.064856],[133.0,0.059234],[134.0,0.057752],[135.0,0.055097],[136.0,0.057109],[137.0,0.052367],[138.0,0.054218],[139.0,0.052082],[141.0,0.056619],[142.0,0.052591],[143.0,0.05278],[144.0,0.05541],[145.0,0.054756],[146.0,0.059341],[147.0,0.058836],[148.0,0.051109],[149.0,0.054761],[150.0,0.056325],[151.0,0.061287],[152.1,0.061888],[153.1,0.054344],[155.1,0.06166],[156.1,0.061324],[158.1,0.052806],[159.1,0.057166],[160.1,0.056076],[161.1,0.068479],[162.1,0.055546],[163.1,0.059912],[164.1,0.055028],[165.1,0.058478],[166.1,0.055747],[167.1,0.059992],[168.1,0.053208],[169.1,0.053021],[170.1,0.06009],[171.1,0.062986],[172.1,0.058375],[173.1,0.059079],[174.1,0.056974],[175.1,0.064222],[176.1,0.055833],[177.1,0.054154],[178.1,0.053546],[179.1,0.055162],[180.1,0.051333],[181.1,0.052736],[182.1,0.052461],[183.1,0.058054],[184.1,0.055608],[185.1,0.061465],[186.1,0.057459],[187.1,0.055955],[188.1,0.055239],[189.1,0.05601],[190.1,0.058581],[191.1,0.062353],[192.1,0.058448],[193.1,0.066356],[194.1,0.060929],[195.1,0.059251],[196.1,0.060633],[197.1,0.064524],[198.1,0.061884],[199.1,0.057429],[201.1,0.059529],[202.1,0.054343],[203.1,0.055506],[204.1,0.053815],[205.1,0.054335],[207.1,0.05607],[208.1,0.058871],[209.1,0.055765],[210.1,0.055007],[211.1,0.052169],[212.1,0.057233],[214.1,0.05896],[215.1,0.058141],[216.1,0.058911],[217.1,0.055478],[218.1,0.059013],[219.1,0.064593],[222.1,0.058615],[223.1,0.06196],[225.1,0.058297],[226.1,0.060619],[227.1,0.056765],[228.1,0.058302],[230.1,0.065544],[232.1,0.060918],[233.1,0.063544],[234.1,0.063959],[235.1,0.049701],[236.1,0.051132],[238.1,0.056308],[239.1,0.057662],[240.1,0.054039],[241.1,0.057637],[242.1,0.057792],[243.1,0.056855],[244.1,0.056872],[245.1,0.056452],[246.1,0.054113],[247.1,0.056965],[248.1,0.063379],[249.1,0.058106],[250.1,0.062908],[251.1,0.061951],[252.1,0.063723],[253.1,0.060702],[254.1,0.065428],[255.1,0.064709],[256.1,0.055605],[257.1,0.061429],[258.1,0.061911],[259.1,0.055967],[260.1,0.058182],[261.1,0.056783],[263.1,0.063301],[264.1,0.066427],[266.1,0.058701],[267.1,0.058605],[268.1,0.057831],[269.1,0.054502],[270.1,0.055693],[271.1,0.054558],[272.1,0.063718],[273.1,0.057626],[274.1,0.064867],[275.1,0.06066],[276.1,0.059806],[277.1,0.056915],[278.1,0.057725],[279.1,0.05646],[280.1,0.063589],[281.1,0.057562],[282.1,0.061079],[283.1,0.057012],[284.1,0.05869],[285.1,0.059355],[286.1,0.059532],[287.1,0.057676],[288.1,0.062412],[289.1,0.061325],[290.1,0.065601],[291.1,0.060869],[292.1,0.05988],[293.1,0.05617],[294.1,0.055563],[295.1,0.058537],[296.1,0.058761],[298.1,0.063574],[299.1,0.061947],[300.1,0.056369]],"mean":[[0.9,0.055395],[1.9,0.055517],[2.9,0.055786],[4.9,0.056699],[6.9,0.056834],[8.9,0.056497],[13.9,0.057653],[21.9,0.060964],[22.9,0.061679],[23.9,0.06195],[27.0,0.062243],[28.0,0.062414],[30.0,0.062096],[32.0,0.062408],[35.0,0.063429],[37.0,0.063439],[39.0,0.063882],[42.0,0.063747],[43.0,0.063445],[44.0,0.06352],[45.0,0.063352],[46.0,0.063021],[47.0,0.06289],[50.0,0.06282],[51.0,0.062755],[52.0,0.062996],[53.0,0.062989],[54.0,0.063376],[55.0,0.063302],[56.0,0.062995],[57.0,0.063047],[59.0,0.062613],[60.0,0.06213],[62.0,0.062191],[64.0,0.061614],[66.0,0.061134],[69.0,0.060544],[70.0,0.060408],[71.0,0.060451],[72.0,0.060268],[73.0,0.059944],[74.0,0.059815],[75.0,0.059858],[76.0,0.060122],[79.0,0.059486],[81.0,0.060385],[82.0,0.060271],[83.0,0.060266],[85.0,0.060533],[92.0,0.059792],[94.0,0.060122],[96.0,0.059893],[97.0,0.060116],[98.0,0.059789],[100.0,0.059442],[102.0,0.058467],[103.0,0.058181],[106.0,0.056826],[107.0,0.05694],[109.0,0.05691],[110.0,0.056725],[112.0,0.056886],[113.0,0.056922],[114.0,0.056819],[115.0,0.057076],[117.0,0.057182],[119.0,0.056883],[120.0,0.057207],[121.0,0.057184],[122.0,0.05706],[124.0,0.057104],[125.0,0.056896],[126.0,0.056843],[128.0,0.057024],[129.0,0.057161],[131.0,0.056849],[132.0,0.056595],[135.0,0.056654],[136.0,0.056213],[137.0,0.055997],[138.0,0.055922],[140.0,0.056314],[142.0,0.056328],[144.0,0.056781],[146.0,0.056233],[148.0,0.056249],[149.0,0.056704],[154.1,0.057283],[155.1,0.057579],[156.1,0.057596],[157.1,0.0575],[159.1,0.057859],[160.1,0.057841],[161.1,0.05816],[162.1,0.058248],[163.1,0.058564],[166.1,0.058005],[167.1,0.057857],[169.1,0.057101],[170.1,0.056896],[171.1,0.057106],[172.1,0.057044],[173.1,0.05726],[174.1,0.056819],[175.1,0.056835],[176.1,0.056648],[178.1,0.056692],[179.1,0.056956],[180.1,0.056894],[182.1,0.057736],[184.1,0.057609],[186.1,0.057967],[187.1,0.057985],[188.1,0.057758],[189.1,0.057906],[192.1,0.057938],[196.1,0.058337],[197.1,0.058344],[199.1,0.057874],[201.1,0.058039],[202.1,0.058157],[203.1,0.058139],[205.1,0.057883],[206.1,0.057589],[209.1,0.057924],[210.1,0.057688],[213.1,0.057771],[215.1,0.057912],[216.1,0.058023],[222.1,0.059804],[223.1,0.059592],[225.1,0.059418],[229.1,0.05908],[230.1,0.059173],[231.1,0.059086],[234.1,0.058216],[235.1,0.05815],[236.1,0.058207],[237.1,0.058144],[238.1,0.058328],[239.1,0.058382],[240.1,0.05866],[243.1,0.058883],[244.1,0.058576],[246.1,0.058531],[247.1,0.058211],[250.1,0.059059],[254.1,0.060082],[256.1,0.060154],[258.1,0.060029],[259.1,0.060046],[260.1,0.060317],[261.1,0.060086],[262.1,0.060357],[264.1,0.060181],[267.1,0.059431],[268.1,0.059386],[270.1,0.05945],[271.1,0.059254],[274.1,0.05952],[277.1,0.059148],[280.1,0.059398],[281.1,0.059331],[283.1,0.059487],[284.1,0.059655],[285.1,0.05954],[286.1,0.059778],[289.1,0.059477],[292.1,0.059826],[293.1,0.059638],[294.1,0.059747],[295.1,0.059673],[297.1,0.059901],[299.1,0.059966],[300.1,0.060142]],"held":[[0,0.05945],[50,0.0599],[100,0.0571],[150,0.05707],[200,0.05731],[250,0.05677],[300,0.05682]],"dom":[[-9.202,308.998],[0.04841,0.0728]]},"action":{"raw":[[0.9,0.0040189],[1.9,0.0031248],[2.9,0.0043719],[3.9,0.0045457],[4.9,0.00438],[5.9,0.0043588],[6.9,0.0051378],[7.9,0.0047038],[8.9,0.0045964],[9.9,0.003948],[10.9,0.0037359],[11.9,0.0042708],[12.9,0.0038429],[13.9,0.0040084],[14.9,0.0040693],[15.9,0.004387],[16.9,0.0045013],[17.9,0.0048913],[18.9,0.0044269],[19.9,0.0054402],[20.9,0.0044455],[21.9,0.0044488],[22.9,0.0046926],[23.9,0.0046229],[24.9,0.0046474],[25.9,0.0049634],[26.9,0.0056735],[27.9,0.0041051],[28.9,0.0048741],[30.9,0.0038515],[32.9,0.005023],[33.9,0.0042263],[34.9,0.0049834],[35.9,0.0040698],[36.9,0.0040693],[37.9,0.0041406],[38.9,0.0042537],[39.9,0.0039495],[40.9,0.0044869],[41.9,0.0042264],[42.9,0.0041244],[43.9,0.0044338],[44.9,0.0043354],[45.9,0.0044374],[46.9,0.0048189],[47.9,0.0043962],[48.9,0.0043408],[49.9,0.00455],[50.9,0.0051299],[51.9,0.0049443],[52.9,0.0049127],[53.9,0.0044698],[55.9,0.0040579],[56.9,0.0047758],[57.9,0.0037255],[58.9,0.0037681],[59.9,0.0054485],[60.9,0.0046563],[61.9,0.0044328],[62.9,0.0040789],[63.9,0.0047686],[65.9,0.0039182],[66.9,0.004129],[67.9,0.0036708],[68.9,0.0041353],[69.9,0.004341],[70.9,0.0037358],[71.9,0.0041345],[73.9,0.0053641],[74.9,0.0040935],[75.9,0.0045715],[78.9,0.0036429],[80.9,0.0039695],[81.9,0.003666],[82.9,0.0039562],[83.9,0.0036533],[84.9,0.0039784],[85.9,0.004082],[86.9,0.0038168],[87.9,0.0044378],[88.9,0.0040279],[90.9,0.0049667],[91.9,0.0043423],[92.9,0.0059223],[93.9,0.0041957],[94.9,0.0040094],[95.9,0.0048479],[96.9,0.0042204],[97.9,0.0042797],[98.9,0.0042394],[99.9,0.0039597],[100.9,0.0043662],[101.9,0.0035531],[102.9,0.0035793],[103.9,0.0036665],[104.9,0.0044817],[105.9,0.00425],[106.9,0.0035886],[107.9,0.0037906],[108.9,0.0044961],[109.9,0.0037912],[110.9,0.0041848],[111.9,0.0035043],[113.9,0.0045911],[114.9,0.0046091],[115.9,0.005274],[116.9,0.0045634],[117.9,0.0043185],[118.9,0.0049431],[119.9,0.0045307],[121.9,0.0054443],[122.9,0.0052862],[123.9,0.0049521],[124.9,0.0044177],[125.9,0.0045503],[126.9,0.0050451],[127.9,0.0044031],[129.9,0.0037715],[130.9,0.0037407],[131.9,0.0043044],[132.9,0.0043358],[133.9,0.0042796],[134.9,0.0039678],[135.9,0.0040297],[136.9,0.0039411],[137.9,0.0039582],[138.9,0.0035526],[139.9,0.0037115],[140.9,0.0040135],[141.9,0.0041711],[142.9,0.0036021],[143.9,0.0036499],[146.9,0.0048973],[147.9,0.0038756],[148.9,0.0039737],[149.9,0.0037116],[151.9,0.0044754],[152.9,0.0040265],[153.9,0.0037993],[155.9,0.004495],[156.9,0.0043405],[157.9,0.003375],[159.9,0.0039154],[160.9,0.0053046],[161.9,0.0041455],[162.9,0.0037991],[163.9,0.0037908],[164.9,0.0036787],[165.9,0.0038122],[166.9,0.0043663],[168.9,0.0039936],[169.9,0.0041984],[170.9,0.0038481],[171.9,0.0042674],[172.9,0.0041865],[173.9,0.0037766],[174.9,0.0039052],[175.9,0.0041375],[176.9,0.0040304],[177.9,0.0035924],[178.9,0.0040337],[179.9,0.0037046],[180.9,0.0036871],[181.9,0.0040488],[182.9,0.0033111],[184.9,0.004372],[185.9,0.0038589],[187.9,0.0036209],[188.9,0.0039905],[189.9,0.0040621],[190.9,0.0046074],[191.9,0.0040336],[192.9,0.0043587],[193.9,0.0038243],[194.9,0.0041089],[195.9,0.0039465],[196.9,0.0042859],[197.9,0.0054745],[198.9,0.0035672],[199.9,0.0045055],[200.9,0.0046593],[201.9,0.0039816],[202.9,0.0037922],[203.9,0.003957],[204.9,0.0039118],[205.9,0.0042679],[206.9,0.0042004],[207.9,0.0040709],[208.9,0.004263],[209.9,0.003959],[210.9,0.0041703],[211.9,0.0038842],[212.9,0.0043115],[213.9,0.0041836],[216.9,0.0036416],[217.9,0.0036332],[218.9,0.0037501],[219.9,0.0039228],[220.9,0.003563],[221.9,0.0040657],[222.9,0.0040103],[223.9,0.0038519],[224.9,0.0042327],[226.9,0.0037239],[227.9,0.0038039],[229.9,0.0044754],[230.9,0.0040731],[231.9,0.0046614],[232.9,0.0046749],[233.9,0.004076],[234.9,0.0041731],[235.9,0.0034994],[236.9,0.0033925],[237.9,0.0039219],[238.9,0.0040345],[239.9,0.0031585],[241.9,0.0038826],[242.9,0.0037641],[243.9,0.0038638],[244.9,0.0031267],[246.9,0.0041495],[247.9,0.0056115],[248.9,0.0039395],[249.9,0.0040018],[250.9,0.0038415],[251.9,0.0039877],[252.9,0.003965],[253.9,0.0041429],[254.9,0.0048831],[255.9,0.0037552],[256.9,0.0041403],[257.9,0.0040417],[258.9,0.0037987],[259.9,0.0037268],[260.9,0.0035675],[261.9,0.0048143],[263.9,0.0035536],[264.9,0.0037906],[265.9,0.0033164],[266.9,0.0036821],[268.9,0.0035394],[269.9,0.0034884],[271.9,0.0047981],[272.9,0.0038643],[273.9,0.0063652],[274.9,0.0037218],[276.9,0.0038071],[278.9,0.0033052],[279.9,0.0041287],[280.9,0.0038509],[281.9,0.003363],[282.9,0.0033698],[283.9,0.0038647],[284.9,0.0036989],[285.9,0.0036413],[287.9,0.0046421],[288.9,0.0041095],[289.9,0.0040698],[290.9,0.004761],[291.9,0.0043546],[292.9,0.0036572],[294.9,0.0041271],[295.9,0.0037567],[296.9,0.0046224],[297.9,0.0046136],[298.9,0.0042932],[299.9,0.0043]],"mean":[[0.9,0.0042335],[2.9,0.0042076],[4.9,0.0042354],[5.9,0.0042718],[6.9,0.00428],[7.9,0.004338],[10.9,0.0043629],[12.9,0.0043847],[13.9,0.0044225],[14.9,0.0045244],[15.9,0.0045138],[16.9,0.0045269],[17.9,0.0045242],[19.9,0.0044822],[20.9,0.004495],[21.9,0.0044802],[22.9,0.0045216],[23.9,0.0045349],[24.9,0.0045269],[26.9,0.0045486],[29.9,0.0045368],[30.9,0.0045061],[31.9,0.0045064],[32.9,0.0044622],[33.9,0.0044619],[34.9,0.0044767],[37.9,0.0044497],[38.9,0.0044563],[39.9,0.0044271],[40.9,0.0044594],[42.9,0.0044422],[44.9,0.0044577],[45.9,0.0044058],[46.9,0.0043875],[49.9,0.0044441],[50.9,0.0044416],[52.9,0.0044807],[53.9,0.0044579],[54.9,0.004454],[56.9,0.0044239],[57.9,0.0044242],[59.9,0.0043687],[60.9,0.0043892],[61.9,0.0044301],[64.9,0.0043635],[67.9,0.0042814],[68.9,0.0042779],[69.9,0.0042335],[71.9,0.0042381],[72.9,0.0041793],[74.9,0.0041317],[75.9,0.004146],[76.9,0.0041164],[77.9,0.0041199],[78.9,0.0041618],[79.9,0.0041703],[80.9,0.0042604],[81.9,0.0042628],[82.9,0.0042495],[83.9,0.004294],[84.9,0.0042975],[85.9,0.0042724],[86.9,0.0042274],[88.9,0.0042138],[90.9,0.0041617],[91.9,0.0041627],[93.9,0.0041998],[95.9,0.0041901],[96.9,0.0042238],[100.9,0.0041961],[101.9,0.0042186],[104.9,0.0042443],[105.9,0.0041801],[107.9,0.0042308],[108.9,0.0042363],[110.9,0.0043255],[112.9,0.0043724],[113.9,0.0043797],[115.9,0.0044724],[116.9,0.0044895],[118.9,0.0044408],[120.9,0.0044912],[121.9,0.0044826],[124.9,0.0045009],[125.9,0.0044935],[129.9,0.00435],[130.9,0.0043213],[131.9,0.0042696],[134.9,0.0042173],[136.9,0.0041217],[138.9,0.0040787],[140.9,0.0040409],[141.9,0.004029],[142.9,0.004043],[143.9,0.0040732],[144.9,0.0040746],[146.9,0.0040098],[147.9,0.0040077],[148.9,0.0040587],[149.9,0.0040669],[150.9,0.0040605],[152.9,0.0040687],[153.9,0.0040607],[154.9,0.0040685],[156.9,0.0041042],[157.9,0.0041085],[159.9,0.0040507],[160.9,0.0040632],[161.9,0.0040553],[163.9,0.0040612],[165.9,0.0040261],[166.9,0.0040354],[167.9,0.0040188],[168.9,0.0039864],[170.9,0.0039722],[172.9,0.0040053],[173.9,0.0039474],[175.9,0.0039247],[177.9,0.003948],[178.9,0.0039798],[179.9,0.0039665],[180.9,0.0039748],[183.9,0.0039684],[184.9,0.0039691],[185.9,0.0040206],[186.9,0.0040122],[188.9,0.0040571],[191.9,0.0040601],[192.9,0.0040684],[195.9,0.0041281],[196.9,0.004139],[197.9,0.0041225],[202.9,0.0041725],[205.9,0.0040976],[207.9,0.0040872],[209.9,0.0040631],[210.9,0.0040045],[211.9,0.0040159],[212.9,0.004005],[214.9,0.0039656],[216.9,0.0039712],[217.9,0.0039938],[218.9,0.003986],[220.9,0.0040286],[221.9,0.0040211],[222.9,0.0040297],[224.9,0.0039832],[228.9,0.0039172],[231.9,0.0039366],[232.9,0.0039047],[234.9,0.0039167],[235.9,0.0039807],[237.9,0.003975],[238.9,0.0039714],[242.9,0.0040069],[244.9,0.0039734],[246.9,0.003937],[247.9,0.0039191],[248.9,0.0039218],[249.9,0.0039787],[250.9,0.003986],[251.9,0.0039667],[252.9,0.003992],[256.9,0.0039538],[259.9,0.0040104],[260.9,0.0039405],[261.9,0.0040375],[265.9,0.0039972],[267.9,0.0039335],[268.9,0.0039374],[270.9,0.0038794],[273.9,0.0038839],[274.9,0.0038577],[277.9,0.0039127],[278.9,0.0039705],[279.9,0.0039974],[281.9,0.0040134],[282.9,0.004039],[284.9,0.004015],[285.9,0.004045],[286.9,0.0039621],[288.9,0.0039941],[289.9,0.0040022],[292.9,0.0040565],[293.9,0.0040673],[296.9,0.0041675],[299.9,0.0042446]],"held":[[0,0.004496],[50,0.00441],[100,0.00419],[150,0.004274],[200,0.004114],[250,0.003936],[300,0.003942]],"dom":[[-8.992,308.992],[0.002933,0.006563]]}},"S1":{"push":{"band":[[0,4.2598],[0,2.0683],[1,5.994],[2,6.6133],[3,7.7416],[4,8.5348],[5,9.5103],[6,12.244],[7,12.158],[8,15.348],[9,13.494],[10,11.847],[11,12.127],[12,10.869],[13,11.537],[14,13.354],[14,16.596],[13,14.295],[12,13.386],[11,14.716],[10,14.62],[9,16.15],[8,17.957],[7,14.378],[6,14.07],[5,11.895],[4,10.469],[3,9.7535],[2,7.9615],[1,7.7647],[0,4.2598]],"gain":[[0,3.164],[1,6.8793],[2,7.2874],[3,8.7476],[4,9.5021],[5,10.703],[6,13.157],[7,13.268],[8,16.652],[9,14.822],[10,13.234],[11,13.421],[12,12.128],[13,12.916],[14,14.975]],"succ":[[4,96.8],[9,96.8],[14,100.0]],"opsd_succ":37.47,"dom":[[-0.604,14.604],[-1.42,20.09]]},"door":{"band":[[0,0.25982],[0,0.15105],[1,0.31743],[2,0.38352],[3,0.49695],[4,0.3944],[5,0.41173],[6,0.62679],[7,0.60499],[8,0.3614],[9,0.53961],[10,0.37843],[11,0.60332],[12,0.61989],[13,0.28802],[14,0.61712],[14,0.77041],[13,0.39815],[12,0.7833],[11,0.78214],[10,0.5395],[9,0.72345],[8,0.49888],[7,0.77278],[6,0.75961],[5,0.54825],[4,0.54049],[3,0.64399],[2,0.53577],[1,0.42682],[0,0.25982]],"gain":[[0,0.20543],[1,0.37213],[2,0.45965],[3,0.57047],[4,0.46745],[5,0.47999],[6,0.6932],[7,0.68889],[8,0.43014],[9,0.63153],[10,0.45896],[11,0.69273],[12,0.7016],[13,0.34309],[14,0.69377]],"succ":[[4,59.3],[9,18.7],[14,53.1]],"dom":[[-0.603,14.582],[-0.06196,0.8765]],"opsd_succ":40.53},"succ_dom":[0.0,104.89]}}</script>
+<script>
+/* Method curves: data read off the paper's vector figures, drawn as SVG; each chart sweeps in from left to right when it scrolls into view. */
+(() => {
+  const D = JSON.parse(document.getElementById('curve-data').textContent);
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const NS = 'http://www.w3.org/2000/svg';
+  const G = '#00c47c', W = '#e6e6e6', MINT = '#8fb3a4', GRAY = '#8c8c8c';
+  const f1 = v => v.toFixed(1), f4 = v => v.toFixed(4), f3 = v => v.toFixed(3);
+
+  const CH = {
+    's4-video': { x: { dom: D.S4.video.dom[0], ticks: [0, 2500, 5000], label: 'Updates' }, y: { type: 'log', dom: D.S4.video.dom[1], ticks: [0.05, 0.1, 0.2], label: 'Loss' },
+      s: [{ d: D.S4.video.raw, c: G, w: .7, o: .22 }, { d: D.S4.video.mean, c: G, w: 1.8 }, { d: D.S4.video.val, c: W, w: 1.3, dash: '5 3' }] },
+    's4-action': { x: { dom: D.S4.action.dom[0], ticks: [0, 2500, 5000], label: 'Updates' }, y: { type: 'log', dom: D.S4.action.dom[1], ticks: [0.001, 0.01, 0.1, 1] },
+      s: [{ d: D.S4.action.raw, c: G, w: .7, o: .22 }, { d: D.S4.action.mean, c: G, w: 1.8 }, { d: D.S4.action.val, c: W, w: 1.3, dash: '5 3' }] },
+    's2-video': { x: { type: 'sqrt', dom: D.S2top.dom_x, ticks: [0, 100, 300, 900, 2000], label: 'Student updates' }, y: { dom: D.S2top.dom_video, ticks: [0.06, 0.075, 0.09], fmt: f3, label: 'Held-out loss' }, vline: 300,
+      s: [{ d: D.S2top.teacher_cache.video, c: MINT, w: 1.8 }, { d: D.S2top.streaming.video, c: W, w: 1.6, dash: '4 3' }, { d: D.S2top.opsd.video, c: G, w: 2.2 }] },
+    's2-action': { x: { type: 'sqrt', dom: D.S2top.dom_x, ticks: [0, 100, 300, 900, 2000], label: 'Student updates' }, y: { dom: D.S2top.dom_action, ticks: [0.004, 0.006], fmt: f3 }, vline: 300,
+      s: [{ d: D.S2top.teacher_cache.action, c: MINT, w: 1.8 }, { d: D.S2top.streaming.action, c: W, w: 1.6, dash: '4 3' }, { d: D.S2top.opsd.action, c: G, w: 2.2 }] },
+    'mopd-video': { x: { dom: D.S2mopd.video.dom[0], ticks: [0, 100, 200, 300], label: 'Student updates' }, y: { dom: D.S2mopd.video.dom[1], ticks: [0.05, 0.06, 0.07], fmt: v => v.toFixed(2), label: 'Loss' }, vline: 300,
+      s: [{ d: D.S2mopd.video.raw, c: G, w: .7, o: .3 }, { d: D.S2mopd.video.mean, c: G, w: 1.8 }, { d: D.S2mopd.video.held, c: W, w: 1, mk: 'o' }] },
+    'mopd-action': { x: { dom: D.S2mopd.action.dom[0], ticks: [0, 100, 200, 300], label: 'Student updates' }, y: { dom: D.S2mopd.action.dom[1], ticks: [0.003, 0.0045, 0.006], fmt: f4 }, vline: 300,
+      s: [{ d: D.S2mopd.action.raw, c: G, w: .7, o: .3 }, { d: D.S2mopd.action.mean, c: G, w: 1.8 }, { d: D.S2mopd.action.held, c: W, w: 1, mk: 'o' }] },
+    's1-push': { x: { dom: D.S1.push.dom[0], ticks: [0, 2, 4, 6, 8, 10, 12, 14], label: 'Training round' }, y: { dom: D.S1.push.dom[1], ticks: [0, 8, 16], label: 'Reward gain' }, y2: { dom: D.S1.succ_dom, ticks: [0, 50, 100] },
+      s: [{ d: D.S1.push.band, band: true }, { h: 0, c: GRAY, w: 1.2, dash: '5 3' }, { d: D.S1.push.gain, c: G, w: 1.8 }, { h: D.S1.push.opsd_succ, ax: 2, c: GRAY, w: 1.2, dash: '1.2 2.4' }, { d: D.S1.push.succ, ax: 2, c: W, w: 1, dash: '1.2 2.4', mk: 's' }] },
+    's1-door': { x: { dom: D.S1.door.dom[0], ticks: [0, 2, 4, 6, 8, 10, 12, 14], label: 'Training round' }, y: { dom: D.S1.door.dom[1], ticks: [0, 0.4, 0.8], fmt: f1 }, y2: { dom: D.S1.succ_dom, ticks: [0, 50, 100], label: 'Success (%)' },
+      s: [{ d: D.S1.door.band, band: true }, { h: 0, c: GRAY, w: 1.2, dash: '5 3' }, { d: D.S1.door.gain, c: G, w: 1.8 }, { h: D.S1.door.opsd_succ, ax: 2, c: GRAY, w: 1.2, dash: '1.2 2.4' }, { d: D.S1.door.succ, ax: 2, c: W, w: 1, dash: '1.2 2.4', mk: 's' }] },
+  };
+
+  const tf = t => t === 'log' ? Math.log10 : t === 'sqrt' ? Math.sqrt : (v => v);
+  const scale = (ax, r0, r1) => { const f = tf(ax.type), a = f(Math.max(ax.dom[0], ax.type ? 0 : -Infinity)), b = f(ax.dom[1]); return v => r0 + (f(Math.max(v, ax.type === 'sqrt' ? 0 : v)) - a) / (b - a) * (r1 - r0); };
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+  let uid = 0;
+
+  const render = (panel, animate) => {
+    const cfg = CH[panel.dataset.chart];
+    panel.querySelector('svg')?.remove();
+    const Wd = Math.max(200, panel.clientWidth), Ht = Math.round(Math.min(280, Math.max(180, Wd * 0.62)));
+    const m = { l: cfg.y.label ? 58 : 50, r: cfg.y2 ? (cfg.y2.label ? 52 : 38) : 10, t: 8, b: 40 };
+    const svg = el('svg', { class: 'cv-svg', viewBox: `0 0 ${Wd} ${Ht}`, width: Wd, height: Ht, role: 'img' }, panel);
+    const X = scale(cfg.x, m.l, Wd - m.r), Y = scale(cfg.y, Ht - m.b, m.t), Y2 = cfg.y2 ? scale(cfg.y2, Ht - m.b, m.t) : null;
+    const fmt = cfg.y.fmt || String;
+    cfg.y.ticks.forEach(v => { const y = Y(v); el('line', { class: 'grid', x1: m.l, x2: Wd - m.r, y1: y, y2: y }, svg); el('text', { x: m.l - 7, y: y + 3.5, 'text-anchor': 'end' }, svg).textContent = fmt(v); });
+    if (cfg.y2) cfg.y2.ticks.forEach(v => { el('text', { x: Wd - m.r + 7, y: Y2(v) + 3.5 }, svg).textContent = v; });
+    cfg.x.ticks.forEach(v => { el('text', { x: X(v), y: Ht - m.b + 16, 'text-anchor': 'middle' }, svg).textContent = v; });
+    el('line', { class: 'axis', x1: m.l, x2: m.l, y1: m.t, y2: Ht - m.b }, svg);
+    el('line', { class: 'axis', x1: m.l, x2: Wd - m.r, y1: Ht - m.b, y2: Ht - m.b }, svg);
+    if (cfg.y2) el('line', { class: 'axis', x1: Wd - m.r, x2: Wd - m.r, y1: m.t, y2: Ht - m.b }, svg);
+    if (cfg.x.label) el('text', { class: 'ax-l', x: (m.l + Wd - m.r) / 2, y: Ht - 6, 'text-anchor': 'middle' }, svg).textContent = cfg.x.label;
+    if (cfg.y.label) el('text', { class: 'ax-l', transform: `translate(13 ${(m.t + Ht - m.b) / 2}) rotate(-90)`, 'text-anchor': 'middle' }, svg).textContent = cfg.y.label;
+    if (cfg.y2 && cfg.y2.label) el('text', { class: 'ax-l', transform: `translate(${Wd - 10} ${(m.t + Ht - m.b) / 2}) rotate(90)`, 'text-anchor': 'middle' }, svg).textContent = cfg.y2.label;
+
+    const id = 'cvc' + (++uid);
+    const clip = el('rect', { x: m.l - 6, y: 0, width: animate ? 0 : Wd, height: Ht }, el('clipPath', { id }, el('defs', {}, svg)));
+    const g = el('g', { 'clip-path': `url(#${id})` }, svg);
+    if (cfg.vline != null) el('line', { x1: X(cfg.vline), x2: X(cfg.vline), y1: m.t, y2: Ht - m.b, stroke: GRAY, 'stroke-width': 1, 'stroke-dasharray': '1.2 2.4' }, g);
+    cfg.s.forEach(s => {
+      const YY = s.ax === 2 ? Y2 : Y;
+      if (s.h != null) { el('line', { x1: m.l, x2: Wd - m.r, y1: YY(s.h), y2: YY(s.h), stroke: s.c, 'stroke-width': s.w, 'stroke-dasharray': s.dash || '' }, g); return; }
+      const pts = s.d.map(([a, b]) => [X(a).toFixed(1), YY(b).toFixed(1)]);
+      if (s.band) { el('polygon', { points: pts.map(p => p.join(',')).join(' '), fill: G, 'fill-opacity': .18 }, g); return; }
+      el('path', { d: 'M' + pts.map(p => p.join(',')).join('L'), fill: 'none', stroke: s.c, 'stroke-width': s.w, 'stroke-opacity': s.o || 1, 'stroke-dasharray': s.dash || '', 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
+      if (s.mk === 'o') pts.forEach(([a, b]) => el('circle', { cx: a, cy: b, r: 3, fill: '#0b0b0b', stroke: s.c, 'stroke-width': 1.2 }, g));
+      if (s.mk === 's') pts.forEach(([a, b]) => el('rect', { x: a - 3.2, y: b - 3.2, width: 6.4, height: 6.4, fill: '#0b0b0b', stroke: s.c, 'stroke-width': 1.2 }, g));
+    });
+    if (!animate || animate === 'hide') return;
+    const scan = el('line', { class: 'scan', x1: m.l, x2: m.l, y1: m.t, y2: Ht - m.b }, svg);
+    const x0 = m.l - 6, span = Wd - x0, dur = 1700, t0 = performance.now() + (+panel.dataset.delay || 0);
+    const step = now => {
+      const p = Math.min(1, Math.max(0, (now - t0) / dur)), e = 1 - Math.pow(1 - p, 3), w = span * e;
+      clip.setAttribute('width', w);
+      const sx = Math.min(x0 + w, Wd - m.r); scan.setAttribute('x1', sx); scan.setAttribute('x2', sx);
+      scan.setAttribute('opacity', p < 1 ? 1 : 0);
+      if (p < 1) requestAnimationFrame(step); else scan.remove();
+    };
+    requestAnimationFrame(step);
+  };
+
+  document.querySelectorAll('[data-cv]').forEach(fig => {
+    const panels = [...fig.querySelectorAll('[data-chart]')];
+    panels.forEach((p, i) => { p.dataset.delay = i * 180; render(p, reduce ? false : 'hide'); });
+    if (reduce) return;
+    new IntersectionObserver(([en]) => { if (en.isIntersecting) panels.forEach(p => render(p, true)); }, { threshold: 0.35 }).observe(fig);
+  });
+
+  let rt = 0, lastW = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (window.innerWidth === lastW) return; lastW = window.innerWidth;
+    clearTimeout(rt); rt = setTimeout(() => document.querySelectorAll('[data-chart]').forEach(p => render(p, false)), 150);
+  });
+})();
+</script>
+<script>
+/* QLM-Bench: each task video loops on its own while it is on screen. */
+(() => {
+  const io = new IntersectionObserver(es => es.forEach(e => { const v = e.target; if (e.isIntersecting) { const p = v.play(); if (p) p.catch(() => {}); } else v.pause(); }), { threshold: 0.25 });
+  document.querySelectorAll('.qlm-grid video').forEach(v => io.observe(v));
 })();
 </script>
 </body>
