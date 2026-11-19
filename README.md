@@ -9,7 +9,7 @@ The `main` branch contains the WAM-Policy code, `qlm-bench` contains the QLM-Ben
 >
 > \*Equal contribution. †Corresponding authors. ‡Project lead.
 >
-> #### [Website](https://aigeeksgroup.github.io/WAM-Policy/) | [Models](https://huggingface.co/AIGeeksGroup/WAM-Policy) | [QLM-Bench code](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench) | [QLM-Bench dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
+> #### [Paper](https://arxiv.org/abs/2611.24011) | [Website](https://aigeeksgroup.github.io/WAM-Policy/) | [Models](https://huggingface.co/AIGeeksGroup/WAM-Policy) | [QLM-Bench code](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench) | [QLM-Bench dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
 
 ## ✏️ Citation
 
