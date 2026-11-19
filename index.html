@@ -1217,6 +1217,12 @@
     .topbar .brand { font-size: 0; gap: 0; }
     .topbar .hdr-actions { gap: 5px !important; }
     .topbar .hdr-btn { height: 30px !important; padding: 0 10px !important; font-size: 12px !important; }
+    .topbar .hdr-long { display: none; }
+  }
+
+  @media (max-width: 400px) {
+    .topbar .hdr-actions { gap: 4px !important; }
+    .topbar .hdr-btn { padding: 0 8px !important; font-size: 11.5px !important; }
   }
 
   @media (max-width: 720px) {
@@ -1253,8 +1259,9 @@
       <a class="brand" href="#top" aria-label="Back to top">WAM-Policy</a>
       <nav class="hdr-actions" aria-label="Sections">
         <a class="res-btn hdr-btn" href="#sim2real">Sim to Real</a>
-        <a class="res-btn hdr-btn" href="#mujoco">MuJoCo Simulation</a>
+        <a class="res-btn hdr-btn" href="#mujoco">MuJoCo<span class="hdr-long">&nbsp;Simulation</span></a>
         <a class="res-btn hdr-btn" href="#method">Method</a>
+        <a class="res-btn hdr-btn" href="#qlm-bench">QLM-Bench</a>
       </nav>
     </header>
 
