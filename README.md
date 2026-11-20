@@ -1,7 +1,7 @@
 # WAM-Policy: World Action Models with On-Policy Distillation for Quadrupedal Loco-Manipulation
 
 Code repository for WAM-Policy training and evaluation.
-The `main` branch contains the WAM-Policy code, `qlm-bench` contains the QLM-Bench simulator and benchmark, and `website` hosts the project page.
+The `main` branch contains the WAM-Policy code, and `qlm-bench` contains the QLM-Bench simulator and benchmark.
 
 > **WAM-Policy: World Action Models with On-Policy Distillation for Quadrupedal Loco-Manipulation**
 >
