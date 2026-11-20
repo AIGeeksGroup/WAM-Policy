@@ -406,7 +406,7 @@ def _silent_step(client, clock, timeout):
 
 def test_check_only_handoff_re_asks_after_a_lost_first_request(modules):
     """The very first CheckMode can be lost to DDS discovery (seen in
-    mock_demo_test); check-only mode must not give up on that single silence.
+    the mock-robot tests); check-only mode must not give up on that single silence.
     Silence is not evidence of an active service."""
     motion, _, clock = modules
     node = FakeNode()

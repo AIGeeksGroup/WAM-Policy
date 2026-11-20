@@ -186,7 +186,7 @@ class MotionSwitcherClient:
             if name is None:
                 # SILENCE is not evidence that a motion service is active. On a
                 # fresh node the very first request is routinely lost to DDS
-                # discovery (in mock_demo_test the mock robot answers every
+                # discovery (in the mock-robot tests the mock answers every
                 # CheckMode it receives, yet without a retry 3 of 8 node starts
                 # end 'failed' here in check-only mode and refuse STAND for the
                 # rest of the run). Ask again; give up after max_tries

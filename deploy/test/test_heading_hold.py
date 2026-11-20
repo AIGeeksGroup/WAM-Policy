@@ -184,4 +184,4 @@ def test_wam_runs_switch_the_in_place_hold_on_and_the_walking_hold_off():
     assert 'declare("heading_hold_in_place", False)' in node
     assert 'in_place=bool(p("heading_hold_in_place")))' in node
     yaml = (REPO / "config/wam_go2.yaml").read_text(encoding="utf-8")
-    assert "heading_hold_in_place: false" in yaml                # other demos: unchanged
+    assert "heading_hold_in_place: false" in yaml                # the node default: unchanged

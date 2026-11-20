@@ -75,9 +75,9 @@ def generate_launch_description():
     handling_arg = DeclareLaunchArgument(
         "command_handling",
         default_value="rambo",
-        description="Native9 commands: rambo (clipped to RAMBO's training ranges, zeroed in all-stance; "
-                    "every demo but WAM) or sim (unclipped, exactly as the QLM-Bench MuJoCo simulation "
-                    "of the WAM training data; WAM runs set it)")
+        description="Native9 commands: rambo (clipped to RAMBO's training ranges, zeroed in all-stance) "
+                    "or sim (unclipped, exactly as the QLM-Bench MuJoCo simulation of the WAM training "
+                    "data; WAM runs set it)")
 
     # Explicitly typed overrides reach Node.parameters; undeclared launch
     # text is not a running controller setting.

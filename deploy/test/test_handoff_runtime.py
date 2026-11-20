@@ -42,7 +42,6 @@ class TickNode:
             joint_vel=np.zeros(12), base_lin_vel_b=np.zeros(3), base_height=.3,
             base_ang_vel_b=np.zeros(3))
         self.estimator = NS(age=lambda _: .002)
-        self._set_ee_compliance = lambda _: None
         self._track_mode_exit = lambda: None
         self._publish_mode = lambda: None
         self._standing = lambda _: True

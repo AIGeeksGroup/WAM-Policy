@@ -163,7 +163,6 @@ def test_first_policy_failure_saves_raw_evidence_and_never_sends_active_command(
     node._trace_dir = str(tmp_path)
     node._trace = []
     node._trace_metadata = '{"test":true}'
-    node._set_ee_compliance = lambda _: None
     node._track_mode_exit = lambda: None
     node._mode_pub = SimpleNamespace(publish=lambda _: None)
     node.get_logger = lambda: SimpleNamespace(info=lambda *_: None, warn=lambda *_: None,

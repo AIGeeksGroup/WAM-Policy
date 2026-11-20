@@ -92,21 +92,6 @@ class RamboController:
         self.velocity_commands = np.zeros(3)
         self.ee_pos_commands = self.task.ee_pos_default.copy()
         self.ee_force_commands = np.zeros((self.task.num_ee, 3))
-        # Handshake "soft" mode (deployment only). While True the manipulation
-        # legs (a) get no policy joint residual and no QP stance torque - only
-        # the gravity compensation holds them - and (b) their JPC target follows
-        # the MEASURED foot inside a fence box around the ee command, so the
-        # hand feels zero static stiffness inside the box (only motor damping
-        # and friction) and the (unchanged) PD only at the fence. MuJoCo:
-        # lowering kp alone cannot make the leg light - the
-        # Cartesian stiffness is J K^-1 J^T ~ 50*kp N/m (kp 15: 7 kgf per
-        # 10 cm; kp 3: still 1.6 kgf) and below kp ~2 the leg no longer holds
-        # itself. Training never had this; the free leg carries no load, so the
-        # base balance is unaffected. Fence = [-lo, +hi] per axis in the
-        # projected frame: x +-10 cm, y +-5 cm, z -2 cm (sag floor) / +10 cm.
-        self.ee_soft = False
-        self.ee_soft_fence_lo = np.array([0.10, 0.05, 0.02])
-        self.ee_soft_fence_hi = np.array([0.10, 0.05, 0.10])
 
         # buffers
         self._obs_history = np.zeros((HISTORY_LENGTH, self.task.num_obs_per_step))
@@ -216,8 +201,7 @@ class RamboController:
 
         # 1. advance the contact schedule and the Raibert reference
         self.contact_generator.update(t_gait)
-        ee_targets = self._fenced_ee_targets(rs) if self.ee_soft else self.ee_pos_commands
-        jpc_target = self.jpc.update(rs, ee_targets)
+        jpc_target = self.jpc.update(rs, self.ee_pos_commands)
         if s >= 1.0:
             self._desired_joint_pos = jpc_target
         else:
@@ -262,8 +246,6 @@ class RamboController:
         self.qp.desired_angular_acceleration = scaled[3:6]
 
         joint_offsets = scaled[6:18].copy()
-        if self.ee_soft:
-            joint_offsets[task.ee_joint_indices] = 0.0   # hand-held leg: no residual fighting the hand
         desired_motor_position = self._desired_joint_pos + joint_offsets
         desired_motor_position = np.clip(desired_motor_position,
                                          self._pos_lower, self._pos_upper)
@@ -284,9 +266,8 @@ class RamboController:
 
         contact_mask = np.tile(desired_contact, 3).astype(bool)
         # the manipulation leg (FL) always receives the QP torque
-        # (qp_env.py:776-779), except in the handshake soft mode (gravity
-        # compensation only)
-        contact_mask[task.ee_joint_indices] = not self.ee_soft
+        # (qp_env.py:776-779)
+        contact_mask[task.ee_joint_indices] = True
         desired_torque = grav_torques + np.where(contact_mask, stance_torques, 0.0)
         desired_torque = np.clip(desired_torque, -JOINT_TORQUE_LIMIT, JOINT_TORQUE_LIMIT)
 
@@ -304,19 +285,6 @@ class RamboController:
         self._last_action = action.copy()
 
         return self._desired_pos.copy(), np.zeros(12), self._desired_tor.copy()
-
-    def _fenced_ee_targets(self, rs):
-        """Soft mode: each manipulation-leg target = its measured foot position
-        (projected frame, as the JPC expects) clamped into the fence box around
-        the ee command. The observation still carries the nominal command."""
-        feet_b = kinematics.foot_positions_b(rs.joint_pos)
-        out = self.ee_pos_commands.copy()
-        for slot, leg in enumerate(self.task.ee_legs):
-            p = rs.base_rot_mat_rp @ feet_b[leg]
-            p[2] += rs.base_height
-            cmd = self.ee_pos_commands[slot]
-            out[slot] = np.clip(p, cmd - self.ee_soft_fence_lo, cmd + self.ee_soft_fence_hi)
-        return out
 
     # ------------------------------------------------------------------
     def _build_obs(self, rs, vel_cmd, ee_force_cmd):

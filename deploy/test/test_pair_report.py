@@ -29,8 +29,8 @@ def sessions(tmp_path):
                                           "d435i": {"stamp_rate_hz": 29.9, "lost_frames": 3}}}}
     quiet = {"time": "2026-10-08 11:00:00 +1100", "wall_s": 30.0, "msgs": {"go2": 0, "d435i": 0}, "motion_lag_hist": []}
     paths = []
-    for name, d in (("demo_plate_walk_20261007_071034_view", plain), ("demo_box_push_20261008_100000_view", full),
-                    ("demo_stand_fl_up_20261008_110000_view", quiet)):
+    for name, d in (("wam_push_box_20261007_071034_view", plain), ("wam_press_button_20261008_100000_view", full),
+                    ("wam_turn_valve_20261008_110000_view", quiet)):
         p = tmp_path / f"{name}.json"
         p.write_text(json.dumps(d))
         paths.append(str(p))
@@ -40,7 +40,7 @@ def sessions(tmp_path):
 def test_report_lines_and_aggregate(sessions, capsys):
     assert pair_report.main(sessions) == 0
     out = capsys.readouterr().out
-    assert "demo_plate_walk_20261007_071034_view" in out and "820/840" in out and "receive_time_approx" in out
+    assert "wam_push_box_20261007_071034_view" in out and "820/840" in out and "receive_time_approx" in out
     assert "no time_sync block" in out                                   # such summaries still report their motion lags
     assert "windows 5" in out and "median +45.0 ms" in out               # 42.3 43.7 45 46 49.6
     assert "session medians spread 1.8 ms" in out                        # 43.7 vs 45.5

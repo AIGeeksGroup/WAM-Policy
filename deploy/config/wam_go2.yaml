@@ -28,19 +28,6 @@
       # and rambo/fsm_cmd (STAND, POLICY, DAMP, REARM). The wireless remote is
       # not used.
 
-      # Handshake compliance (rambo/ee_compliance std_msgs/Bool, POLICY only):
-      # PD gains of the manipulation-leg joints (FL) while on.
-      # Training is 40/1; these were chosen in MuJoCo (sim/mj_sim.py
-      # quad_demo handshake_stand).
-      ee_compliant_kp: 15.0
-      ee_compliant_kd: 0.8
-      # soft: the compliant leg also loses the policy joint residual and the
-      # QP stance torque (gravity compensation stays), and its target follows
-      # the measured foot inside a fence box around the ee command (x +-10 cm,
-      # y +-5 cm, z -2/+10 cm) - zero static stiffness inside, kp/kd only at
-      # the fence. Lowering kp alone cannot make the leg light (Cartesian
-      # stiffness ~ 50*kp N/m; kp 15 = 7 kgf per 10 cm, MuJoCo).
-      ee_compliant_soft: true
       # a /cmd_vel older than this counts as zero, so
       # a dead publisher (SSH drop, crashed script) cannot leave the robot walking
       cmd_vel_timeout: 0.5
@@ -109,7 +96,6 @@
 
       # 100 Hz trace of every POLICY run (raw policy action, JPC target,
       # commanded q / tau_ff, GRF, KF state) -> policy_trace_<unix>.npz in
-      # this directory when POLICY ends; pair with record_lowstate.py via the
-      # wall clock. "" disables. "~" is expanded by the node and the directory
-      # is created on first use; point it at a checkout to keep traces with it.
+      # this directory when POLICY ends. "" disables. "~" is expanded by the
+      # node and the directory is created on first use.
       policy_trace_dir: "~/.ros/wam_go2_traces"

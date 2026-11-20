@@ -1,4 +1,4 @@
-"""Staleness watchdog for the FL end-effector force command, and the box-push phases.
+"""Staleness watchdog for the FL end-effector force command.
 
 The force part of the native9 command (fl_ee_fx, fl_ee_fy, fl_ee_fz; WAM-Policy
 sends zeros) reaches the controller on rambo/ee_force_cmd. A publisher that dies
@@ -8,12 +8,8 @@ by zeros. After such a timeout the force stays zero until the publisher withdraw
 it (sends zeros) or the robot stops (zero planar velocity command); a publisher
 that merely comes back cannot restore a force on its own. 0 disables the watchdog.
 
-These are the command-watchdog semantics of the development tree's push pipeline
-with its contact gate off (the default). This release ships no foot contact-force
-estimate and therefore no contact gate. The node and the MuJoCo harness both call
-`ForceCommandWatchdog.step` at 100 Hz with the same inputs.
+No foot contact force is read. The node calls `ForceCommandWatchdog.step` at 100 Hz.
 """
-from dataclasses import dataclass
 import math
 import time
 
@@ -47,24 +43,3 @@ class ForceCommandWatchdog:
         if self.command_expired:
             self._withdraw_required = True
         return np.zeros(3) if self._withdraw_required else req.copy()
-
-
-@dataclass(frozen=True)
-class PushMotionPhase:
-    seconds: float
-    velocity: tuple
-    force: tuple
-
-
-def push_motion_phases(vx, force, duration, vy=0.0, wz=0.0):
-    """Moving push, then simultaneous zero velocity/force and 0.5 s hold.
-
-    Duration <= 0 is open-ended and has no scheduled stop; both callers stop
-    publishing force when the controller exits POLICY.
-    """
-    walk = PushMotionPhase(duration if duration > 0.0 else math.inf,
-                           (float(vx), float(vy), float(wz)),
-                           (float(force), 0.0, 0.0))
-    if duration <= 0.0:
-        return (walk,)
-    return (walk, PushMotionPhase(0.5, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)))

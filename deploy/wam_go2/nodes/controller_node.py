@@ -27,9 +27,9 @@ from rclpy.clock import Clock, ClockType
 from rclpy.node import Node
 from rcl_interfaces.msg import ParameterDescriptor
 from rclpy.signals import SignalHandlerOptions
-from std_msgs.msg import Bool, Float64MultiArray, String
+from std_msgs.msg import Float64MultiArray, String
 
-from ..adapter.command_adapter import CommandError, adapt_command, policy_gains
+from ..adapter.command_adapter import CommandError, adapt_command
 from ..constants import (
     DEFAULT_JOINT_POS,
     GATHER_CALF_FRACTION,
@@ -100,17 +100,6 @@ class RamboGo2Controller(Node):
         # action, JPC target, commanded q / tau_ff, GRF, estimator state),
         # saved as policy_trace_<unix>.npz when POLICY ends; "" = off
         declare("policy_trace_dir", "")
-        # Handshake compliance (RAMBO paper Sec. V-D): while rambo/ee_compliance
-        # is true in POLICY the manipulation-leg joints (FL) run
-        # these PD gains instead of the training 40 / 1. The QP feedforward
-        # (gravity compensation + stance torque) still holds the leg up.
-        # Values chosen in MuJoCo (sim/mj_sim.py quad_demo).
-        declare("ee_compliant_kp", 15.0)
-        declare("ee_compliant_kd", 0.8)
-        # soft: while compliant the manipulation leg also loses the policy
-        # joint residual and the QP stance torque (gravity compensation
-        # stays), so the hand only works against the lowered PD
-        declare("ee_compliant_soft", True)
         # /cmd_vel older than this is treated as zero
         # (a dead publisher must not leave the robot walking; the demo
         # sequencer republishes at 20 Hz)
@@ -152,10 +141,6 @@ class RamboGo2Controller(Node):
         # ticks that ran on an unchanged LowState frame
         self._freshness = StateFreshnessMonitor(self._dt)
         self._prev_mode = None
-        self._compliant_kp = float(p("ee_compliant_kp"))
-        self._compliant_kd = float(p("ee_compliant_kd"))
-        self._compliant_soft = bool(p("ee_compliant_soft"))
-        self._ee_compliant = False     # POLICY only; forced off on entry/exit
         self._cmd_vel_timeout = float(p("cmd_vel_timeout"))
         self._ee_force_timeout = float(p("ee_force_cmd_timeout"))
         self._force_req = np.zeros(3)  # the FL force last requested on rambo/ee_force_cmd [N]
@@ -220,8 +205,6 @@ class RamboGo2Controller(Node):
         self.create_subscription(Point, "rambo/ee_pos_cmd", self._on_ee_pos, 10)
         self.create_subscription(Vector3, "rambo/ee_force_cmd", self._on_ee_force, 10)
         self.create_subscription(String, "rambo/fsm_cmd", self._on_fsm_cmd, 10)
-        self.create_subscription(Bool, "rambo/ee_compliance",
-                                 self._on_ee_compliance, 10)
         self._mode_pub = self.create_publisher(String, "rambo/mode", 10)
         self._state_pub = (self.create_publisher(Float64MultiArray, state_stream.TOPIC, 10)
                            if bool(p("publish_state")) else None)
@@ -322,29 +305,6 @@ class RamboGo2Controller(Node):
         elif not self._damp_requested:
             self._fsm_request = request
 
-    def _on_ee_compliance(self, msg):
-        want = bool(msg.data)
-        if self.mode != POLICY:
-            if want:
-                self.get_logger().warn("ee compliance request ignored: not in POLICY")
-            return
-        self._set_ee_compliance(want)
-
-    def _set_ee_compliance(self, on):
-        """Lower / restore the manipulation-leg PD gains (POLICY only)."""
-        if on == self._ee_compliant:
-            return
-        self._ee_compliant = on
-        self.controller.ee_soft = bool(on and self._compliant_soft)
-        if on:
-            soft = ("; soft: no policy residual / QP torque on the leg, gravity comp only"
-                    if self._compliant_soft else "")
-            self.get_logger().info(
-                f"ee compliance ON (FL kp {self._compliant_kp:.1f} / "
-                f"kd {self._compliant_kd:.2f}; other joints 40 / 1{soft})")
-        else:
-            self.get_logger().info("ee compliance OFF")
-
     def _on_state(self, state):
         """LowState callback (~500 Hz): run the estimator."""
         # Go2Interface only calls us for an accepted forward source tick.
@@ -429,7 +389,6 @@ class RamboGo2Controller(Node):
             self.safety._trip(reason)
         self.mode = DAMP
         self._exit_reason = reason
-        self._set_ee_compliance(False)   # every exit path, not only the tick's
 
     def _wired_ok_or_refuse(self, what):
         """Require confirmed ownership, no fault latch, and wired traffic.
@@ -484,7 +443,6 @@ class RamboGo2Controller(Node):
             return
         rs = self._make_robot_state(s)
         self._policy_time = 0.0
-        self._ee_compliant = False
         self._freshness.reset()        # per-run LowState freshness summary
         self._heading_hold.reset()
         # drop any stale operator commands from a previous session
@@ -718,9 +676,7 @@ class RamboGo2Controller(Node):
                 if len(self._trace) > 60000:          # keep the last 10 min
                     del self._trace[:len(self._trace) - 60000]
             try:
-                kp, kd = policy_gains(self.task.ee_joint_indices, self._ee_compliant,
-                                      self._compliant_kp, self._compliant_kd)
-                cmd = adapt_command(q_des, dq_des, tau_ff, kp=kp, kd=kd)
+                cmd = adapt_command(q_des, dq_des, tau_ff)
                 self.go2.send(*cmd)
             except CommandError as e:
                 self._to_damp(str(e))
@@ -730,12 +686,11 @@ class RamboGo2Controller(Node):
         self._publish_mode()
 
     def _track_mode_exit(self):
-        """POLICY -> anything: save the 100 Hz trace, drop compliance."""
+        """POLICY -> anything: save the 100 Hz trace."""
         if self._prev_mode == POLICY and self.mode != POLICY:
             self.get_logger().info(
                 f"POLICY run LowState freshness: {self._freshness.summary()}")
             self._save_policy_trace()
-            self._set_ee_compliance(False)
         self._prev_mode = self.mode
 
     def _save_policy_trace(self):

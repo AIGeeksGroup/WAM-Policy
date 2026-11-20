@@ -10,11 +10,6 @@ resulting /lowcmd stream:
   STAND   kp=stand_kp, converges to DEFAULT_JOINT_POS (in Go2 motor order)
   POLICY  kp=40, kd=1, ~100 Hz, finite q, non-zero feedforward torque,
           valid CRC on every message
-  rambo/ee_compliance: True in POLICY lowers FL (Go2 3-5)
-          to ee_compliant_kp/kd, False restores 40/1; a True left ON is
-          forced OFF by DAMP -> STAND -> POLICY (first 0.5 s of the new
-          session is 40/1 on FL); a True while in STAND is ignored (kp stays
-          STAND_KP on all 12) and not latched for the next POLICY entry
 
 The mock robot tracks commanded joint positions whenever kp > 0 (perfect
 motors), so the stand-up completes and tracking watchdogs stay quiet.
@@ -40,7 +35,7 @@ import time
 import numpy as np
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Bool, Float64MultiArray, String
+from std_msgs.msg import Float64MultiArray, String
 from unitree_go.msg import LowCmd, LowState
 from unitree_api.msg import Request, Response
 
@@ -50,7 +45,6 @@ from wam_go2.constants import (  # noqa: E402
     DAMPING_KD,
     DEFAULT_JOINT_POS,
     RAMBO_TO_GO2,
-    STAND_KP,
 )
 from wam_go2.go2.crc import compute_lowcmd_crc  # noqa: E402
 from wam_go2.go2.motion_switcher import (  # noqa: E402
@@ -68,7 +62,6 @@ def to_go2(q_rambo):
 DEFAULT_Q_GO2 = to_go2(DEFAULT_JOINT_POS)
 LEVEL_QUAT = np.array([1.0, 0.0, 0.0, 0.0])
 
-COMPLIANT_KP, COMPLIANT_KD = 15.0, 0.8     # passed to the node as parameters
 
 
 class MockRobot(Node):
@@ -87,7 +80,6 @@ class MockRobot(Node):
         # rambo/state: the controller's state stream for the WAM bridge
         self.states = []
         self.create_subscription(Float64MultiArray, "rambo/state", self._on_state_stream, 50)
-        self.comp_pub = self.create_publisher(Bool, "rambo/ee_compliance", 10)
         self.cmds = []
         self.tick = 0
         self.q = DEFAULT_Q_GO2.copy()   # Go2 order, tracks commands
@@ -147,11 +139,6 @@ class MockRobot(Node):
         m = String()
         m.data = mode
         self.fsm_pub.publish(m)
-
-    def set_compliance(self, on):
-        m = Bool()
-        m.data = bool(on)
-        self.comp_pub.publish(m)
 
 
 def check_state_stream(robot, check):
@@ -241,98 +228,6 @@ def run_quadruped(robot, check):
     policy = summarize(robot.cmds[-160:], "POLICY")
     results.append(policy)
 
-    # handshake compliance (rambo/ee_compliance): only the FL motors (Go2
-    # 3-5) drop to the compliant gains, the other nine stay 40/1, and all
-    # twelve are back to 40/1 once it is switched off
-    robot.cmds.clear()
-    robot.set_compliance(True)
-    spin_for(robot, 0.6)
-    comp = robot.cmds[-30:]
-    robot.set_compliance(False)
-    spin_for(robot, 0.6)
-    restored = robot.cmds[-30:]
-    fl, rest = [3, 4, 5], [0, 1, 2, 6, 7, 8, 9, 10, 11]
-    comp_ok = bool(comp) and all(
-        np.allclose(c["kp"][fl], COMPLIANT_KP) and np.allclose(c["kd"][fl], COMPLIANT_KD)
-        and np.allclose(c["kp"][rest], 40.0) and np.allclose(c["kd"][rest], 1.0)
-        for c in comp)
-    restored_ok = bool(restored) and all(
-        np.allclose(c["kp"], 40.0) and np.allclose(c["kd"], 1.0) for c in restored)
-    results.append({
-        "phase": "COMPLIANT", "count": len(comp),
-        "fl_kp": float(comp[-1]["kp"][fl].max()) if comp else None,
-        "fl_kd": float(comp[-1]["kd"][fl].max()) if comp else None,
-        "rest_kp": float(comp[-1]["kp"][rest].max()) if comp else None,
-        "restored": restored_ok,
-    })
-    check(comp_ok, "COMPLIANT: FL gains not lowered to "
-                   f"{COMPLIANT_KP}/{COMPLIANT_KD} with the rest at 40/1")
-    check(restored_ok, "COMPLIANT: gains not restored to 40/1 after switching off")
-
-    # compliance is a POLICY-only, single-session flag:
-    #  (a) a request still ON when POLICY ends (here: DAMP) must not survive
-    #      into the next POLICY session - the FL motors would otherwise start
-    #      the next demo soft;
-    #  (b) a True received outside POLICY (here: STAND) is ignored with a
-    #      warning, never latched for the next entry.
-    # Both show on the wire as 40/1 on FL from the first POLICY frame after
-    # re-entry; (b) additionally as untouched STAND gains.
-    robot.cmds.clear()
-    robot.set_compliance(True)
-    spin_for(robot, 0.4)
-    soft = robot.cmds[-20:]
-    check(bool(soft) and all(np.allclose(c["kp"][fl], COMPLIANT_KP) for c in soft),
-          "REENTRY (setup): FL kp not back at COMPLIANT_KP before leaving POLICY")
-    robot.request("DAMP")
-    spin_for(robot, 0.6)
-    damped = robot.cmds[-20:]
-    check(bool(damped) and all(c["kp"].max() == 0.0 for c in damped),
-          "REENTRY (setup): DAMP request from POLICY not honoured")
-    robot.request("STAND")
-    spin_for(robot, 1.6)                       # stand_duration 1.0 in the mock
-    # (b) True while in STAND: every STAND frame keeps kp == STAND_KP on all 12
-    robot.cmds.clear()
-    robot.set_compliance(True)
-    spin_for(robot, 0.5)
-    stand_frames = list(robot.cmds)
-    outside_ok = len(stand_frames) > 20 and all(
-        np.allclose(c["kp"], STAND_KP) for c in stand_frames)
-    results.append({
-        "phase": "COMPLIANCE_OUTSIDE_POLICY", "count": len(stand_frames),
-        "kp_min": float(min(c["kp"].min() for c in stand_frames)) if stand_frames else None,
-        "kp_max": float(max(c["kp"].max() for c in stand_frames)) if stand_frames else None,
-        "ignored": outside_ok,
-    })
-    check(outside_ok, "COMPLIANCE_OUTSIDE_POLICY: a True in STAND must be ignored "
-                      f"(expected kp {STAND_KP} on all 12 motors in {len(stand_frames)} frames, "
-                      f"kp range {results[-1]['kp_min']}..{results[-1]['kp_max']})")
-    # (a)+(b) re-enter POLICY: no latched request, forced OFF on entry - the
-    # first 0.5 s of POLICY-gain frames (kp.max() == 40) are 40/1 on FL
-    robot.cmds.clear()
-    for _ in range(4):
-        robot.request("POLICY")
-        spin_for(robot, 0.4)
-    spin_for(robot, 0.6)
-    pol = [c for c in robot.cmds if abs(c["kp"].max() - 40.0) < 1e-6]
-    early = [c for c in pol if c["t"] <= pol[0]["t"] + 0.5] if pol else []
-    early_fl_ok = len(early) > 20 and all(
-        np.allclose(c["kp"][fl], 40.0) and np.allclose(c["kd"][fl], 1.0) for c in early)
-    bad_early = [c for c in early if not (np.allclose(c["kp"][fl], 40.0)
-                                          and np.allclose(c["kd"][fl], 1.0))]
-    results.append({
-        "phase": "COMPLIANCE_REENTRY", "count": len(early),
-        "fl_kp_min": float(min(c["kp"][fl].min() for c in early)) if early else None,
-        "fl_kd_min": float(min(c["kd"][fl].min() for c in early)) if early else None,
-        "bad_frames": len(bad_early),
-        "forced_off": early_fl_ok,
-    })
-    check(bool(pol), "COMPLIANCE_REENTRY: POLICY not re-entered after DAMP -> STAND")
-    check(early_fl_ok, "COMPLIANCE_REENTRY: FL gains not 40/1 in the first 0.5 s of the new "
-                       f"POLICY session ({len(bad_early)}/{len(early)} frames soft, "
-                       f"first bad kp {bad_early[0]['kp'][fl].tolist() if bad_early else None} "
-                       f"kd {bad_early[0]['kd'][fl].tolist() if bad_early else None}) - "
-                       "a compliance request leaked across DAMP/STAND")
-
     check(damp["count"] > 50, f"DAMP: too few commands ({damp['count']})")
     check(damp["kp"] == 0.0, f"DAMP: kp={damp['kp']} (expected 0)")
     check(abs(damp["kd"] - DAMPING_KD) < 1e-6,
@@ -360,9 +255,7 @@ def main():
                  "-p", "task:=quadruped",
                  "-p", "auto_release_sport_mode:=false",
                  "-p", "wired_nic:=none",      # mock robot on loopback: no cable to check
-                 "-p", "stand_duration:=1.0",
-                 "-p", f"ee_compliant_kp:={COMPLIANT_KP}",
-                 "-p", f"ee_compliant_kd:={COMPLIANT_KD}"]
+                 "-p", "stand_duration:=1.0"]
     if args.checkpoint:
         node_args += ["-p", f"policy_checkpoint:={args.checkpoint}"]
     proc = subprocess.Popen(

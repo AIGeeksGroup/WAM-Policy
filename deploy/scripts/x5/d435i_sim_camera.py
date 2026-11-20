@@ -25,7 +25,7 @@ wired DDS environment as the other camera tools:
 
 It pins no CPU; OpenCV is limited to one thread.
 
-The operator view of the demos shows the raw picture; this stream is the model's D435i input (the
+The operator view of a run shows the raw picture; this stream is the model's D435i input (the
 WAM bridge subscribes to <ns>/sim/color/image_raw).
 """
 

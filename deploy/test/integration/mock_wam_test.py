@@ -51,8 +51,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
 from mock_robot_test import MockRobot, spin_for  # noqa: E402  (adds REPO to sys.path)
-from mock_demo_test import (BASE_ARGS, SEQUENCER, Probe, begin_scenario, compress, end_scenario,  # noqa: E402
-                            run_while_spinning, spin_until)
+from mock_scenario import (BASE_ARGS, SEQUENCER, Probe, begin_scenario, compress, end_scenario,  # noqa: E402
+                           run_while_spinning, spin_until)
 
 QLM_SRC = os.environ.get("QLM_BENCH_SRC", "")
 if QLM_SRC and os.path.isdir(os.path.join(QLM_SRC, "qlm_bench")):
@@ -68,7 +68,6 @@ from wam_go2.wam import settings  # noqa: E402
 WAM_CONTROLLER = ("command_handling:=sim",)
 
 INSTRUCTION = settings.INSTRUCTION          # push_box's instruction
-KP, KD = 15.0, 0.8
 
 
 def shm_profile_for_tests():
@@ -222,7 +221,7 @@ def enter_policy(robot, logf):
 
 def run_happy(robot, probe, cams, service, check):
     tag = "happy"
-    proc = begin_scenario("SCENARIO happy (wam_entry, then 3 chunks of the mock policy)", robot, probe, KP, KD, extra=WAM_CONTROLLER)
+    proc = begin_scenario("SCENARIO happy (wam_entry, then 3 chunks of the mock policy)", robot, probe, extra=WAM_CONTROLLER)
     summary = {"scenario": tag}
     out = tempfile.mkdtemp(prefix="wam_bridge_happy_")
     try:
@@ -283,7 +282,7 @@ def run_happy(robot, probe, cams, service, check):
 
 def run_operator_stop(robot, probe, cams, service, check):
     tag = "operator_stop"
-    proc = begin_scenario("SCENARIO operator_stop (DAMP during the second chunk)", robot, probe, KP, KD, extra=WAM_CONTROLLER)
+    proc = begin_scenario("SCENARIO operator_stop (DAMP during the second chunk)", robot, probe, extra=WAM_CONTROLLER)
     summary = {"scenario": tag}
     out = tempfile.mkdtemp(prefix="wam_bridge_opstop_")
     try:
@@ -320,7 +319,7 @@ def run_operator_stop(robot, probe, cams, service, check):
 
 def run_ego_loss(robot, probe, cams, service, check):
     tag = "ego_loss"
-    proc = begin_scenario("SCENARIO ego_loss (ego stream stops after the first chunk)", robot, probe, KP, KD, extra=WAM_CONTROLLER)
+    proc = begin_scenario("SCENARIO ego_loss (ego stream stops after the first chunk)", robot, probe, extra=WAM_CONTROLLER)
     summary = {"scenario": tag}
     out = tempfile.mkdtemp(prefix="wam_bridge_egoloss_")
     try:
@@ -357,7 +356,7 @@ def run_ego_loss(robot, probe, cams, service, check):
 def run_wrong_size(robot, probe, cams, service, check):
     tag = "wrong_size"
     proc = begin_scenario("SCENARIO wrong_size (D435i sim stream at 1280x720, the bridge expects 640x360)",
-                          robot, probe, KP, KD, extra=WAM_CONTROLLER)
+                          robot, probe, extra=WAM_CONTROLLER)
     summary = {"scenario": tag}
     out = tempfile.mkdtemp(prefix="wam_bridge_wrongsize_")
     try:
@@ -385,7 +384,7 @@ def run_wrong_size(robot, probe, cams, service, check):
 
 def run_wrong_prompt(robot, probe, cams, service, check):
     tag = "wrong_prompt"
-    proc = begin_scenario("SCENARIO wrong_prompt (the mock serves another instruction)", robot, probe, KP, KD, extra=WAM_CONTROLLER)
+    proc = begin_scenario("SCENARIO wrong_prompt (the mock serves another instruction)", robot, probe, extra=WAM_CONTROLLER)
     summary = {"scenario": tag}
     out = tempfile.mkdtemp(prefix="wam_bridge_wrongprompt_")
     try:

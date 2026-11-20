@@ -34,32 +34,11 @@ def _gain_vector(value, name):
     return g
 
 
-def policy_gains(ee_joint_indices, compliant, compliant_kp, compliant_kd,
-                 kp=POLICY_KP, kd=POLICY_KD):
-    """Per-joint POLICY gains in RAMBO order -> (kp, kd) arrays of shape (12,).
-
-    Nominal ``kp`` / ``kd`` (training: 40 / 1) on every joint; when
-    ``compliant`` the manipulation-leg joints (``TaskConfig.ee_joint_indices``:
-    FL) get ``compliant_kp`` / ``compliant_kd`` instead. This is how the RAMBO paper made the arm
-    compliant for the handshake demo (Sec. V-D: "lowering the PD gains at the
-    joints associated with the manipulation end-effectors"). The QP
-    feedforward (gravity compensation + stance torque) is not touched here,
-    so the leg still holds its own weight.
-    """
-    kp_v = np.full(12, float(kp))
-    kd_v = np.full(12, float(kd))
-    if compliant:
-        idx = np.asarray(ee_joint_indices, dtype=int)
-        kp_v[idx] = float(compliant_kp)
-        kd_v[idx] = float(compliant_kd)
-    return kp_v, kd_v
-
-
 def adapt_command(q_des, dq_des, tau_ff, kp=POLICY_KP, kd=POLICY_KD):
     """RAMBO-order command -> (q, dq, kp, kd, tau) arrays in Go2 order.
 
     ``kp`` / ``kd`` are scalars (same gain on all 12 motors) or RAMBO-order
-    (12,) vectors (see :func:`policy_gains`); vectors are reordered like q.
+    (12,) vectors; vectors are reordered like q.
     Raises CommandError if the command contains non-finite values.
     """
     q_des = np.asarray(q_des, dtype=float)

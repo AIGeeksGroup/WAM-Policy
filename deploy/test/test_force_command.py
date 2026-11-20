@@ -11,7 +11,7 @@ import math
 import numpy as np
 import pytest
 
-from wam_go2.control.force_command import ForceCommandWatchdog, push_motion_phases
+from wam_go2.control.force_command import ForceCommandWatchdog
 
 F = [14.0, 0.0, 0.0]
 ZERO = [0.0, 0.0, 0.0]
@@ -93,11 +93,3 @@ def test_invalid_request_is_rejected(request_):
 def test_invalid_timeout_is_rejected(timeout):
     with pytest.raises(ValueError):
         ForceCommandWatchdog(command_timeout=timeout)
-
-
-def test_push_phases_start_with_motion_and_end_with_zeros():
-    walk, stop = push_motion_phases(0.15, 0.0, 2.0)
-    assert walk.seconds == 2.0 and walk.velocity == (0.15, 0.0, 0.0) and walk.force == (0.0, 0.0, 0.0)
-    assert stop.seconds == 0.5 and stop.velocity == (0.0, 0.0, 0.0) and stop.force == (0.0, 0.0, 0.0)
-    (open_ended,) = push_motion_phases(0.15, 0.0, 0.0)
-    assert open_ended.seconds == math.inf
