@@ -8,11 +8,20 @@ The `qlm-bench` branch of WAM-Policy contains the QLM-Bench MuJoCo simulator and
 >
 > \*Equal contribution. †Corresponding authors. ‡Project lead.
 >
-> #### [Website](https://aigeeksgroup.github.io/WAM-Policy/) | [WAM-Policy code](https://github.com/AIGeeksGroup/WAM-Policy/tree/main) | [WAM-Policy weights](https://huggingface.co/AIGeeksGroup/WAM-Policy) | [QLM-Bench code](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench) | [QLM-Bench dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
+> #### [Paper](https://arxiv.org/abs/2611.24011) | [Website](https://aigeeksgroup.github.io/WAM-Policy/) | [WAM-Policy code](https://github.com/AIGeeksGroup/WAM-Policy/tree/main) | [WAM-Policy weights](https://huggingface.co/AIGeeksGroup/WAM-Policy) | [QLM-Bench code](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench) | [QLM-Bench dataset](https://huggingface.co/datasets/AIGeeksGroup/QLM-Bench)
 
 ## ✏️ Citation
 
-Citation will be added after publication.
+If you find our work helpful for your research, please consider citing our paper:
+
+```bibtex
+@article{long2026wampolicy,
+  title={WAM-Policy: World Action Models with On-Policy Distillation for Quadrupedal Loco-Manipulation},
+  author={Long, Junlin and Deng, Xu and Wang, Yiran and Yang, Yue and Zhao, Yang and Zhang, Zeyu},
+  journal={arXiv preprint arXiv:2611.24011},
+  year={2026}
+}
+```
 
 ---
 
