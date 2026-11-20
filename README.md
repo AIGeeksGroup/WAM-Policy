@@ -146,6 +146,10 @@ scripts/evaluation/standard100.sh opsd_student runs/eval/opsd \
 
 Use `--seeds 42,43,44` for the paper's 300-episode protocol and see `--help` in the [evaluation CLIs](./src/wam_policy/evaluation/) for runner, trial merging and latency options.
 
+### Real-Robot Deployment
+
+[`deploy/`](./deploy/README.md) runs the released policies on a real Unitree Go2 (ROS 2). The bridge connects the policy server (`python -m wam_policy.inference.serve`) to the RAMBO whole-body controller over the same qlm-live-v1 protocol as the QLM-Bench simulation, so the released checkpoints run unchanged. See [Running a task](./deploy/README.md#running) for setup and usage.
+
 ### Reproducing the Paper
 
 | Paper table | Entry point or specification |
@@ -157,6 +161,7 @@ Use `--seeds 42,43,44` for the paper's 300-episode protocol and see `--help` in 
 | Tab. 4: Distillation objective | [Standard100 runner](./scripts/evaluation/standard100.sh) for the 1/2-NFE teacher at seed 42 and the [900-update OPSD config](./configs/stage1_2_opsd/ablations/longer_training.json). |
 | Tab. 5: Sampling steps without distillation | [Standard100 runner](./scripts/evaluation/standard100.sh) with `teacher`, `--video-steps` and `--action-steps` |
 | Tab. 6: Proprioception in Stage 1.1 | [SFT config](./configs/ablations/proprioception/sft5000.json) and [training script](./scripts/ablations/proprioception/train.sh). Evaluate with `proprioception_teacher` and set `--teacher` to the [SFT5000 checkpoint](https://huggingface.co/AIGeeksGroup/WAM-Policy/tree/main/ablations/quadruped/rgb_proprioception/s5000). |
+| Tab. 7: Real-robot results on the Unitree Go2 Air | [Real-robot deployment](./deploy/README.md#running) with `opsd_student` |
 | Tab. S1: Ablations on QLM-Bench Standard100 per task | Use the configurations and evaluation entry points for Tabs. 2–6 and report the results by task. |
 | Tab. S2: Success rate (%) of an arm WAM on LIBERO | [Arm evaluation](./supplementary/arm_libero/README.md#evaluation) |
 | Tab. S3: Ablation studies on LIBERO-Pro2.0: success rate (%) | [Arm configs and tables](./supplementary/arm_libero/README.md#tables) |
@@ -176,8 +181,9 @@ Use `--seeds 42,43,44` for the paper's 300-episode protocol and see `--help` in 
 
 ## License
 
-- WAM-Policy code on `main` is licensed under [Apache-2.0](./LICENSE). Third-party attributions (LingBot-VA, Wan, torchtitan) are in
+- WAM-Policy code on `main` is licensed under [Apache-2.0](./LICENSE), except `deploy/`. Third-party attributions (LingBot-VA, Wan, torchtitan) are in
   `NOTICE`. `supplementary/arm_libero/` carries its own LICENSE and NOTICE.
+- The real-robot deployment in `deploy/` is licensed under [CC BY-NC 4.0](./deploy/LICENSE) because it implements the RAMBO controller; see [`deploy/NOTICE`](./deploy/NOTICE).
 - QLM-Bench code on [`qlm-bench`](https://github.com/AIGeeksGroup/WAM-Policy/tree/qlm-bench) is licensed under [CC BY-NC 4.0](https://github.com/AIGeeksGroup/WAM-Policy/blob/qlm-bench/LICENSE).
 - Released weights (`AIGeeksGroup/WAM-Policy`): Apache License 2.0. They are derived from the
   Apache-2.0 models `robbyant/lingbot-va-base` (quadruped) and `robbyant/lingbot-va-posttrain-libero-long` (arm).
