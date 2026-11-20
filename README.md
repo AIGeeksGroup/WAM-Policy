@@ -164,6 +164,16 @@ Use `--seeds 42,43,44` for the paper's 300-episode protocol and see `--help` in 
 | Tab. S5: Paired comparisons on QLM-Bench | [Paired evaluation CLI](./src/wam_policy/evaluation/compare.py) |
 | Tab. S6: Paired comparisons on LIBERO | [Arm paired evaluation](./supplementary/arm_libero/README.md#evaluation) |
 
+## 🔭 Limitations and Future Work
+
+> **Note.** The first point below is missing from the *Limitations and Future Work* section of the paper. We apologize for the omission. The remaining points are the limitations discussed in the paper.
+
+- **Single-camera setup in WAM-Policy v2.** WAM-Policy v1 observes the scene through two cameras: the Go2's built-in ego-centric camera and an additional top-down camera (a RealSense D435i on a mount raised above the trunk). The add-on top-down camera makes the hardware harder to reproduce and the robot less self-contained. In WAM-Policy v2, we plan to replace the two views with a single wide-angle fisheye camera mounted near the ego camera, combined with LiDAR, so that one viewpoint provides what currently takes two.
+- **Task coverage of Stage 2.** Stage 2.1 tunes only two tasks, each with a reward designed for its task object. Extending it to more tasks calls for rewards that need less task-specific design.
+- **Scope of evaluation.** All results use one quadruped, one whole-body controller, and one manipulating leg, and Standard100 varies the scenes of the ten training tasks; transfer to other legged robots and generalization to unseen tasks or instructions are not evaluated.
+- **End-to-end latency.** On the real robot, sampling takes 0.159 s per chunk, but the closed loop takes 0.66 s with the encoding of the observations, about twice the 0.32 s that a chunk covers, so the loop is not yet real time. Accelerating the encoder is the next step.
+- **Simulation-to-real gap.** WAM-Policy is trained only in simulation, and the OPSD student succeeds less often on the real robot than in simulation (Tab. 7 of the paper). Closing this sim-to-real gap is therefore one of the key problems for future work.
+
 ## License
 
 - WAM-Policy code on `main` is licensed under [Apache-2.0](./LICENSE). Third-party attributions (LingBot-VA, Wan, torchtitan) are in
