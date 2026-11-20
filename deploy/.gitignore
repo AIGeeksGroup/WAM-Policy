@@ -1,0 +1,18 @@
+# local configuration (copy of config/deploy.example.env)
+config/deploy.env
+# the RAMBO controller checkpoint (scripts/fetch_controller.sh, policies/README.md)
+policies/quadruped/*.pt
+# MuJoCo Menagerie Go2 model for sim/mj_sim.py (scripts/fetch_mujoco_menagerie.sh)
+third_party/
+
+# outputs: one directory per task run, controller / camera logs
+/result/
+data/
+
+# colcon build trees when this directory is used as a workspace source
+build/
+install/
+log/
+__pycache__/
+*.py[cod]
+.pytest_cache/

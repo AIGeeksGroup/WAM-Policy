@@ -1,0 +1,306 @@
+{
+  "label": "static_reference_session",
+  "time": "2000-01-01 00:00:00 +0000",
+  "duration_request_s": 30.0,
+  "hosts": {
+    "laptop": {
+      "ref_id": "C0000201",
+      "ref_ip": "192.0.2.1",
+      "stratum": 3,
+      "offset_s": -3.3979e-05,
+      "last_offset_s": -2.251e-06,
+      "rms_offset_s": 0.000391509,
+      "freq_ppm": -7.361,
+      "skew_ppm": 0.432,
+      "root_delay_s": 0.003254826,
+      "root_dispersion_s": 0.000828327,
+      "leap": "Normal",
+      "synced": true
+    },
+    "x5_sntp": {
+      "offset_s": -8.749961853027344e-05,
+      "rtt_s": 0.0005154609680175781,
+      "leap": 0,
+      "stratum": 4,
+      "remote_synced": true,
+      "note": "offset = X5 clock minus laptop clock, from the lowest-rtt sample"
+    },
+    "x5": {
+      "ref_id": "C000020A",
+      "ref_ip": "192.0.2.10",
+      "stratum": 4,
+      "offset_s": -1.808e-06,
+      "last_offset_s": -2.87e-07,
+      "rms_offset_s": 9.684e-06,
+      "freq_ppm": -0.345,
+      "skew_ppm": 0.949,
+      "root_delay_s": 0.003465837,
+      "root_dispersion_s": 0.000812654,
+      "leap": "Normal",
+      "synced": true
+    },
+    "x5_sntp_after": {
+      "offset_s": -9.882450103759766e-05,
+      "rtt_s": 0.0002810955047607422,
+      "leap": 0,
+      "stratum": 4,
+      "remote_synced": true,
+      "note": "offset = X5 clock minus laptop clock, from the lowest-rtt sample"
+    },
+    "x5_after": {
+      "ref_id": "C000020A",
+      "ref_ip": "192.0.2.10",
+      "stratum": 4,
+      "offset_s": 1.2426e-05,
+      "last_offset_s": -1.2071e-05,
+      "rms_offset_s": 1.7892e-05,
+      "freq_ppm": 0.861,
+      "skew_ppm": 3.527,
+      "root_delay_s": 0.003376185,
+      "root_dispersion_s": 0.000936739,
+      "leap": "Normal",
+      "synced": true
+    }
+  },
+  "x5_metadata": {
+    "topic": "/camera/d435i/color/metadata",
+    "n": 50,
+    "fields": [
+      "actual_fps",
+      "backend_timestamp",
+      "clock_domain",
+      "frame_number",
+      "frame_timestamp",
+      "hw_timestamp",
+      "raw_frame_size",
+      "time_of_arrival"
+    ],
+    "has_exposure_metadata": false,
+    "clock_domain": "global_time",
+    "fps": 29.97789715590556,
+    "sdk_hold_ms": {
+      "n": 50,
+      "min": 31.554698944091797,
+      "median": 32.06193447113037,
+      "p99": 32.549991607666016,
+      "max": 32.55653381347656
+    },
+    "backend_minus_frame_ms": {
+      "n": 50,
+      "min": 0.408172607421875,
+      "median": 1.3066530227661133,
+      "p99": 2.204902172088623,
+      "max": 2.2110939025878906
+    },
+    "frame_number_gaps": 0
+  },
+  "observed_s": 30.000318676999996,
+  "lowstate": {
+    "n": 15017,
+    "hz": 500.56134942036175,
+    "tick_fit": {
+      "slope": 0.000999968263451069,
+      "offset_s": 946678438.199228,
+      "rate_ppm": -31.736548930960673,
+      "n": 15017,
+      "n_used": 945,
+      "tick0": 6362904.0,
+      "span_s": 29.99980330467224,
+      "resid_ms": {
+        "min": -0.209808349609375,
+        "median": 0.7948875427246094,
+        "p99": 2.5565147399902366,
+        "max": 31.754732131958008
+      }
+    }
+  },
+  "camera": {
+    "gyro": {
+      "n": 5814,
+      "min": 0.44465065002441406,
+      "median": 1.3366937637329102,
+      "p99": 3.709273338317869,
+      "max": 13.342142105102539,
+      "hz": 193.79794136844797
+    },
+    "imu": {
+      "n": 5814,
+      "min": 0.6039142608642578,
+      "median": 1.9326210021972656,
+      "p99": 5.90708494186401,
+      "max": 16.19577407836914,
+      "hz": 193.79794136844797
+    },
+    "color": {
+      "n": 871,
+      "min": 43.848276138305664,
+      "median": 54.87799644470215,
+      "p99": 56.93259239196777,
+      "max": 82.21054077148438,
+      "hz": 29.033024928090505
+    },
+    "depth": {
+      "n": 871,
+      "min": 15.674114227294922,
+      "median": 23.466825485229492,
+      "p99": 26.479315757751465,
+      "max": 40.55428504943848,
+      "hz": 29.033024928090505
+    }
+  },
+  "gyro_lag": {
+    "ok": false,
+    "lag_s": 0.0,
+    "peak_corr": 0.0,
+    "motion_rms_a": 0.004437755273403802,
+    "motion_rms_b": 0.0016556140132364928,
+    "overlap_s": 28.68243718147278,
+    "reason": "insufficient motion (rms a=0.004 b=0.002 < 0.05/0.05)"
+  },
+  "model_input": {
+    "reference_clock": "laptop CLOCK_REALTIME (chrony server for the X5)",
+    "grid_ms": 80.0,
+    "go2_ego": {
+      "res": 360,
+      "msgs": 428,
+      "fps": 14.244277606570307,
+      "arrival_gap_ms": {
+        "median": 70.47200202941895,
+        "p99": 75.59871196746826,
+        "max": 77.6817798614502
+      },
+      "time_frame_step_is_1_15s": 1.0,
+      "arrival_fit": {
+        "slope": 1.054006047880322e-05,
+        "offset_s": 946678478.4154942,
+        "rate_ppm": 54006.04788032193,
+        "n": 428,
+        "n_used": 107,
+        "tick0": 599852919.0,
+        "span_s": 29.97695016860962,
+        "resid_ms": {
+          "min": -2.013683319091797,
+          "median": 2.193927764892578,
+          "p99": 6.273701190948488,
+          "max": 31.244277954101562
+        }
+      },
+      "decode_errors": 3,
+      "energy_samples": 424,
+      "time_source": "arrival-envelope fit of time_frame (a frame counter, not a clock) minus pipeline latency"
+    },
+    "lags": {
+      "ego_energy_vs_go2_imu": {
+        "ok": false,
+        "lag_s": 0.0,
+        "peak_corr": 0.0,
+        "motion_rms_a": 0.0044519120452981426,
+        "motion_rms_b": 0.08420512421552057,
+        "overlap_s": 28.5229709148407,
+        "reason": "insufficient motion (rms a=0.004 b=0.084 < 0.05/0.8)"
+      },
+      "color_energy_vs_d435i_gyro": {
+        "ok": false,
+        "lag_s": 0.0,
+        "peak_corr": 0.0,
+        "motion_rms_a": 0.001656342639957544,
+        "motion_rms_b": 0.04221310256969502,
+        "overlap_s": 27.786960124969482,
+        "reason": "insufficient motion (rms a=0.002 b=0.042 < 0.05/0.8)"
+      },
+      "ego_energy_vs_color_energy": {
+        "ok": false,
+        "lag_s": 0.0,
+        "peak_corr": 0.0,
+        "motion_rms_a": 0.04221227909489299,
+        "motion_rms_b": 0.08511275310479526,
+        "overlap_s": 27.787489891052246,
+        "reason": "insufficient motion (rms a=0.042 b=0.085 < 0.8/0.8)"
+      },
+      "sign": "lag > 0: the second stream is stamped LATER than the first for the same motion"
+    },
+    "calibration": {
+      "go2_ego_latency_ms": null,
+      "go2_ego_latency_source": "uncalibrated (0)",
+      "d435i_stamp_minus_exposure_ms": null,
+      "d435i_stamp_source": "uncalibrated (0)"
+    },
+    "grid": {
+      "ok": true,
+      "period_ms": 80.0,
+      "slots": 363,
+      "ego_frames": 428,
+      "task_frames": 871,
+      "ego_period_ms": 70.27053833007812,
+      "task_period_ms": 33.35714340209961,
+      "causal": {
+        "ego_staleness_ms": {
+          "n": 363,
+          "min": 0.07867813110351562,
+          "median": 34.97481346130371,
+          "p95": 66.74473285675049,
+          "max": 70.1138973236084
+        },
+        "task_minus_ego_ms": {
+          "n": 363,
+          "min": -16.58463478088379,
+          "median": -0.07128715515136719,
+          "p95": 14.736557006835936,
+          "max": 16.524314880371094
+        },
+        "abs_skew_ms": {
+          "n": 363,
+          "min": 0.028371810913085938,
+          "median": 8.296966552734375,
+          "p95": 15.765547752380371,
+          "max": 16.58463478088379
+        },
+        "duplicates": 0,
+        "ego_gaps": 0
+      },
+      "nearest": {
+        "ego_staleness_ms": {
+          "n": 363,
+          "min": 0.07867813110351562,
+          "median": 17.499923706054688,
+          "p95": 33.31766128540039,
+          "max": 35.06040573120117
+        },
+        "task_minus_ego_ms": {
+          "n": 363,
+          "min": -16.57867431640625,
+          "median": -0.028371810913085938,
+          "p95": 14.922904968261717,
+          "max": 16.672372817993164
+        },
+        "abs_skew_ms": {
+          "n": 363,
+          "min": 0.028371810913085938,
+          "median": 8.296966552734375,
+          "p95": 15.822243690490723,
+          "max": 16.672372817993164
+        },
+        "duplicates": 0,
+        "ego_gaps": 0
+      },
+      "calibrated": false
+    }
+  },
+  "verdict": [
+    "--  laptop chrony: offset -0.034 ms, stratum 3, Normal",
+    "OK  X5 chrony offset -0.002 ms (rms 0.010 ms, stratum 4); target < 1 ms",
+    "OK  SNTP X5-minus-laptop -0.087 ms (rtt 0.52 ms, remote synced) - independent of chrony's own figure",
+    "OK  tick->laptop fit: rate -31.7 ppm, delay jitter p99 2.56 ms max 31.75 ms (target p99 < 5)",
+    "OK  camera IMU recv-stamp median +1.34 ms (p99 +3.71); target 0..20 ms = X5 clock consistent with laptop",
+    "    color: 29.03 Hz, recv-stamp median +54.9 ms p99 +56.9 ms",
+    "    depth: 29.03 Hz, recv-stamp median +23.5 ms p99 +26.5 ms",
+    "--  gyro lag not measured: insufficient motion (rms a=0.004 b=0.002 < 0.05/0.05)",
+    "MODEL ego /frontvideostream 360p: 14.24 fps, arrival interval p99 76 / max 78 ms; time_frame steps of exactly 1/15 s: 100 % (a counter, not a clock); arrival envelope fit residual p99 6.3 ms",
+    "--  Go2 ego pipeline latency (ego image motion vs Go2 IMU; = arrival model - exposure midpoint): not measured - insufficient motion (rms a=0.004 b=0.084 < 0.05/0.8)",
+    "--  D435i color stamp - exposure midpoint (color image motion vs D435i gyro): not measured - insufficient motion (rms a=0.002 b=0.042 < 0.05/0.8)",
+    "--  ego arrival model - D435i stamp, same motion (cross-correlation of the two image motions): not measured - insufficient motion (rms a=0.042 b=0.085 < 0.8/0.8)",
+    "MODEL capture time constants: Go2 latency 0 ms [uncalibrated (0)], D435i stamp - exposure midpoint 0 ms [uncalibrated (0)]  <- uncalibrated: rock the body during the window (both cameras are fixed to the body) and run again",
+    "MODEL 80 ms grid (363 slots, ego 70.3 ms/frame, D435i 33.4 ms/frame) [constants uncalibrated, structure only]: online takes the latest past ego frame -> staleness median 35 / max 70 ms, D435i nearest frame vs ego capture |median| 8 / max 17 ms, duplicates 0, holes 0; offline takes the nearest ego frame -> error max 35 ms",
+    "MODEL X5 color metadata (50 frames, 30.0 fps, dropped 0, global_time): fields actual_fps,backend_timestamp,clock_domain,frame_number,frame_timestamp,hw_timestamp,raw_frame_size,time_of_arrival; no sensor_timestamp/actual_exposure -> the exposure midpoint can only be measured with the motion method (c); frames wait 32 ms in the SDK before reaching the ROS node"
+  ]
+}

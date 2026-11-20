@@ -1,0 +1,33 @@
+WAM-Policy real-robot deployment on the Unitree Go2 (deploy/)
+
+This directory is released under the Creative Commons Attribution-NonCommercial 4.0 International
+license (CC BY-NC 4.0, see LICENSE), unlike the rest of the repository (Apache License 2.0), because it
+implements the RAMBO controller and runs RAMBO's policy. Third-party work used or referenced:
+
+RAMBO (https://github.com/catachiii/rambo, commit 6f6c87c614255a5ada063da40206a2fa67054cb6), CC BY-NC 4.0.
+  J. Cheng, D. Kang, G. Fadini, G. Shi, S. Coros. "RAMBO: RL-Augmented Model-Based Whole-Body Control for
+  Loco-Manipulation". IEEE Robotics and Automation Letters, 2025. arXiv:2504.06662.
+  wam_go2/control/ (policy observation, contact schedule, joint-position controller, kinematics,
+  ground-reaction-force QP) and the controller constants in wam_go2/constants.py and wam_go2/tasks.py
+  implement RAMBO's control pipeline for the real robot, written with NumPy, SciPy, OSQP and PyTorch, so
+  that a RAMBO quadruped policy runs on the robot unchanged.
+
+RAMBO controller checkpoint (model_2000.pt), CC BY-NC 4.0, not distributed here: it is part of the
+  QLM-Bench dataset (assets/rambo-go2-controller/iteration-2000/runtime/), downloaded by
+  scripts/fetch_controller.sh.
+
+QLM-Bench (the qlm-bench branch of this repository), CC BY-NC 4.0, installed separately.
+  The bridge speaks its qlm-live-v1 protocol through the qlm_bench package. wam_go2/wam/ledger.py is
+  adapted from its command-execution runtime. config/d435i_rgb_simulation/ is the D435i camera exported
+  from the QLM-Bench simulation.
+
+Unitree Robotics
+  The unitree_go / unitree_api ROS 2 messages (unitree_ros2, BSD-3-Clause) are built by
+  scripts/install_unitree_msgs.sh and not distributed here. The LowCmd CRC in wam_go2/go2/crc.py follows
+  the algorithm of Unitree's SDK (unitree_sdk2, BSD-3-Clause).
+
+MuJoCo Menagerie (https://github.com/google-deepmind/mujoco_menagerie), Unitree Go2 model, BSD-3-Clause.
+  Used by sim/ and downloaded by scripts/fetch_mujoco_menagerie.sh; not distributed here.
+
+The Python dependencies (NumPy, SciPy, OSQP, PyTorch, MuJoCo, PyAV, OpenCV, Pillow) and ROS 2 are
+installed separately and keep their own licenses.

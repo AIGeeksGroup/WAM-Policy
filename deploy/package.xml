@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>wam_go2_deploy</name>
+  <version>0.1.0</version>
+  <description>
+    WAM-Policy on a real Unitree Go2: the RAMBO whole-body controller (Go2 LowState ->
+    state estimation -> RAMBO policy + OSQP force QP -> Go2 LowCmd at 100 Hz) and the
+    bridge that feeds it the WAM-Policy server's command chunks from the two cameras.
+  </description>
+  <maintainer email="wam-policy@example.com">WAM-Policy authors</maintainer>
+  <license>CC-BY-NC-4.0</license>
+
+  <depend>rclpy</depend>
+  <depend>rcl_interfaces</depend>
+  <depend>unitree_go</depend>
+  <depend>unitree_api</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

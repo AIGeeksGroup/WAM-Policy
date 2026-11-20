@@ -1,0 +1,42 @@
+# wam_bridge node parameters (wam_go2/nodes/wam_bridge_node.py). Launch arguments of
+# launch/wam_bridge.launch.py override host/port/instruction/task_id/task_version/
+# session_id/max_chunks/max_wall_s/save_images/output_dir/start_timeout_s/settle_s.
+/**:
+  wam_bridge:
+    ros__parameters:
+      host: "127.0.0.1"          # the policy server on the laptop (QLM's RPC is localhost-only)
+      port: 8862
+      rpc_timeout_s: 30.0        # one RPC (predict / feedback) may take this long, 2 attempts; the robot holds meanwhile
+      session_id: "go2-real"
+      episode_id: ""             # "" = <session_id>:<reset_epoch>
+      reset_epoch: 0             # 0 = unix seconds at start (must advance between runs of one session)
+      instruction: "Push the box inside the outlined area."   # the task instruction (config/wam_tasks.json)
+      task_id: "push_box"
+      task_version: "mujoco-push_box-runtime-v1"
+      policy_seed: 42
+      max_chunks: 1000           # 16 commands = 320 ms of motion per chunk
+      max_wall_s: 0.0            # 0 = no wall-clock budget; the operator ends with Ctrl+C
+      sample_wait_s: 0.30        # bounded wait for the frames of a sample instant (camera latency ~50-130 ms)
+      # a sample uses the frame / state nearest its 80 ms grid instant within these tolerances
+      ego_tolerance_s: 0.040     # ego_stream ~14 fps (/frontvideostream): half a period is ~35 ms
+      d435i_tolerance_s: 0.020   # D435i 60 fps
+      state_tolerance_s: 0.015   # controller state at 100 Hz
+      # predictions outside this envelope end the episode, never clamped. WAM runs launch the controller
+      # with command_handling:=sim (unclipped, as the QLM-Bench MuJoCo data collection); every training
+      # value lies inside these (1.5x RAMBO's ranges; closest margin: fl_ee_z -0.034 vs -0.05)
+      bound_vx: 0.75
+      bound_vy: 0.75
+      bound_wz: 0.75
+      bound_ee_x: [0.0, 0.65]
+      bound_ee_y: [-0.15, 0.35]
+      bound_ee_z: [-0.05, 0.50]
+      ego_topic: "/camera/go2/ego/image_raw"
+      d435i_topic: "/camera/d435i/sim/color/image_raw"
+      d435i_stamp_offset_ms: 0.0   # D435i capture = header.stamp - this (sync_check: stamp minus exposure)
+      state_timeout_s: 0.06      # a step is confirmed only if rambo/state arrived within this
+      keep_s: 3.0                # frame / state buffer depth
+      start_timeout_s: 15.0      # wait for the streams, POLICY + settle and the entry sequence's exit (the demo
+                                 # starts the bridge BEFORE the sequence and passes 90 s)
+      settle_s: 2.0              # the controller must have been in POLICY this long before the cold start
+      output_dir: "~/.ros/wam_bridge"
+      save_images: false

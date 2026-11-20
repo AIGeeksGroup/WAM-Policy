@@ -1,0 +1,69 @@
+# Nominal simulation configuration, not real-device calibration.
+schema_version: 1
+camera_name: "qlm_d435i_rgb_simulation"
+setup: "robot-dual-v3"
+view: "task"
+camera_prim_path: "/World/envs/env_0/Robot/base/task_camera_rig/task_camera"
+export_method: "offline derivation from pinned repository configuration; no live simulator readback"
+provenance:
+  repository: "https://github.com/JalenLoong/QLM-Bench"
+  repository_commit: "66605a83180609f610e0dfd23b4440fe91ac689f"
+  isaaclab_commit: "ffff603eafc6b74264a5261cc0183d6a65390d78"
+  configuration_url: "https://github.com/JalenLoong/QLM-Bench/blob/66605a83180609f610e0dfd23b4440fe91ac689f/source/rambo/rambo/tasks/common/lift_camera_rig.py"
+  shared_camera_url: "https://github.com/JalenLoong/QLM-Bench/blob/66605a83180609f610e0dfd23b4440fe91ac689f/source/rambo/rambo/tasks/common/camera.py"
+  camera_axes_url: "https://github.com/isaac-sim/IsaacLab/blob/ffff603eafc6b74264a5261cc0183d6a65390d78/source/isaaclab/isaaclab/utils/math.py#L1525-L1611"
+  source_sha256:
+    camera.py: "e0be39bf9ba83fe9786eef95515e8412e80102460f6bde1b0e987539a38c88f2"
+    isaaclab_math.py: "4ae6fe19d9b18c2747bf6546dc72f75cfe497ee2ba6046e95fabbeb33d958d33"
+    lift_camera_rig.py: "f1011e5e40ee2dd2332cd3bd81334e0967125029701409740710088f8e39e6d8"
+intrinsics:
+  image_width_px: 1280
+  image_height_px: 720
+  matrix_units: "pixels"
+  K: [[924.277379745929, 0.0, 640.0], [0.0, 924.277379745929, 360.0], [0.0, 0.0, 1.0]]
+  fx: 924.277379745929
+  fy: 924.277379745929
+  cx: 640.0
+  cy: 360.0
+  skew: 0.0
+  projection_model: "centered ideal pinhole"
+  distortion_model: "none"
+  opencv_distortion_order: ["k1", "k2", "p1", "p2", "k3"]
+  opencv_distortion_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
+  distortion_note: "Zeros encode the undistorted simulated pinhole; these are not device-calibrated D435i coefficients."
+  horizontal_fov_deg: 69.4
+  vertical_fov_deg: 42.56117708362836
+  pixel_coordinates: "u right, v down; use principal point (640,360) exactly as Isaac Lab computes it"
+extrinsics:
+  length_unit: "metre"
+  matrix_storage: "row-major nested lists; multiplication uses homogeneous column vectors"
+  base_frame: "Robot/base (+X forward, +Y left, +Z up)"
+  camera_world_frame: "At optical origin, +X forward, +Y left, +Z up; Isaac Lab camera-axis convention named world, NOT the global world frame"
+  camera_optical_frame: "At optical origin, +X right, +Y down, +Z forward; OpenCV / ROS optical convention"
+  position_of_camera_origin_in_base_m: [0.3, 0.0, 0.34]
+  quaternion_base_from_camera_world_xyzw: [0.0, 0.5372996083468239, 0.0, 0.8433914458128857]
+  downward_pitch_deg: 65.00000000000001
+  T_base_from_camera_world: [[0.4226182617406993, 0.0, 0.90630778703665, 0.3], [0.0, 1.0, 0.0, 0.0], [-0.90630778703665, 0.0, 0.4226182617406993, 0.34], [0.0, 0.0, 0.0, 1.0]]
+  R_camera_world_from_camera_optical: [[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]]
+  T_base_from_camera_optical: [[0.0, -0.90630778703665, 0.4226182617406993, 0.3], [-1.0, 0.0, 0.0, 0.0], [0.0, -0.4226182617406993, -0.90630778703665, 0.34], [0.0, 0.0, 0.0, 1.0]]
+  T_camera_optical_from_base: [[0.0, -1.0, 0.0, 0.0], [-0.90630778703665, 0.0, -0.4226182617406993, 0.41558254510283277], [0.4226182617406993, 0.0, -0.90630778703665, 0.18135916907025126], [0.0, 0.0, 0.0, 1.0]]
+  opencv_R_camera_optical_from_base: [[0.0, -1.0, 0.0], [-0.90630778703665, 0.0, -0.4226182617406993], [0.4226182617406993, 0.0, -0.90630778703665]]
+  opencv_t_camera_optical_from_base_m: [0.0, 0.41558254510283277, 0.18135916907025126]
+  camera_to_base_equation: "p_base_h = T_base_from_camera_optical @ p_camera_optical_h"
+  base_to_camera_equation: "p_camera_optical_h = T_camera_optical_from_base @ p_base_h"
+  projection_equation: "lambda * [u,v,1] = K @ (R_camera_optical_from_base @ p_base + t_camera_optical_from_base_m), for camera Z > 0"
+  P_base_to_image_3x4: [[270.47568751404754, -924.277379745929, -580.036983703456, 116.06986820496081], [-685.5372124189146, 0.0, -716.8873029276667, 449.40284672108106], [0.4226182617406993, 0.0, -0.90630778703665, 0.18135916907025126]]
+  global_pose_equation: "T_world_from_camera_optical(t) = T_world_from_base(t) @ T_base_from_camera_optical"
+  global_pose_note: "Global world extrinsics depend on the robot pose at each timestamp and are not a single static matrix."
+render_settings:
+  data_types: ["rgb"]
+  update_period_simulation_seconds: 0.08
+  frame_rate_simulation_hz: 12.5
+  near_clip_m: 0.1
+  far_clip_m: 20.0
+  renderer: "IsaacRtxRendererCfg"
+  spawn_focal_length_raw: 1.88
+  spawn_horizontal_aperture_raw: 2.6035474336302435
+  spawn_vertical_aperture_raw: 1.464495431417012
+  raw_units_note: "Repository variable names use _mm; values are passed directly to USD/Isaac spawn fields. Export preserves raw values. Focal/aperture ratios determine the pixel intrinsics and FOV."
+scope_notes: ["D435i RGB task camera only; the Go2 ego front camera is a different sensor.", "No stereo-depth intrinsics, stereo baseline, depth-to-color extrinsics, or IMU extrinsics are configured here.", "Existing simulation configuration is preserved; no STEP alignment correction or real-device calibration is applied."]

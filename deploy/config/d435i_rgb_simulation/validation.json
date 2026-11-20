@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "method": "offline numerical verification",
+  "rotation_determinant": 1.0,
+  "inverse_max_abs_error": 1.1280702649050465e-17,
+  "projection_test_optical_points_m": [
+    [
+      0.0,
+      0.0,
+      1.0
+    ],
+    [
+      0.1,
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      0.1,
+      1.0
+    ]
+  ],
+  "projection_test_pixels": [
+    [
+      640.0,
+      359.9999999999999
+    ],
+    [
+      732.4277379745929,
+      359.9999999999999
+    ],
+    [
+      640.0,
+      452.4277379745929
+    ]
+  ],
+  "live_isaac_sim_validation": "not_run"
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "wam-go2-tasks-v1",
+  "_comment": "The ten QLM-Bench quadruped tasks. instruction = the exact training prompt (the policy server picks the cached prompt embedding <prompt_root>/<id>/embedding.pt by it); entry_ee = the front-left foot target [m, body frame] the controller enters POLICY with (RAMBO's default command, where every training episode starts); task_profile_version = the QLM-Bench runtime profile reported at reset. Read by wam_go2/wam/tasks.py.",
+  "tasks": [
+    {"id": "push_box", "instruction": "Push the box inside the outlined area.", "entry_ee": [0.1934, 0.142, 0.05], "task_profile_version": "mujoco-push_box-runtime-v1"},
+    {"id": "press_button", "instruction": "Press the button.", "entry_ee": [0.1934, 0.142, 0.05], "task_profile_version": "mujoco-press_button-runtime-v1"},
+    {"id": "lift_basket", "instruction": "Lift the basket by its handle.", "entry_ee": [0.1934, 0.142, 0.05], "task_profile_version": "mujoco-lift_basket-runtime-v1"},
+    {"id": "kick_ball_to_goal", "instruction": "Kick the ball through the goal.", "entry_ee": [0.1934, 0.142, 0.05], "task_profile_version": "mujoco-kick_ball_to_goal-runtime-v1"},
+    {"id": "sweep_block_to_zone", "instruction": "Sweep the block into the outlined area.", "entry_ee": [0.1934, 0.142, 0.05], "task_profile_version": "mujoco-sweep_block_to_zone-runtime-v1"},
+    {"id": "close_fridge_door", "instruction": "Push against the fridge door until the door closes.", "entry_ee": [0.1934, 0.142, 0.05], "task_profile_version": "mujoco-close_fridge_door-runtime-v1"},
+    {"id": "close_oven_door", "instruction": "Push the oven door until the door closes.", "entry_ee": [0.1934, 0.142, 0.05], "task_profile_version": "mujoco-close_oven_door-runtime-v1"},
+    {"id": "turn_valve", "instruction": "Rotate the valve lever upward to the upright position.", "entry_ee": [0.1934, 0.142, 0.05], "task_profile_version": "mujoco-turn_valve-runtime-v1"},
+    {"id": "pull_open_drawer", "instruction": "Slide your foot into the drawer handle opening and pull the drawer outward.", "entry_ee": [0.1934, 0.142, 0.05], "task_profile_version": "mujoco-pull_open_drawer-runtime-v1"},
+    {"id": "open_room_door", "instruction": "Press down the lever handle, then push the door open.", "entry_ee": [0.1934, 0.142, 0.05], "task_profile_version": "mujoco-open_room_door-runtime-v1"}
+  ]
+}

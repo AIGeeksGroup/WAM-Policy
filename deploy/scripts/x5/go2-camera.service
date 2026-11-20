@@ -1,0 +1,18 @@
+[Unit]
+Description=Go2 camera host: Intel D435i -> ROS2 (RDK X5, wam_go2_deploy/scripts/x5/go2_camera.sh)
+After=network-online.target chrony.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=HOME=/root
+ExecStart=/root/go2_camera_deploy/bin/go2_camera.sh run
+Restart=always
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=40
+StandardOutput=append:/root/go2_camera_deploy/logs/service.log
+StandardError=append:/root/go2_camera_deploy/logs/service.log
+
+[Install]
+WantedBy=multi-user.target

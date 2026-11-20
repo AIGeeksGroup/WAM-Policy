@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  fastdds_wired.xml + a host-local shared-memory transport, for camera tools that pass large
+  images between processes on the laptop (opt-in: CAMERA_DDS_SHM=1 before sourcing
+  scripts/x5/laptop_camera_env.bash; every local process of that exchange needs it).
+
+  Why: scripts/x5/d435i_sim_camera.py republishes 1280x720 rgb8 frames (2.76 MB) to local
+  consumers. Over UDP loopback each frame leaves in one burst and overflows the default 212 kB
+  socket receive buffer (measured: 1033 receive-buffer errors in 20 s, 0.7 of 15 frames/s
+  delivered). Frames from the X5 are unaffected: the wire paces them.
+
+  The UDP part is IDENTICAL to fastdds_wired.xml (interface whitelist = the laptop's wired IP,
+  builtin transports off, the same ros_discovery_info partition), so nothing changes on the
+  network: SHM has no network interface and remote participants (the Go2's CycloneDDS, the X5)
+  never use its locators. The controller and the demo scripts keep using fastdds_wired.xml; they
+  do not need this file.
+-->
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <transport_descriptors>
+    <transport_descriptor>
+      <transport_id>udp_wired</transport_id>
+      <type>UDPv4</type>
+      <interfaceWhiteList>
+        <address>@LAPTOP_IP@</address>
+      </interfaceWhiteList>
+    </transport_descriptor>
+    <transport_descriptor>
+      <transport_id>shm_local</transport_id>
+      <type>SHM</type>
+      <segment_size>33554432</segment_size>
+      <port_queue_capacity>1024</port_queue_capacity>
+    </transport_descriptor>
+  </transport_descriptors>
+  <participant profile_name="wired_shm_participant" is_default_profile="true">
+    <rtps>
+      <userTransports>
+        <transport_id>udp_wired</transport_id>
+        <transport_id>shm_local</transport_id>
+      </userTransports>
+      <useBuiltinTransports>false</useBuiltinTransports>
+    </rtps>
+  </participant>
+  <!-- ros_discovery_info in its own partition, as in fastdds_wired.xml (the X5's Humble realsense
+       node cannot parse Jazzy's node-name messages and runs out of memory on them) -->
+  <data_writer profile_name="ros_discovery_info">
+    <qos><partition><names><name>wam_jazzy_graph</name></names></partition></qos>
+  </data_writer>
+  <data_reader profile_name="ros_discovery_info">
+    <qos><partition><names><name>wam_jazzy_graph</name></names></partition></qos>
+  </data_reader>
+</profiles>

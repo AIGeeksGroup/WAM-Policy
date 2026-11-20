@@ -1,0 +1,115 @@
+/**:
+  wam_go2_controller:
+    ros__parameters:
+      # RAMBO task the checkpoint was trained for:
+      #   quadruped  Isaac-RAMBO-Quadruped-Go2-v0 (three-legged walk, FL arm)
+      task: "quadruped"
+
+      # Path to the RAMBO policy checkpoint. Accepts a crl2 training
+      # checkpoint (model_<it>.pt), a TorchScript export, or an ONNX export.
+      # Empty: the node loads the checkpoint for `task` from the package's
+      # policies/ directory (policies/quadruped/model_2000.pt, not included:
+      # see policies/README.md; the launch scripts pass RAMBO_CONTROLLER).
+      policy_checkpoint: ""
+
+      control_rate: 100.0          # RAMBO policy/QP rate [Hz] (training: 100)
+      stand_duration: 2.0          # stand-up interpolation time [s]
+
+      # Confirm CheckMode reports an empty active mode before any movement.
+      # true: non-blocking release/check sequence; false: check only (e.g.
+      # after running release_sport_mode separately). No response refuses motion.
+      auto_release_sport_mode: true
+
+      # Foot contacts (Kalman filter and JPC phase switch): the gait scheduler's
+      # plan in POLICY, all four feet in every other mode. No foot contact force
+      # is read - the policy has no foot-force input.
+
+      # All commands come from topics: /cmd_vel, rambo/ee_pos_cmd, rambo/ee_force_cmd
+      # and rambo/fsm_cmd (STAND, POLICY, DAMP, REARM). The wireless remote is
+      # not used.
+
+      # Handshake compliance (rambo/ee_compliance std_msgs/Bool, POLICY only):
+      # PD gains of the manipulation-leg joints (FL) while on.
+      # Training is 40/1; these were chosen in MuJoCo (sim/mj_sim.py
+      # quad_demo handshake_stand).
+      ee_compliant_kp: 15.0
+      ee_compliant_kd: 0.8
+      # soft: the compliant leg also loses the policy joint residual and the
+      # QP stance torque (gravity compensation stays), and its target follows
+      # the measured foot inside a fence box around the ee command (x +-10 cm,
+      # y +-5 cm, z -2/+10 cm) - zero static stiffness inside, kp/kd only at
+      # the fence. Lowering kp alone cannot make the leg light (Cartesian
+      # stiffness ~ 50*kp N/m; kp 15 = 7 kgf per 10 cm, MuJoCo).
+      ee_compliant_soft: true
+      # a /cmd_vel older than this counts as zero, so
+      # a dead publisher (SSH drop, crashed script) cannot leave the robot walking
+      cmd_vel_timeout: 0.5
+      # Heading hold: with FL held up the three-leg gait
+      # yaws right by itself (real robot: -0.7..-2.0 deg/s at 0.1-0.15 m/s
+      # -> 25 deg after 20 s). While the operator commands forward speed with
+      # ~zero yaw rate, the yaw at walk start is latched and
+      # wz = Kp*err + Ki*int(err) (deadband, |wz| <= max) is sent instead of
+      # 0. cmd_vel yaw input or stopping releases it.
+      heading_hold: true
+      heading_hold_kp: 1.0            # [rad/s per rad]
+      heading_hold_ki: 0.3            # [rad/s per rad*s], anti-windup at the limit
+      heading_hold_max_wz: 0.3        # [rad/s] (trained range 0.5)
+      heading_hold_deadband_deg: 1.0
+      # In place: the same right turn with a ZERO command while the gait keeps stepping
+      # (real -0.9..-1.0 deg/s, MuJoCo -1.1 deg/s at the WAM entry target). true = also hold
+      # the yaw while the whole command is ~0; any command releases it. Only the yaw (the
+      # estimator cannot hold position). WAM runs set it true (scripts/demo/wam_task.sh
+      # WAM_IN_PLACE_HOLD).
+      heading_hold_in_place: false
+
+      # Safety
+      # Host <-> robot over the Ethernet cable ONLY. Set wired_nic to the
+      # host's wired interface (`ip -br link`). The node samples this NIC's
+      # rx_bytes: while LowState frames flow it must grow >= wired_min_mbps
+      # (500 Hz x ~1.3 kB = 0.65 MB/s), otherwise STAND / POLICY are refused
+      # and an error is logged every 5 s. Why: if the robot is
+      # also on WiFi, an unbound DDS participant lets it stream /lowstate to
+      # the host's WiFi address -> 20-250 ms bursts of lost frames. "none"
+      # disables (mock).
+      wired_nic: eth0
+      wired_min_mbps: 0.3
+      # The robot streams steadily (tick gaps <= 6 ms), but over a WiFi path
+      # delivery can stall 40-92 ms every ~10-15 s. 0.1 s false-trips; 0.25
+      # still catches a pulled cable.
+      lowstate_timeout: 0.25       # [s] receive/source watchdog in inactive modes
+      # Active motion also stops on source-age or host scheduler gaps >=50 ms.
+      # Chosen below recorded 100-170 ms stale bursts; <50 ms is tolerated.
+      # These are deployment fail-stop limits, not real-robot validated tuning.
+      source_stale_timeout: 0.05
+      control_gap_timeout: 0.05
+      estimator_timeout: 0.05      # POLICY: age of last successful KF update
+      max_tilt_gravity_z: -0.3     # trip when projected_gravity_z exceeds this
+
+      # Stand state gains (official example values)
+      stand_kp: 60.0
+      stand_kd: 5.0
+
+      # RAMBO controller options
+      # Native9 commands. Whatever the simulation can reach, the robot must reach too.
+      # rambo = clipped to RAMBO's Isaac sampling ranges (vx, vy, wz +-0.5; FL x 0.1934..0.5,
+      #         y 0..0.2, z 0..0.4 m) and velocity / force zeroed while all four feet are in stance.
+      # sim   = exactly as QLM-Bench MuJoCo, where the WAM training data come from (RAMBOCore.submit stores
+      #         them unclipped; 34 % of the training rows lie outside the RAMBO box, up to 8.5 cm). WAM runs
+      #         set sim (run_wam.sh / scripts/demo/wam_task.sh WAM_COMMAND_HANDLING).
+      command_handling: rambo
+      gravity_compensation: true
+      joint_limit_soft_factor: 1.0
+
+      # FL force command (native9 fl_ee_fx/fy/fz; WAM-Policy sends zeros).
+      # ee_force_cmd_timeout zeroes a stale /rambo/ee_force_cmd the way
+      # cmd_vel_timeout does for velocity; after a timeout the force stays zero
+      # until the publisher withdraws it or the robot stops
+      # (wam_go2/control/force_command.py). 0 = off.
+      ee_force_cmd_timeout: 0.5
+
+      # 100 Hz trace of every POLICY run (raw policy action, JPC target,
+      # commanded q / tau_ff, GRF, KF state) -> policy_trace_<unix>.npz in
+      # this directory when POLICY ends; pair with record_lowstate.py via the
+      # wall clock. "" disables. "~" is expanded by the node and the directory
+      # is created on first use; point it at a checkout to keep traces with it.
+      policy_trace_dir: "~/.ros/wam_go2_traces"

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Bind the laptop's FastDDS participant to the robot's wired link only.
+
+  With the default participant the laptop announces every NIC (wired and WiFi). If the Go2 is
+  also on the WiFi LAN, its CycloneDDS may pick the WiFi locator for /lowstate: 500 Hz over WiFi
+  arrives in 20-250 ms bursts and control ticks run on stale frames. With this whitelist the
+  robot only learns the wired address (measured: 500.0 Hz, receive gap 2.0 ms median / 6 ms max,
+  no gap > 20 ms, request/response discovery intact).
+
+  Use: export FASTRTPS_DEFAULT_PROFILES_FILE=<this file> in every terminal that talks to the
+  robot (scripts/demo/common.sh does it automatically, regenerating the address from
+  DEMO_LAPTOP_IP). Replace @LAPTOP_IP@ with the laptop's address on the robot cable
+  (DEMO_LAPTOP_IP) for manual use. Equivalent CycloneDDS setting: docs/network.md.
+
+  ros_discovery_info in its own partition: the X5 runs ROS 2 Humble, the laptop Jazzy, and the
+  two distributions' ParticipantEntitiesInfo (the node-name message every ROS process publishes
+  on ros_discovery_info) are not wire-compatible. The X5's realsense node fails to parse each one
+  ("Fast CDR exception" / "Bad alloc") and every failed parse holds GBs for a few seconds
+  (measured: 37 MB -> 0.8-4.4 GB at each start and exit of one laptop process); the ~8 processes
+  of a WAM run can run the 7 GB X5 out of memory, stopping the D435i. With the laptop's writer and
+  reader of that one topic in the partition below, Humble participants (default partition) never
+  match them: no parse errors, the node stays at 38 MB, frames unchanged (59.5 fps). Data topics
+  are untouched. Every laptop process needs the same partition (this file, fastdds_wired_shm.xml
+  and the copy scripts/demo/common.sh writes), else it cannot see the others' node names (ros2
+  param get, ros2 node list); the X5's node names are not visible to the laptop either way
+  (_NODE_NAME_UNKNOWN_). Never add it to the X5's profile (scripts/x5/fastdds_x5_wired.xml): the
+  X5 must stay outside.
+-->
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <transport_descriptors>
+    <transport_descriptor>
+      <transport_id>udp_wired</transport_id>
+      <type>UDPv4</type>
+      <interfaceWhiteList>
+        <address>@LAPTOP_IP@</address>
+      </interfaceWhiteList>
+    </transport_descriptor>
+  </transport_descriptors>
+  <participant profile_name="wired_participant" is_default_profile="true">
+    <rtps>
+      <userTransports>
+        <transport_id>udp_wired</transport_id>
+      </userTransports>
+      <useBuiltinTransports>false</useBuiltinTransports>
+    </rtps>
+  </participant>
+  <!-- the rmw looks these up by topic name for its ros_discovery_info writer / reader (see above) -->
+  <data_writer profile_name="ros_discovery_info">
+    <qos><partition><names><name>wam_jazzy_graph</name></names></partition></qos>
+  </data_writer>
+  <data_reader profile_name="ros_discovery_info">
+    <qos><partition><names><name>wam_jazzy_graph</name></names></partition></qos>
+  </data_reader>
+</profiles>

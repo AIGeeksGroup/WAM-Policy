@@ -1,0 +1,8 @@
+# Example /root/go2_camera_deploy/config/camera.conf for the RDK X5 camera host
+# (read by scripts/x5/go2_camera.sh; KEY=value, every key optional).
+# The deployed profile (WAM: both cameras 640x360 on a 50 Hz capture grid): colour
+# 640x360 at 60 fps, depth kept small at 15 fps. With the robot on: /lowstate 500 Hz,
+# max arrival gap 3.3 ms.
+CAMERA_IMU=1
+CAMERA_PROFILE=640x360x60
+CAMERA_DEPTH_PROFILE=640x360x15
