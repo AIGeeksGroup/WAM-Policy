@@ -191,4 +191,9 @@ This repository contains code derived from the following third-party works.
 - [LingBot-VA](https://github.com/Robbyant/lingbot-va)
 - [Wan](https://github.com/Wan-Video/Wan2.1) (via LingBot-VA)
 
+We also thank the authors of the following works, on which QLM-Bench builds.
+
+- [RAMBO](https://github.com/catachiii/rambo): the whole-body controller ported to QLM-Bench and used to execute every command
+- [Leg-Manip](https://arxiv.org/abs/2403.20328): the baseline re-implemented in `baselines/leg_manip/` on the `qlm-bench` branch
+
 See [NOTICE](./NOTICE) for third-party attribution.
